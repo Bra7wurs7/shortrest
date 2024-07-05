@@ -1,1 +1,83 @@
-/* You can add global styles to this file, and also import other style files */
+// Color Scheme: GruvBox Dark
+$bg_h: #1d2021;
+$bg: #282828;
+$bg_s: #32302f;
+$bg1: #3c3836;
+$bg2: #504945;
+$bg3: #665c54;
+$bg4: #7c6f64;
+$fg: #fbf1c7;
+$fg1: #ebdbb2;
+$fg2: #d5c4a1;
+$fg3: #bdae93;
+$fg4: #a89984;
+$red: #fb4934;
+$green: #b8bb26;
+$yellow: #fabd2f;
+$blue: #83a598;
+$purple: #d3869b;
+$aqua: #8ec07c;
+$gray: #928374;
+$orange: #fe8019;
+$red-dim: #cc2412;
+$green-dim: #98971a;
+$yellow-dim: #d79921;
+$blue-dim: #458588;
+$purple-dim: #b16286;
+$aqua-dim: #689d6a;
+$gray-dim: #a89984;
+$orange-dim: #d65d0e;
+
+// Variables
+
+// Variables.Spacing
+$border-radius: 8px;
+$spacing: 2px;
+$padding: 4px;
+
+// Variables.Colors
+$border-color: $bg3;
+$background-color: $bg_h;
+$foreground-color: $fg;
+
+@font-face {
+    font-family: "geist";
+    src: url(assets/fonts/GeistVF.ttf) format("truetype");
+}
+
+:root {
+    background-color: $background-color;
+    color: $foreground-color;
+    font-family: geist;
+}
+
+.rounded-box {
+    border: 1px solid $border-color;
+    border-radius: $border-radius;
+}
+
+.padding {
+    padding: $padding;
+}
+
+.flex-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.flex-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.align-end {
+    align-items: end;
+}
+
+.justify-end {
+    justify-content: end;
+}
+
+.grow {
+    flex-grow: 1;
+}
