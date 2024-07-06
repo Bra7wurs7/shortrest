@@ -2,62 +2,117 @@
 $bg_h: #1d2021;
 $bg: #282828;
 $bg_s: #32302f;
+
 $bg1: #3c3836;
 $bg2: #504945;
 $bg3: #665c54;
 $bg4: #7c6f64;
+
 $fg: #fbf1c7;
+
 $fg1: #ebdbb2;
 $fg2: #d5c4a1;
 $fg3: #bdae93;
 $fg4: #a89984;
-$red: #fb4934;
+
+
+// Green highlights CREATE actions (create new file, copy stuff)
 $green: #b8bb26;
-$yellow: #fabd2f;
-$blue: #83a598;
-$purple: #d3869b;
-$aqua: #8ec07c;
-$gray: #928374;
-$orange: #fe8019;
-$red-dim: #cc2412;
 $green-dim: #98971a;
-$yellow-dim: #d79921;
+
+// Blue highlights READ actions (open file, read text)
+$blue: #83a598;
 $blue-dim: #458588;
+
+// Yellow highlights UPDATE actions (format text, edit file)
+$yellow: #fabd2f;
+$yellow-dim: #d79921;
+
+// Red highlights DELETE actions (delete file, remove text)
+$red: #fb4934;
+$red-dim: #cc2412;
+
+
+$purple: #d3869b;
 $purple-dim: #b16286;
+$aqua: #8ec07c;
 $aqua-dim: #689d6a;
-$gray-dim: #a89984;
+$orange: #fe8019;
 $orange-dim: #d65d0e;
+$gray: #928374;
+$gray-dim: #a89984;
 
-// Variables
+// Using local font for somewhat uniform look between browsers and operating systems
+@font-face {
+    font-family: "geist";
+    src: url(assets/fonts/Geist.ttf) format("truetype");
+}
 
-// Variables.Spacing
+@font-face {
+    font-family: "geist-mono";
+    src: url(assets/fonts/GeistMono.ttf) format("truetype");
+}
+
+@font-face {
+    font-family: "bitter";
+    src: url(assets/fonts/Bitter.ttf) format("truetype");
+}
+
+// Style Variables
+
+// Style -> Spacing
 $border-radius: 8px;
-$spacing: 2px;
-$padding: 4px;
+$spacing: 4px;
+$padding: 6px;
+$margin: 2px;
+$border-width: 1px;
 
-// Variables.Colors
+// Style -> Colors
 $border-color: $bg3;
+$border-color-highlighted: $bg3;
 $background-color: $bg_h;
 $foreground-color: $fg;
 
-@font-face {
-    font-family: "geist";
-    src: url(assets/fonts/GeistVF.ttf) format("truetype");
+// Style -> Fonts
+$sans: geist, sans;
+$mono: geist-mono, mono;
+$serif: bitter, serif;
+
+html {
+    height: 100%;
+}
+
+body {
+    height: 100%;
+    margin: 0;
 }
 
 :root {
+    height: 100%;
     background-color: $background-color;
     color: $foreground-color;
-    font-family: geist;
+    font-family: $sans;
 }
 
 .rounded-box {
-    border: 1px solid $border-color;
+    border: $border-width solid $border-color;
     border-radius: $border-radius;
 }
 
-.padding {
+.padding {
     padding: $padding;
+}
+
+.margin {
+    margin: $margin;
+}
+
+.margin-right {
+    margin-right: $margin;
+}
+
+.width-20vw {
+    width: 10vw;
 }
 
 .flex-row {
@@ -78,6 +133,35 @@ $foreground-color: $fg;
     justify-content: end;
 }
 
+.centered-content {
+    align-items: center;
+    justify-content: center;
+}
+
 .grow {
     flex-grow: 1;
+}
+
+.h-100 {
+    height: 100%;
+}
+
+.w-100 {
+    width: 100%;
+}
+
+.bg_h {
+    background-color: $bg_h;
+}
+
+.bg {
+    background-color: $bg;
+}
+
+.bg_s {
+    background-color: $bg_s;
+}
+
+.icon {
+    font-size: 20px;
 }
