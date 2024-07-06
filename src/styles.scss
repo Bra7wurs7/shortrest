@@ -62,14 +62,13 @@ $gray-dim: #a89984;
 
 // Style -> Spacing
 $border-radius: 8px;
-$spacing: 4px;
-$padding: 6px;
+$padding: 4px;
 $margin: 2px;
 $border-width: 1px;
 
 // Style -> Colors
 $border-color: $bg3;
-$border-color-highlighted: $bg3;
+$border-color-highlighted: $fg4;
 $background-color: $bg_h;
 $foreground-color: $fg;
 
@@ -111,6 +110,14 @@ body {
     margin-right: $margin;
 }
 
+.margin-bottom {
+    margin-bottom: $margin;
+}
+
+.pseudo_element {
+    margin: $margin;
+}
+
 .width-20vw {
     width: 10vw;
 }
@@ -139,6 +146,7 @@ body {
 }
 
 .grow {
+    display: flex;
     flex-grow: 1;
 }
 
@@ -164,4 +172,43 @@ body {
 
 .icon {
     font-size: 20px;
+}
+
+.pseudo_input:has(> input:focus) {
+    border-color: $border-color-highlighted;
+}
+
+.hover_highlight_border {
+    &:hover {
+        border-color: $border-color-highlighted;
+    }
+}
+
+.hover_cursor_pointer {
+    cursor: pointer;
+}
+
+// Base HTML Element Styles
+input {
+    /* Remove background color and borders */
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+
+    /* Remove padding and margins */
+    padding: 0;
+    margin: 0;
+
+    /* Set font to inherit from parent element */
+    font-size: inherit;
+    font-family: inherit;
+
+    /* Reset text color, appearance and cursor */
+    color: inherit;
+    appearance: none;
+    -webkit-appearance: none;
+
+    &:focus {
+        outline: none;
+    }
 }
