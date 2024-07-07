@@ -101,14 +101,40 @@ body {
     border-radius: $border-radius;
 }
 
-.rounded_left {
+.rounded_tl {
     border-top-left-radius: $border-radius;
+}
+
+.rounded_tr {
+    border-top-right-radius: $border-radius;
+}
+
+.rounded_bl {
     border-bottom-left-radius: $border-radius;
 }
 
-.rounded_right {
+.rounded_br {
+    border-bottom-right-radius: $border-radius;
+}
+
+.rounded_t {
+    border-top-left-radius: $border-radius;
+    border-top-right-radius: $border-radius;
+}
+
+.rounded_r {
     border-top-right-radius: $border-radius;
     border-bottom-right-radius: $border-radius;
+}
+
+.rounded_b {
+    border-bottom-left-radius: $border-radius;
+    border-bottom-right-radius: $border-radius;
+}
+
+.rounded_l {
+    border-top-left-radius: $border-radius;
+    border-bottom-left-radius: $border-radius;
 }
 
 .padding {
@@ -131,10 +157,6 @@ body {
     margin: $margin;
 }
 
-.width-20vw {
-    width: 10vw;
-}
-
 .flex_row {
     display: flex;
     flex-direction: row;
@@ -149,11 +171,19 @@ body {
     align-items: end;
 }
 
+.align_stretch {
+    align-items: stretch;
+}
+
 .justify_end {
     justify-content: end;
 }
 
-.centered-content {
+.justify_between {
+    justify-content: space-between;
+}
+
+.centered_content {
     align-items: center;
     justify-content: center;
 }
@@ -163,12 +193,16 @@ body {
     flex-grow: 1;
 }
 
-.h-100 {
+.h_100 {
     height: 100%;
 }
 
-.w-100 {
+.w_100 {
     width: 100%;
+}
+
+.w_20vw {
+    width: 10vw;
 }
 
 .bg_h {
@@ -215,6 +249,36 @@ body {
     &:hover {
         border-color: $border-color-highlighted;
     }
+
+    &.edit {
+        &:hover {
+            border-color: $yellow-dim;
+        }
+    }
+
+    &.read {
+        &:hover {
+            border-color: $blue-dim;
+        }
+    }
+
+    &.create {
+        &:hover {
+            border-color: $green-dim;
+        }
+    }
+
+    &.delete {
+        &:hover {
+            border-color: $red-dim;
+        }
+    }
+}
+
+.hover_bg_s {
+    &:hover {
+        background-color: $bg_s;
+    }
 }
 
 .hover_cursor_pointer {
@@ -249,5 +313,28 @@ input {
 }
 
 textarea {
-    
+    /* Remove background color and borders */
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    box-sizing: border-box;
+    width: 100%;
+    resize: none;
+
+    /* Remove padding and margins */
+    padding: 0;
+    margin: 0;
+
+    /* Set font to inherit from parent element */
+    font-size: inherit;
+    font-family: inherit;
+
+    /* Reset text color, appearance and cursor */
+    color: inherit;
+    appearance: none;
+    -webkit-appearance: none;
+
+    &:focus {
+        outline: none;
+    }
 }
