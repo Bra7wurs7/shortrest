@@ -61,7 +61,7 @@ $gray-dim: #a89984;
 // Style Variables
 
 // Style -> Spacing
-$border-radius: 8px;
+$border-radius: 6px;
 $padding: 4px;
 $margin: 2px;
 $border-width: 1px;
@@ -93,9 +93,22 @@ body {
     font-family: $sans;
 }
 
-.rounded-box {
+.box {
     border: $border-width solid $border-color;
+}
+
+.rounded {
     border-radius: $border-radius;
+}
+
+.rounded_left {
+    border-top-left-radius: $border-radius;
+    border-bottom-left-radius: $border-radius;
+}
+
+.rounded_right {
+    border-top-right-radius: $border-radius;
+    border-bottom-right-radius: $border-radius;
 }
 
 .padding {
@@ -122,21 +135,21 @@ body {
     width: 10vw;
 }
 
-.flex-row {
+.flex_row {
     display: flex;
     flex-direction: row;
 }
 
-.flex-column {
+.flex_column {
     display: flex;
     flex-direction: column;
 }
 
-.align-end {
+.align_end {
     align-items: end;
 }
 
-.justify-end {
+.justify_end {
     justify-content: end;
 }
 
@@ -170,6 +183,26 @@ body {
     background-color: $bg_s;
 }
 
+.fg1 {
+    color: $fg1;
+}
+
+.fg2 {
+    color: $fg2;
+}
+
+.fg3 {
+    color: $fg3;
+}
+
+.fg4 {
+    color: $fg4;
+}
+
+.hover_fg:hover {
+    color: $fg;
+}
+
 .icon {
     font-size: 20px;
 }
@@ -194,6 +227,8 @@ input {
     background-color: transparent;
     border: none;
     box-shadow: none;
+    box-sizing: border-box;
+    width: 100%;
 
     /* Remove padding and margins */
     padding: 0;
@@ -211,4 +246,8 @@ input {
     &:focus {
         outline: none;
     }
+}
+
+textarea {
+    
 }
