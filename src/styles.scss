@@ -145,16 +145,16 @@ body {
     margin: $margin;
 }
 
-.margin-right {
+.margin_right {
     margin-right: $margin;
 }
 
-.margin-bottom {
+.margin_bottom {
     margin-bottom: $margin;
 }
 
 .pseudo_element {
-    margin: $margin;
+    padding-bottom: $padding;
 }
 
 .flex_row {

@@ -1,30 +1,46 @@
 <div class="flex_column h_100 justify_end">
   <div class="flex_row grow">
-    <div class="rounded box padding margin flex_column justify_end bg">
-      <div class="w_20vw rounded box flex_row padding hover_highlight_border delete hover_cursor_pointer hover_bg_s">
-        <span class="icon iconoir-page-minus hover_cursor_pointer hover_fg margin-right"></span>
-        Delete File
+    <div class="rounded_t box padding margin flex_column justify_between bg">
+      <div>
+        <div
+          class="w_20vw rounded box flex_row padding hover_highlight_border delete hover_cursor_pointer hover_bg_s">
+          <span class="icon iconoir-page-minus hover_cursor_pointer hover_fg margin_right"></span>
+          Delete File
+        </div>
+        <div class="pseudo_element"></div>
       </div>
-      <div class="pseudo_element"></div>
-      <div class="w_20vw rounded box flex_row padding hover_highlight_border create hover_cursor_pointer hover_bg_s">
-        <span class="icon iconoir-page-plus hover_cursor_pointer hover_fg margin-right"></span>
-        Create File
-      </div>
-      <div class="pseudo_element"></div>
-      <div class="w_20vw rounded box flex_row padding hover_highlight_border edit hover_cursor_pointer hover_bg_s">
-        <span class="icon iconoir-page-edit hover_cursor_pointer hover_fg margin-right"></span>
-        Edit File
-      </div>
-      <div class="pseudo_element"></div>
-      <div class="w_20vw rounded box flex_row padding hover_highlight_border read hover_cursor_pointer hover_bg_s">
-        <span class="icon iconoir-page hover_cursor_pointer hover_fg margin-right"></span>
-        Read File
+      <div>
+        <div
+          class="w_20vw rounded_t box flex_row padding hover_highlight_border delete hover_cursor_pointer hover_bg_s">
+          <span class="icon iconoir-page-minus hover_cursor_pointer hover_fg margin_right"></span>
+          Delete File
+        </div>
+        <div class="pseudo_element"></div>
+        <div class="w_20vw box flex_row padding hover_highlight_border create hover_cursor_pointer hover_bg_s">
+          <span class="icon iconoir-page-plus hover_cursor_pointer hover_fg margin_right"></span>
+          Create File
+        </div>
+        <div class="pseudo_element"></div>
+        <div class="w_20vw box flex_row padding hover_highlight_border edit hover_cursor_pointer hover_bg_s">
+          <span class="icon iconoir-page-edit hover_cursor_pointer hover_fg margin_right"></span>
+          Edit File
+        </div>
+        <div class="pseudo_element"></div>
+        <div class="w_20vw rounded_b box flex_row padding hover_highlight_border read hover_cursor_pointer hover_bg_s">
+          <span class="icon iconoir-page hover_cursor_pointer hover_fg margin_right"></span>
+          Read File
+        </div>
       </div>
     </div>
     <div class="flex_column grow">
-      <div class="rounded_t box padding margin flex_row bg_s">
-        <span class="margin-right">Filename</span>
+      <div class="rounded_t box padding margin flex_row bg_s justify_between">
         <input placeholder="Filename" />
+        <div class="flex_row fg4">
+          <span class="icon iconoir-eye hover_cursor_pointer hover_fg margin_right"></span>
+          <span class="icon iconoir-code-brackets hover_cursor_pointer hover_fg margin_right"></span>
+          <span class="icon iconoir-chat-bubble hover_cursor_pointer hover_fg margin_right"></span>
+          <span class="icon iconoir-multi-bubble hover_cursor_pointer hover_fg"></span>
+        </div>
       </div>
       <div class="flex_row grow">
         <div class="rounded_bl box padding grow margin bg_s">
@@ -32,7 +48,7 @@
         </div>
         <div class="rounded_br box padding margin flex_column justify_between bg_s">
           <div class="flex_column">
-            <div (click)="saySomething()"
+            <div
               class="w_20vw flex_row rounded box padding pseudo_input hover_highlight_border hover_cursor_pointer justify_between">
               <span>System Msg</span>
               <span class="icon iconoir-bubble-warning hover_cursor_pointer fg4"></span>
@@ -66,11 +82,11 @@
     </div>
   </div>
   <div class="flex_row">
-    <div class="rounded_l box padding grow margin pseudo_input hover_highlight_border bg">
+    <div class="rounded_bl box padding grow margin pseudo_input hover_highlight_border bg">
       <input class="flex grow" placeholder="Type here to control shortrest" />
     </div>
     <div class="rounded_r box padding margin flex_row centered_content hover_highlight_border fg4 bg">
-      <span class="icon iconoir-message margin-right hover_cursor_pointer hover_fg"></span>
+      <span class="icon iconoir-message margin_right hover_cursor_pointer hover_fg"></span>
       <span class="icon iconoir-settings hover_cursor_pointer hover_fg"></span>
     </div>
   </div>

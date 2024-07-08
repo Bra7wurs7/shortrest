@@ -1,4 +1,4 @@
-import { Component, OnInit } from "@angular/core";
+import { Component } from "@angular/core";
 import { RouterOutlet } from "@angular/router";
 
 @Component({
@@ -10,10 +10,4 @@ import { RouterOutlet } from "@angular/router";
 })
 export class AppComponent{
   title = "shortrest";
-
-  saySomething(){
-    console.log(window.speechSynthesis.getVoices());
-    var msg = new SpeechSynthesisUtterance('Hello World!');
-    window.speechSynthesis.speak(msg);
-  }
 }
