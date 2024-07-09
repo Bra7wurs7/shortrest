@@ -67,6 +67,7 @@ $smallpadding: 2px;
 $margin: 2px;
 $smallmargin: 1px;
 $border-width: 1px;
+$thicker-border-width: 2px;
 
 // Style -> Colors
 $border-color: $bg3;
@@ -97,6 +98,16 @@ body {
 
 .box {
     border: $border-width solid $border-color;
+}
+
+.box_tl {
+    border: $border-width solid $border-color;
+    border-bottom: none;
+    border-right: none;
+}
+
+.thicker_border_l {
+    border-left: $thicker-border-width solid $border-color;
 }
 
 .rounded {
@@ -151,11 +162,11 @@ body {
     margin: $margin;
 }
 
-.margin_right {
+.margin_r {
     margin-right: $margin;
 }
 
-.margin_bottom {
+.margin_b {
     margin-bottom: $margin;
 }
 
@@ -168,7 +179,7 @@ body {
     flex-direction: row;
 }
 
-.flex_column {
+.flex_col {
     display: flex;
     flex-direction: column;
 }
@@ -293,6 +304,10 @@ body {
 
 .overflow_scroll {
     overflow: scroll;
+}
+
+.overflow_y_scroll {
+    overflow-y: scroll;
 }
 
 .overflow_hidden {

@@ -8,7 +8,7 @@ import { RouterOutlet } from "@angular/router";
   templateUrl: "./app.component.html",
   styleUrls: ["./app.component.scss"], // Note the 's' added to 'styleUrl'. It was a typo in the original code.
 })
-export class AppComponent{
+export class AppComponent {
   title = "shortrest";
-  files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
+  files = ['file a', 'file b', 'file c', 'file d', 'file e', 'file f', 'file g', 'file h', 'file i', 'file j', 'file k', 'file l', 'file m', 'file q', 'file o', 'file p', 'file q', 'file r', 'file s', 'file t', 'file u', 'file v', 'file w', 'file x', 'file y', 'file z']
 }
