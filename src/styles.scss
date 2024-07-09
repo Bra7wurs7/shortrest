@@ -63,7 +63,9 @@ $gray-dim: #a89984;
 // Style -> Spacing
 $border-radius: 6px;
 $padding: 4px;
+$smallpadding: 2px;
 $margin: 2px;
+$smallmargin: 1px;
 $border-width: 1px;
 
 // Style -> Colors
@@ -141,6 +143,10 @@ body {
     padding: $padding;
 }
 
+.padding_flat {
+    padding: $smallpadding $padding $smallpadding $padding;
+}
+
 .margin {
     margin: $margin;
 }
@@ -154,7 +160,7 @@ body {
 }
 
 .pseudo_element {
-    padding-bottom: $padding;
+    padding-bottom: $smallpadding;
 }
 
 .flex_row {
@@ -283,6 +289,14 @@ body {
 
 .hover_cursor_pointer {
     cursor: pointer;
+}
+
+.overflow_scroll {
+    overflow: scroll;
+}
+
+.overflow_hidden {
+    overflow: hidden;
 }
 
 // Base HTML Element Styles

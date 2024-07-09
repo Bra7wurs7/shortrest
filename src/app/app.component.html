@@ -1,13 +1,15 @@
 <div class="flex_column h_100 justify_end">
-  <div class="flex_row grow">
-    <div class="rounded_t box padding margin flex_column justify_between bg">
-      <div>
+  <div class="flex_row grow overflow_hidden">
+    <div class="rounded_t box padding margin flex_column justify_between bg overflow_hidden">
+      <div class="overflow_scroll">
+        @for(file of files; track file.charAt(0)) {
         <div
-          class="w_20vw rounded box flex_row padding hover_highlight_border delete hover_cursor_pointer hover_bg_s">
+          class="w_20vw box flex_row padding_flat hover_highlight_border read hover_cursor_pointer hover_bg_s">
           <span class="icon iconoir-page-minus hover_cursor_pointer hover_fg margin_right"></span>
-          Delete File
+          {{file}}
         </div>
         <div class="pseudo_element"></div>
+        }
       </div>
       <div>
         <div
@@ -33,7 +35,7 @@
       </div>
     </div>
     <div class="flex_column grow">
-      <div class="rounded_t box padding margin flex_row bg_s justify_between">
+      <div class="rounded_tl box padding margin flex_row bg_s justify_between">
         <input placeholder="Filename" />
         <div class="flex_row fg4">
           <span class="icon iconoir-eye hover_cursor_pointer hover_fg margin_right"></span>
@@ -42,41 +44,39 @@
           <span class="icon iconoir-multi-bubble hover_cursor_pointer hover_fg"></span>
         </div>
       </div>
-      <div class="flex_row grow">
-        <div class="rounded_bl box padding grow margin bg_s">
-          <textarea placeholder="File empty"></textarea>
+      <div class="rounded_bl box padding grow margin bg_s">
+        <textarea placeholder="File empty"></textarea>
+      </div>
+    </div>
+    <div class="rounded_r box padding margin flex_column justify_between bg_s">
+      <div class="flex_column">
+        <div
+          class="w_20vw flex_row rounded box padding pseudo_input hover_highlight_border hover_cursor_pointer justify_between">
+          <span>System Msg</span>
+          <span class="icon iconoir-bubble-warning hover_cursor_pointer fg4"></span>
         </div>
-        <div class="rounded_br box padding margin flex_column justify_between bg_s">
-          <div class="flex_column">
-            <div
-              class="w_20vw flex_row rounded box padding pseudo_input hover_highlight_border hover_cursor_pointer justify_between">
-              <span>System Msg</span>
-              <span class="icon iconoir-bubble-warning hover_cursor_pointer fg4"></span>
-            </div>
-            <div class="pseudo_element"></div>
-            <div
-              class="w_20vw flex_row rounded box padding pseudo_input hover_highlight_border hover_cursor_pointer justify_between">
-              <span>Outgoing Msg</span>
-              <span class="icon iconoir-bubble-outcome hover_cursor_pointer fg4"></span>
-            </div>
-            <div class="pseudo_element"></div>
-            <div
-              class="w_20vw flex_row rounded box padding pseudo_input hover_highlight_border hover_cursor_pointer justify_between">
-              <span>Incoming Msg</span>
-              <span class="icon iconoir-bubble-income hover_cursor_pointer fg4"></span>
-            </div>
-          </div>
-          <div class="flex_column">
-            <div class="w_20vw flex_row rounded box padding pseudo_input hover_highlight_border bg">
-              <input class="flex grow" placeholder="Randomness" />
-              <span class="icon iconoir-dice-six hover_cursor_pointer fg4"></span>
-            </div>
-            <div class="pseudo_element"></div>
-            <div class="w_20vw flex_row rounded box padding pseudo_input hover_highlight_border bg">
-              <input class="flex grow" placeholder="Variety" />
-              <span class="icon iconoir-palette hover_cursor_pointer fg4"></span>
-            </div>
-          </div>
+        <div class="pseudo_element"></div>
+        <div
+          class="w_20vw flex_row rounded box padding pseudo_input hover_highlight_border hover_cursor_pointer justify_between">
+          <span>Outgoing Msg</span>
+          <span class="icon iconoir-bubble-outcome hover_cursor_pointer fg4"></span>
+        </div>
+        <div class="pseudo_element"></div>
+        <div
+          class="w_20vw flex_row rounded box padding pseudo_input hover_highlight_border hover_cursor_pointer justify_between">
+          <span>Incoming Msg</span>
+          <span class="icon iconoir-bubble-income hover_cursor_pointer fg4"></span>
+        </div>
+      </div>
+      <div class="flex_column">
+        <div class="w_20vw flex_row rounded box padding pseudo_input hover_highlight_border bg">
+          <input class="flex grow" placeholder="Randomness" />
+          <span class="icon iconoir-dice-six hover_cursor_pointer fg4"></span>
+        </div>
+        <div class="pseudo_element"></div>
+        <div class="w_20vw flex_row rounded box padding pseudo_input hover_highlight_border bg">
+          <input class="flex grow" placeholder="Variety" />
+          <span class="icon iconoir-palette hover_cursor_pointer fg4"></span>
         </div>
       </div>
     </div>
