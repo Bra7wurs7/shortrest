@@ -166,6 +166,10 @@ body {
     margin-right: $margin;
 }
 
+.margin_l {
+    margin-left: $margin;
+}
+
 .margin_b {
     margin-bottom: $margin;
 }
@@ -214,11 +218,19 @@ body {
     height: 100%;
 }
 
+.h_auto {
+    height: auto;
+}
+
+.h_max_content {
+    height: max-content;
+}
+
 .w_100 {
     width: 100%;
 }
 
-.w_20vw {
+.w_10vw {
     width: 10vw;
 }
 
@@ -248,6 +260,19 @@ body {
 
 .fg4 {
     color: $fg4;
+}
+
+.small_font {
+    font-size: x-small;
+}
+
+.color_bg3 {
+    color: $bg3 
+}
+
+.text_overflow_ellipsis {
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .hover_fg:hover {

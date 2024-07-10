@@ -1,47 +1,55 @@
 <div class="flex_col h_100 justify_end">
   <div class="flex_row grow overflow_hidden">
     <div class="rounded_t box padding margin flex_col justify_between bg overflow_hidden">
-      <div class="box rounded_t margin_b flex_row justify_between padding">
-        Folder Name
-        <span class="icon iconoir-folder hover_cursor_pointer hover_fg margin_r"></span>
-      </div>
-      <div class="overflow_y_scroll">
-        @for(file of files; track file.charAt(0)) {
-        <div class="box thicker_border_l hover_highlight_border read hover_cursor_pointer hover_bg_s">
-          <div class="w_20vw flex_row padding justify_between fg4">
-            {{file}}
-            <span class="icon iconoir-multiple-pages-empty hover_cursor_pointer hover_fg margin_r"></span>
-          </div>
-          <div class="box_tl thicker_border_l padding flex_row justify_between fg4">
-            foo
-            <span class="icon iconoir-empty-page hover_cursor_pointer hover_fg margin_r"></span>
-          </div>
+      <div class="overflow_hidden flex_col">
+        <div
+          class="box rounded_t margin_b flex_row justify_between padding overflow_hidden text_overflow_ellipsis bg_s">
+          Folder Name
+          <span class="icon iconoir-folder hover_cursor_pointer hover_fg margin_r"></span>
         </div>
-        <div class="pseudo_element"></div>
-        }
+        <div class="overflow_y_scroll flex_col">
+          @for(file of files; track file.filename) {
+          <div class="box thicker_border_l hover_highlight_border read hover_cursor_pointer hover_bg_s">
+            <div class="w_10vw flex_row padding justify_between" [ngClass]="{'fg4': !file.active}">
+              <div class="align_end overflow_hidden text_overflow_ellipsis">
+                {{file.filename}}
+                @for(tag of file.tags; track tag) {
+                <span class="margin_l small_font color_bg3">{{tag}}</span>
+                }
+              </div>
+              <span class="icon iconoir-multiple-pages-empty hover_cursor_pointer hover_fg margin_r"></span>
+            </div>
+            <div class="box_tl thicker_border_l padding flex_row justify_between fg4">
+              foo
+              <span class="icon iconoir-empty-page hover_cursor_pointer hover_fg margin_r"></span>
+            </div>
+          </div>
+          <div class="pseudo_element"></div>
+          }
+        </div>
+        <div class="rounded_b box padding bg_s margin_b"></div>
       </div>
-
       <div>
         <div
-          class="w_20vw rounded_t box flex_row padding hover_highlight_border delete hover_cursor_pointer hover_bg_s justify_between">
+          class="w_10vw rounded_t box flex_row padding hover_highlight_border delete hover_cursor_pointer hover_bg_s justify_between">
           Delete File
           <span class="icon iconoir-page-minus hover_cursor_pointer hover_fg margin_r"></span>
         </div>
         <div class="pseudo_element"></div>
         <div
-          class="w_20vw box flex_row padding hover_highlight_border create hover_cursor_pointer hover_bg_s justify_between">
+          class="w_10vw box flex_row padding hover_highlight_border create hover_cursor_pointer hover_bg_s justify_between">
           Create File
           <span class="icon iconoir-page-plus hover_cursor_pointer hover_fg margin_r"></span>
         </div>
         <div class="pseudo_element"></div>
         <div
-          class="w_20vw box flex_row padding hover_highlight_border edit hover_cursor_pointer hover_bg_s justify_between">
+          class="w_10vw box flex_row padding hover_highlight_border edit hover_cursor_pointer hover_bg_s justify_between">
           Edit File
           <span class="icon iconoir-page-edit hover_cursor_pointer hover_fg margin_r"></span>
         </div>
         <div class="pseudo_element"></div>
         <div
-          class="w_20vw rounded_b box flex_row padding hover_highlight_border read hover_cursor_pointer hover_bg_s justify_between">
+          class="w_10vw rounded_b box flex_row padding hover_highlight_border read hover_cursor_pointer hover_bg_s justify_between">
           Read File
           <span class="icon iconoir-page hover_cursor_pointer hover_fg margin_r"></span>
         </div>
@@ -64,30 +72,30 @@
     <div class="rounded_r box padding margin flex_col justify_between bg_s">
       <div class="flex_col">
         <div
-          class="w_20vw flex_row rounded box padding pseudo_input hover_highlight_border hover_cursor_pointer justify_between">
+          class="w_10vw flex_row box padding pseudo_input hover_highlight_border hover_cursor_pointer justify_between">
           <span>System Msg</span>
           <span class="icon iconoir-bubble-warning hover_cursor_pointer fg4"></span>
         </div>
         <div class="pseudo_element"></div>
         <div
-          class="w_20vw flex_row rounded box padding pseudo_input hover_highlight_border hover_cursor_pointer justify_between">
+          class="w_10vw flex_row rounded box padding pseudo_input hover_highlight_border hover_cursor_pointer justify_between">
           <span>Outgoing Msg</span>
           <span class="icon iconoir-bubble-outcome hover_cursor_pointer fg4"></span>
         </div>
         <div class="pseudo_element"></div>
         <div
-          class="w_20vw flex_row rounded box padding pseudo_input hover_highlight_border hover_cursor_pointer justify_between">
+          class="w_10vw flex_row rounded box padding pseudo_input hover_highlight_border hover_cursor_pointer justify_between">
           <span>Incoming Msg</span>
           <span class="icon iconoir-bubble-income hover_cursor_pointer fg4"></span>
         </div>
       </div>
       <div class="flex_col">
-        <div class="w_20vw flex_row rounded box padding pseudo_input hover_highlight_border bg">
+        <div class="w_10vw flex_row rounded box padding pseudo_input hover_highlight_border bg">
           <input class="flex grow" placeholder="Randomness" />
           <span class="icon iconoir-dice-six hover_cursor_pointer fg4"></span>
         </div>
         <div class="pseudo_element"></div>
-        <div class="w_20vw flex_row rounded box padding pseudo_input hover_highlight_border bg">
+        <div class="w_10vw flex_row rounded box padding pseudo_input hover_highlight_border bg">
           <input class="flex grow" placeholder="Variety" />
           <span class="icon iconoir-palette hover_cursor_pointer fg4"></span>
         </div>
