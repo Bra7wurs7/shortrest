@@ -13,88 +13,79 @@ export class AppComponent {
   title = "shortrest";
   files = [
     {
-      filename: 'File A',
-      tags: ['#tag1', '#tag2'],
-      description: 'This is file A',
-      active: false
+      filename: "Katzenfoto",
+      tags: ["#tag1", "#tag2"],
+      description: "This is file A",
+      active: false,
     },
     {
-      filename: 'File B',
-      tags: ['#tag3', '#tag4', '#tag5'],
-      description: 'This is file B',
-      active: true
+      filename: "Apfel",
+      tags: ["#tag3", "#tag4", "#tag5"],
+      description: "This is file B",
+      active: true,
     },
     {
-      filename: 'File C',
-      tags: ['#tag6', '#tag7'],
-      description: 'This is file C',
-      active: false
+      filename: "File C",
+      tags: ["#tag6", "#tag7"],
+      description: "This is file C",
+      active: false,
     },
     {
-      filename: 'File D',
-      tags: ['#tag8', '#tag9', '#tag10'],
-      description: 'This is file D',
-      active: true
+      filename: "File D",
+      tags: ["#tag8", "#tag9", "#tag10"],
+      description: "This is file D",
+      active: true,
     },
     {
-      filename: 'File E',
-      tags: ['#tag11', '#tag12'],
-      description: 'This is file E',
-      active: false
+      filename: "File E",
+      tags: ["#tag11", "#tag12"],
+      description: "This is file E",
+      active: false,
     },
     {
-      filename: 'File F',
-      tags: ['#tag13', '#tag14', '#tag15'],
-      description: 'This is file F',
-      active: true
+      filename: "File F",
+      tags: ["#tag13", "#tag14", "#tag15"],
+      description: "This is file F",
+      active: true,
     },
     {
-      filename: 'File G',
-      tags: ['#tag16', '#tag17'],
-      description: 'This is file G',
-      active: false
+      filename: "File G",
+      tags: ["#tag16", "#tag17"],
+      description: "This is file G",
+      active: false,
+    },
+  ];
+
+  messages = [
+    {
+      role: "system",
+      content:
+        "Welcome to our platform! Here, you can explore various files tagged with different interests. Let's start by getting familiar with the basics.",
     },
     {
-      filename: 'File H',
-      tags: ['#tag18', '#tag19', '#tag20'],
-      description: 'This is file H',
-      active: true
+      role: "outgoing",
+      content:
+        "Thanks for the warm welcome! I'm new here and would love some guidance on how to navigate this platform.",
     },
     {
-      filename: 'File I',
-      tags: ['#tag21', '#tag22'],
-      description: 'This is file I',
-      active: false
+      role: "incoming",
+      content:
+        "Absolutely, we're happy to help you get started. We have files with various tags that you can browse through and explore.",
     },
     {
-      filename: 'File J',
-      tags: ['#tag23', '#tag24', '#tag25'],
-      description: 'This is file J',
-      active: true
+      role: "outgoing",
+      content:
+        "That sounds amazing. Could you please explain how I can find files based on specific interests or tags?",
     },
     {
-      filename: 'File K',
-      tags: ['#tag26', '#tag27'],
-      description: 'This is file K',
-      active: false
+      role: "incoming",
+      content:
+        "Certainly! Just type a tag that you're interested in the search bar and we'll display all matching files for you.",
     },
     {
-      filename: 'File L',
-      tags: ['#tag28', '#tag29', '#tag30'],
-      description: 'This is file L',
-      active: true
+      role: "outgoing",
+      content:
+        "Got it. So, I just need to click on 'Search', enter the tag I'm interested in, and hit enter. That easy, right?",
     },
-    {
-      filename: 'File M',
-       tags: ['#tag31', '#tag32'],
-       description: 'This is file M',
-       active: false
-    },
-    {
-      filename: 'File N',
-       tags: ['#tag33', '#tag34', '#tag35'],
-       description: 'This is file N',
-       active: true
-    }
-  ]
+  ];
 }
