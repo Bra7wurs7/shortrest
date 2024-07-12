@@ -21,36 +21,9 @@
                 </div>
                 <div class="overflow_y_scroll flex_col">
                     @for (file of files; track file.filename) {
-                        <div
-                            class="box thicker_border_l hover_highlight_border read hover_cursor_pointer hover_bg_s"
-                        >
-                            <div
-                                class="flex_row padding justify_between"
-                                [ngClass]="{
-                                    fg4: !file.active,
-                                    bg_s: file.active,
-                                }"
-                            >
-                                <div
-                                    class="align_end overflow_hidden grow"
-                                    [ngClass]="{
-                                        text_overflow_fade_bg: !file.active,
-                                        text_overflow_fade_bg_s: file.active,
-                                    }"
-                                >
-                                    {{ file.filename }}
-                                    @for (tag of file.tags; track tag) {
-                                        <span
-                                            class="margin_l small_font color_bg3"
-                                            >{{ tag }}</span
-                                        >
-                                    }
-                                </div>
-                                <span
-                                    class="icon iconoir-multiple-pages-empty hover_cursor_pointer hover_fg margin_r"
-                                ></span>
-                            </div>
-                        </div>
+                        <app-file-list-entry
+                            [file]="file"
+                        ></app-file-list-entry>
                         <div class="pseudo_element"></div>
                     }
                 </div>

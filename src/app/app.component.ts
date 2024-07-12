@@ -1,56 +1,72 @@
 import { CommonModule } from "@angular/common";
 import { Component } from "@angular/core";
 import { RouterOutlet } from "@angular/router";
+import { fileListEntry } from "../models/file-list-entry.model";
+import { FileListEntryComponent } from "../components/file-list-entry/file-list-entry.component";
 
 @Component({
   selector: "app-root",
   standalone: true,
-  imports: [RouterOutlet, CommonModule],
+  imports: [RouterOutlet, CommonModule, FileListEntryComponent],
   templateUrl: "./app.component.html",
-  styleUrls: ["./app.component.scss"], // Note the 's' added to 'styleUrl'. It was a typo in the original code.
+  styleUrls: ["./app.component.scss"],
 })
 export class AppComponent {
   title = "shortrest";
-  files = [
-    {
-      filename: "Katzenfoto",
-      tags: ["#tag1", "#tag2"],
-      description: "This is file A",
-      active: false,
-    },
+  files: fileListEntry[] = [
     {
       filename: "Apfel",
-      tags: ["#tag3", "#tag4", "#tag5"],
+      tags: ["Rosengewächs", "Frucht"],
+      description: "This is file A",
+      active: false,
+      children: [
+        {
+          filename: "Braeburn",
+          tags: ["tag1", "tag2"],
+          description: "This is file A",
+          active: false,
+        },
+        {
+          filename: "Jonagold",
+          tags: ["tag3", "tag4", "tag5"],
+          description: "This is file B",
+          active: true,
+        },
+      ],
+    },
+    {
+      filename: "File B",
+      tags: ["tag3", "tag4", "tag5"],
       description: "This is file B",
       active: true,
     },
     {
       filename: "File C",
-      tags: ["#tag6", "#tag7"],
+      tags: ["tag6", "tag7"],
       description: "This is file C",
       active: false,
     },
     {
       filename: "File D",
-      tags: ["#tag8", "#tag9", "#tag10"],
+      tags: ["tag8", "tag9", "tag10"],
       description: "This is file D",
       active: true,
     },
     {
       filename: "File E",
-      tags: ["#tag11", "#tag12"],
+      tags: ["tag11", "tag12"],
       description: "This is file E",
       active: false,
     },
     {
       filename: "File F",
-      tags: ["#tag13", "#tag14", "#tag15"],
+      tags: ["tag13", "tag14", "tag15"],
       description: "This is file F",
       active: true,
     },
     {
       filename: "File G",
-      tags: ["#tag16", "#tag17"],
+      tags: ["tag16", "tag17"],
       description: "This is file G",
       active: false,
     },
@@ -60,32 +76,32 @@ export class AppComponent {
     {
       role: "system",
       content:
-        "Welcome to our platform! Here, you can explore various files tagged with different interests. Let's start by getting familiar with the basics.",
+        "Welcome to our special place! We have lots of files with different interests. Let's begin by learning about them together.",
     },
     {
       role: "outgoing",
       content:
-        "Thanks for the warm welcome! I'm new here and would love some guidance on how to navigate this platform.",
+        "Yay, thank you so much for the warm welcome! I'm new here and I need some help to figure things out.",
     },
     {
       role: "incoming",
       content:
-        "Absolutely, we're happy to help you get started. We have files with various tags that you can browse through and explore.",
+        "Of course, we're happy to help you. We have files with different tags that you can look at and explore.",
     },
     {
       role: "outgoing",
       content:
-        "That sounds amazing. Could you please explain how I can find files based on specific interests or tags?",
+        "That sounds fun! How do I find files based on what I like or the tags?",
     },
     {
       role: "incoming",
       content:
-        "Certainly! Just type a tag that you're interested in the search bar and we'll display all matching files for you.",
+        "Just type a tag you're interested in the search box and we'll show you all the matching files.",
     },
     {
       role: "outgoing",
       content:
-        "Got it. So, I just need to click on 'Search', enter the tag I'm interested in, and hit enter. That easy, right?",
+        "I see! So, I just need to click on 'Search', type the tag I'm interested in, and press go. Is that right?",
     },
   ];
 }
