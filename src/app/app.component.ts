@@ -47,14 +47,46 @@ export class AppComponent {
           tags: ["Strong", "Deciduous"],
           description: "",
           active: false,
-          children: [],
+          children: [
+            {
+              filename: "Quercus robur",
+              tags: ["Ubiquitous", "Common Oak"],
+              description:
+                "A common oak variety found across Europe and parts of Asia.",
+              active: false,
+              children: [],
+            },
+            {
+              filename: "Quercus alba",
+              tags: ["White Oak", "North America"],
+              description:
+                "This white oak variant is native to North America and has a wide distribution range.",
+              active: false,
+              children: [],
+            },
+          ],
         },
         {
           filename: "Maple",
           tags: ["Autumn colors", "Sugar"],
           description: "This is another variety of tree",
           active: false,
-          children: [],
+          children: [
+            {
+              filename: "Red Maple",
+              tags: ["Autumn colors", "Northern"],
+              description: "",
+              active: false,
+              children: [],
+            },
+            {
+              filename: "Sugar Maple",
+              tags: ["Sugar", "Syrup"],
+              description: "Known for its sweet syrup production",
+              active: false,
+              children: [],
+            },
+          ],
         },
         {
           filename: "Apple",

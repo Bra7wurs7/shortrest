@@ -65,7 +65,7 @@ $smallpadding: 2px;
 $margin: 2px;
 $smallmargin: 1px;
 $border-width: 1px;
-$thicker-border-width: 2px;
+$thicker-border-width: 3px;
 
 // Style -> Colors
 $border-color: $bg3;
@@ -333,32 +333,25 @@ body {
 
 .hover_highlight_border {
     &:hover {
-        border-color: $border-color-highlighted;
-    }
-
-    &.edit {
-        &:hover {
+        &.edit {
             border-color: $yellow;
         }
-    }
 
-    &.read {
-        &:hover {
+        &.read {
             border-color: $blue;
         }
-    }
 
-    &.create {
-        &:hover {
+        &.create {
             border-color: $green;
         }
-    }
 
-    &.delete {
-        &:hover {
+        &.delete {
             border-color: $red;
         }
     }
+}
+.highlight_border {
+    border-color: $border-color-highlighted;
 }
 
 .hover_bg_s {
