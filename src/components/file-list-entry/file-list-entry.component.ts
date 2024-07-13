@@ -10,5 +10,6 @@ import { CommonModule } from "@angular/common";
   styleUrl: "./file-list-entry.component.scss",
 })
 export class FileListEntryComponent {
-  file = input<fileListEntry>();
+  file = input.required<fileListEntry>();
+  isChild = input<boolean>(false);
 }

@@ -7,22 +7,19 @@
                 <div
                     class="box rounded_t margin_b flex_row padding overflow_hidden bg_s"
                 >
-                    <span
-                        class="to_bg grow overflow_hidden text_overflow_fade_bg"
-                    >
-                        Folder Name
+                    <span class="grow overflow_hidden bg_s text_overflow_fade">
+                        Plants
                     </span>
+
                     <span
-                        class="icon iconoir-floppy-disk hover_cursor_pointer hover_fg margin_r"
-                    ></span>
-                    <span
-                        class="icon iconoir-folder hover_cursor_pointer hover_fg margin_r"
+                        class="icon iconoir-folder hover_cursor_pointer fg4 hover_fg margin_r"
                     ></span>
                 </div>
                 <div class="overflow_y_scroll flex_col">
                     @for (file of files; track file.filename) {
                         <app-file-list-entry
                             [file]="file"
+                            [isChild]="false"
                         ></app-file-list-entry>
                         <div class="pseudo_element"></div>
                     }
@@ -31,36 +28,44 @@
             </div>
             <div class="w_10vw">
                 <div
-                    class="rounded_t box flex_row padding hover_highlight_border delete hover_cursor_pointer hover_bg_s justify_between"
+                    class="rounded_t box flex_row padding hover_highlight_border delete hover_cursor_pointer bg_h justify_between overflow_hidden"
                 >
-                    Delete File
+                    <span class="bg_h text_overflow_fade overflow_hidden grow">
+                        Delete File
+                    </span>
                     <span
                         class="icon iconoir-page-minus hover_cursor_pointer hover_fg margin_r"
                     ></span>
                 </div>
                 <div class="pseudo_element"></div>
                 <div
-                    class="box flex_row padding hover_highlight_border create hover_cursor_pointer hover_bg_s justify_between"
+                    class="box flex_row padding hover_highlight_border create hover_cursor_pointer bg_h justify_between overflow_hidden"
                 >
-                    Create File
+                    <span class="bg_h text_overflow_fade overflow_hidden grow">
+                        Create File
+                    </span>
                     <span
-                        class="icon iconoir-page-plus hover_cursor_pointer hover_fg margin_r"
+                        class="icon iconoir-page-plus hover_cursor_pointer bg_h hover_fg margin_r"
                     ></span>
                 </div>
                 <div class="pseudo_element"></div>
                 <div
-                    class="box flex_row padding hover_highlight_border edit hover_cursor_pointer hover_bg_s justify_between"
+                    class="box flex_row padding hover_highlight_border edit hover_cursor_pointer bg_h justify_between overflow_hidden"
                 >
-                    Edit File
+                    <span class="bg_h text_overflow_fade overflow_hidden grow">
+                        Edit File
+                    </span>
                     <span
                         class="icon iconoir-page-edit hover_cursor_pointer hover_fg margin_r"
                     ></span>
                 </div>
                 <div class="pseudo_element"></div>
                 <div
-                    class="rounded_b box flex_row padding hover_highlight_border read hover_cursor_pointer hover_bg_s justify_between"
+                    class="rounded_b box flex_row padding hover_highlight_border read hover_cursor_pointer bg_h justify_between overflow_hidden"
                 >
-                    Read File
+                    <span class="bg_h text_overflow_fade overflow_hidden grow">
+                        Read File
+                    </span>
                     <span
                         class="icon iconoir-page hover_cursor_pointer hover_fg margin_r"
                     ></span>
@@ -102,10 +107,9 @@
                             rounded_t: message.role === 'outgoing',
                         }"
                     >
-                        <span
-                            class="overflow_hidden text_overflow_fade_bg_s grow"
-                            >{{ message.content }}</span
-                        >
+                        <span class="overflow_hidden text_overflow_fade grow">{{
+                            message.content
+                        }}</span>
                         <span
                             class="icon hover_cursor_pointer fg4"
                             [ngClass]="{

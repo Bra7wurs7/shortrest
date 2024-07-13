@@ -1,7 +1,7 @@
 export interface fileListEntry {
   filename: string;
-  tags?: string[];
-  description?: string;
-  active?: boolean;
-  children?: fileListEntry[];
+  tags: string[];
+  description: string;
+  active: boolean;
+  children: fileListEntry[];
 }

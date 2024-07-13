@@ -59,7 +59,7 @@ $gray-dim: #a89984;
 // Style Variables
 
 // Style -> Spacing
-$border-radius: 6px;
+$border-radius: 8px;
 $padding: 4px;
 $smallpadding: 2px;
 $margin: 2px;
@@ -94,13 +94,16 @@ body {
     font-family: $sans;
 }
 
+.user_select_none {
+    user-select: none;
+}
+
 .box {
     border: $border-width solid $border-color;
 }
 
-.box_tl {
+.box_tbl {
     border: $border-width solid $border-color;
-    border-bottom: none;
     border-right: none;
 }
 
@@ -154,6 +157,10 @@ body {
 
 .padding_flat {
     padding: $smallpadding $padding $smallpadding $padding;
+}
+
+.smallpadding_left {
+    padding-left: $smallpadding;
 }
 
 .margin {
@@ -236,14 +243,29 @@ body {
 
 .bg_h {
     background-color: $bg_h;
+    &.text_overflow_fade {
+        &:before {
+            background: linear-gradient(to right, transparent 90%, $bg_h);
+        }
+    }
 }
 
 .bg {
     background-color: $bg;
+    &.text_overflow_fade {
+        &:before {
+            background: linear-gradient(to right, transparent 90%, $bg);
+        }
+    }
 }
 
 .bg_s {
     background-color: $bg_s;
+    &.text_overflow_fade {
+        &:before {
+            background: linear-gradient(to right, transparent 90%, $bg_s);
+        }
+    }
 }
 
 .fg1 {
@@ -271,6 +293,9 @@ body {
 }
 
 %text_overflow_fade_base {
+}
+
+.text_overflow_fade {
     position: relative;
     white-space: nowrap;
 
@@ -282,28 +307,15 @@ body {
         position: absolute;
         left: 0;
         top: 0;
-        background: linear-gradient(to right, transparent 90%, $bg);
-    }
-}
-
-.text_overflow_fade_bg {
-    @extend %text_overflow_fade_base;
-    &:before {
-        background: linear-gradient(to right, transparent 90%, $bg);
-    }
-}
-
-.text_overflow_fade_bg_s {
-    @extend %text_overflow_fade_base;
-    &:before {
-        background: linear-gradient(to right, transparent 90%, $bg_s);
-    }
-}
-
-.text_overflow_fade_bg_h {
-    @extend %text_overflow_fade_base;
-    &:before {
-        background: linear-gradient(to right, transparent 90%, $bg_h);
+        &.bg {
+            background: linear-gradient(to right, transparent 90%, $bg);
+        }
+        &.bg_s {
+            background: linear-gradient(to right, transparent 90%, $bg_s);
+        }
+        &.bg_h {
+            background: linear-gradient(to right, transparent 90%, $bg_h);
+        }
     }
 }
 
@@ -326,25 +338,25 @@ body {
 
     &.edit {
         &:hover {
-            border-color: $yellow-dim;
+            border-color: $yellow;
         }
     }
 
     &.read {
         &:hover {
-            border-color: $blue-dim;
+            border-color: $blue;
         }
     }
 
     &.create {
         &:hover {
-            border-color: $green-dim;
+            border-color: $green;
         }
     }
 
     &.delete {
         &:hover {
-            border-color: $red-dim;
+            border-color: $red;
         }
     }
 }

@@ -1,5 +1,11 @@
 <div
-    class="box thicker_border_l hover_highlight_border read hover_cursor_pointer hover_bg_s"
+    class="thicker_border_l hover_highlight_border read hover_cursor_pointer user_select_none"
+    [ngClass]="{
+        box: !isChild(),
+        box_tbl: isChild(),
+    }"
+    (click)="file().active = !file().active; $event.stopPropagation()"
+    draggable="true"
 >
     <div
         class="flex_row padding justify_between"
@@ -9,10 +15,10 @@
         }"
     >
         <div
-            class="align_end overflow_hidden grow"
+            class="align_end text_overflow_fade overflow_hidden grow"
             [ngClass]="{
-                text_overflow_fade_bg: !file().active,
-                text_overflow_fade_bg_s: file().active,
+                bg: !file().active,
+                bg_s: file().active,
             }"
         >
             {{ file().filename }}
@@ -21,12 +27,32 @@
             }
         </div>
         <span
-            class="icon iconoir-multiple-pages-empty hover_cursor_pointer hover_fg margin_r"
+            class="icon margin_r"
+            [ngClass]="{
+                'iconoir-multiple-pages':
+                    file().children.length > 0 && file().description.length > 0,
+                'iconoir-multiple-pages-empty':
+                    file().children.length > 0 &&
+                    file().description.length === 0,
+                'iconoir-empty-page':
+                    file().children.length == 0 &&
+                    file().description.length == 0,
+                'iconoir-page':
+                    file().children.length == 0 &&
+                    file().description.length > 0,
+            }"
         ></span>
     </div>
-    @for (child of file().children ?? []; track child.filename) {
-        <div class="box_tl thicker_border_l padding">
-            {{ child.filename }}
-        </div>
-    }
+    <div class="smallpadding_left">
+        @for (
+            child of file().active ? file().children : [];
+            track child.filename
+        ) {
+            <app-file-list-entry
+                [file]="child"
+                [isChild]="true"
+            ></app-file-list-entry>
+            <div class="pseudo_element"></div>
+        }
+    </div>
 </div>
