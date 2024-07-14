@@ -3,7 +3,7 @@
     [ngClass]="{
         box: !isChild(),
         box_tbl: isChild(),
-        highlight_border: file().active,
+        highlight_border_left: file().active,
     }"
     (click)="file().active = !file().active; $event.stopPropagation()"
     draggable="true"
@@ -12,14 +12,15 @@
         class="flex_row padding justify_between"
         [ngClass]="{
             fg4: !file().active,
+            bg: !file().active,
             bg_s: file().active,
         }"
     >
         <div
             class="align_end text_overflow_fade overflow_hidden grow"
             [ngClass]="{
-                bg: !file().active,
                 bg_s: file().active,
+                bg: !file().active,
             }"
         >
             {{ file().filename }}

@@ -98,6 +98,10 @@ body {
     user-select: none;
 }
 
+.pseudo_box {
+    border: $border-width solid transparent;
+}
+
 .box {
     border: $border-width solid $border-color;
 }
@@ -333,6 +337,7 @@ body {
 
 .hover_highlight_border {
     &:hover {
+        border-color: $border-color-highlighted;
         &.edit {
             border-color: $yellow;
         }
@@ -350,8 +355,13 @@ body {
         }
     }
 }
+
 .highlight_border {
     border-color: $border-color-highlighted;
+}
+
+.highlight_border_left {
+    border-left-color: $border-color-highlighted;
 }
 
 .hover_bg_s {
@@ -374,6 +384,10 @@ body {
 
 .overflow_hidden {
     overflow: hidden;
+}
+
+.grid {
+    display: grid;
 }
 
 // Base HTML Element Styles

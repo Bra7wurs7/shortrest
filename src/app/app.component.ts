@@ -18,7 +18,7 @@ export class AppComponent {
       filename: "Flower",
       tags: ["Botanical", "Beautiful"],
       description: "A diverse and colorful plant structure",
-      active: true,
+      active: false,
       children: [
         {
           filename: "Rose",
@@ -40,7 +40,7 @@ export class AppComponent {
       filename: "Tree",
       tags: ["Botanical", "Natural"],
       description: "Tall and statelyy perennial plants",
-      active: true,
+      active: false,
       children: [
         {
           filename: "Oak",
@@ -112,38 +112,51 @@ export class AppComponent {
         },
       ],
     },
-  ];
-
-  messages = [
     {
-      role: "system",
-      content:
-        "Welcome to our special place! We have lots of files with different interests. Let's begin by learning about them together.",
+      filename: "Bird",
+      tags: ["Aviary", "Wildlife"],
+      description: "Feathered creatures that fly and chirp",
+      active: false,
+      children: [
+        {
+          filename: "Sparrow",
+          tags: ["Small", "Common"],
+          description: "",
+          active: false,
+          children: [],
+        },
+        {
+          filename: "Eagle",
+          tags: ["Large", "Powerful"],
+          description:
+            "Majestic birds of prey known for their sight and strength",
+          active: false,
+          children: [],
+        },
+      ],
     },
     {
-      role: "outgoing",
-      content:
-        "Yay, thank you so much for the warm welcome! I'm new here and I need some help to figure things out.",
-    },
-    {
-      role: "incoming",
-      content:
-        "Of course, we're happy to help you. We have files with different tags that you can look at and explore.",
-    },
-    {
-      role: "outgoing",
-      content:
-        "That sounds fun! How do I find files based on what I like or the tags?",
-    },
-    {
-      role: "incoming",
-      content:
-        "Just type a tag you're interested in the search box and we'll show you all the matching files.",
-    },
-    {
-      role: "outgoing",
-      content:
-        "I see! So, I just need to click on 'Search', type the tag I'm interested in, and press go. Is that right?",
+      filename: "Mammal",
+      tags: ["Warm-blooded", "Animal"],
+      description:
+        "A group of vertebrate animals that are characterized by their ability to regulate body temperature and give live birth to their young ones.",
+      active: false,
+      children: [
+        {
+          filename: "Dog",
+          tags: ["Pet", "Loyal"],
+          description: "",
+          active: false,
+          children: [],
+        },
+        {
+          filename: "Whale",
+          tags: ["Large", "Marine Mammal"],
+          description: "The largest animals on Earth that live in the oceans.",
+          active: false,
+          children: [],
+        },
+      ],
     },
   ];
 }
