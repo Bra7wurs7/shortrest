@@ -12,4 +12,8 @@ import { CommonModule } from "@angular/common";
 export class FileListEntryComponent {
   file = input.required<fileListEntry>();
   isChild = input<boolean>(false);
+
+  log(a: any) {
+    console.log(a);
+  }
 }

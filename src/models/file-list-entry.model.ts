@@ -3,5 +3,6 @@ export interface fileListEntry {
   tags: string[];
   description: string;
   active: boolean;
+  reading: boolean;
   children: fileListEntry[];
 }

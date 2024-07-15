@@ -62,6 +62,7 @@ $gray-dim: #a89984;
 $border-radius: 8px;
 $padding: 4px;
 $smallpadding: 2px;
+$thickpadding: 15px;
 $margin: 2px;
 $smallmargin: 1px;
 $border-width: 1px;
@@ -163,6 +164,10 @@ body {
     padding: $smallpadding $padding $smallpadding $padding;
 }
 
+.padding_thicc {
+    padding: $thickpadding;
+}
+
 .smallpadding_left {
     padding-left: $smallpadding;
 }
@@ -214,6 +219,10 @@ body {
     justify-content: space-between;
 }
 
+.justify_strech {
+    justify-content: stretch;
+}
+
 .centered_content {
     align-items: center;
     justify-content: center;
@@ -240,9 +249,9 @@ body {
     width: 100%;
 }
 
-.w_10vw {
+.w_12vw {
     box-sizing: border-box;
-    width: 10vw;
+    width: 12vw;
 }
 
 .bg_h {
@@ -442,4 +451,17 @@ textarea {
     &:focus {
         outline: none;
     }
+}
+
+.ProseMirror {
+    :first-child {
+        margin-top: 0;
+    }
+    :last-child {
+        margin-bottom: 0;
+    }
+}
+
+.ProseMirror-focused {
+    outline: none;
 }

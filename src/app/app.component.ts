@@ -1,8 +1,12 @@
 import { CommonModule } from "@angular/common";
-import { Component } from "@angular/core";
+import { AfterViewInit, Component, ElementRef, ViewChild } from "@angular/core";
 import { RouterOutlet } from "@angular/router";
 import { fileListEntry } from "../models/file-list-entry.model";
 import { FileListEntryComponent } from "../components/file-list-entry/file-list-entry.component";
+import { defaultValueCtx, Editor, rootCtx } from "@milkdown/core";
+import { commonmark } from "@milkdown/preset-commonmark";
+import { nord } from "@milkdown/theme-nord";
+import { HttpClient } from "@angular/common/http";
 
 @Component({
   selector: "app-root",
@@ -11,20 +15,46 @@ import { FileListEntryComponent } from "../components/file-list-entry/file-list-
   templateUrl: "./app.component.html",
   styleUrls: ["./app.component.scss"],
 })
-export class AppComponent {
+export class AppComponent implements AfterViewInit {
+  @ViewChild("editorRef") editorRef!: ElementRef;
+
   title = "shortrest";
+  defaultValue = "";
+
+  constructor(private readonly http: HttpClient) {
+    this.http
+      .get("https://jaspervdj.be/lorem-markdownum/markdown.txt", {
+        responseType: "text",
+      })
+      .subscribe((data: string) => {
+        this.defaultValue = data;
+        Editor.make()
+          .config((ctx) => {
+            ctx.set(rootCtx, this.editorRef.nativeElement);
+            ctx.set(defaultValueCtx, this.defaultValue);
+          })
+          .config(nord)
+          .use(commonmark)
+          .create();
+      });
+  }
+
+  ngAfterViewInit() {}
+
   files: fileListEntry[] = [
     {
       filename: "Flower",
       tags: ["Botanical", "Beautiful"],
       description: "A diverse and colorful plant structure",
       active: false,
+      reading: false,
       children: [
         {
           filename: "Rose",
           tags: ["Fragrant", "Red", "White", "Pink"],
           description: "",
           active: false,
+          reading: false,
           children: [],
         },
         {
@@ -33,6 +63,7 @@ export class AppComponent {
           description: "This is another variety of flower",
           active: false,
           children: [],
+          reading: false,
         },
       ],
     },
@@ -41,12 +72,14 @@ export class AppComponent {
       tags: ["Botanical", "Natural"],
       description: "Tall and statelyy perennial plants",
       active: false,
+      reading: false,
       children: [
         {
           filename: "Oak",
           tags: ["Strong", "Deciduous"],
           description: "",
           active: false,
+          reading: false,
           children: [
             {
               filename: "Quercus robur",
@@ -55,6 +88,7 @@ export class AppComponent {
                 "A common oak variety found across Europe and parts of Asia.",
               active: false,
               children: [],
+              reading: false,
             },
             {
               filename: "Quercus alba",
@@ -63,6 +97,7 @@ export class AppComponent {
                 "This white oak variant is native to North America and has a wide distribution range.",
               active: false,
               children: [],
+              reading: false,
             },
           ],
         },
@@ -71,6 +106,7 @@ export class AppComponent {
           tags: ["Autumn colors", "Sugar"],
           description: "This is another variety of tree",
           active: false,
+          reading: false,
           children: [
             {
               filename: "Red Maple",
@@ -78,6 +114,7 @@ export class AppComponent {
               description: "",
               active: false,
               children: [],
+              reading: false,
             },
             {
               filename: "Sugar Maple",
@@ -85,6 +122,7 @@ export class AppComponent {
               description: "Known for its sweet syrup production",
               active: false,
               children: [],
+              reading: false,
             },
           ],
         },
@@ -93,6 +131,7 @@ export class AppComponent {
           tags: ["Rosaceae", "Fruit"],
           description: "Juicy fruit common in temperate climates",
           active: false,
+          reading: false,
           children: [
             {
               filename: "Granny Smith",
@@ -100,6 +139,7 @@ export class AppComponent {
               description: "",
               active: false,
               children: [],
+              reading: false,
             },
             {
               filename: "Fuji",
@@ -107,6 +147,7 @@ export class AppComponent {
               description: "A variety of apple with a sweet and crisp taste.",
               active: false,
               children: [],
+              reading: false,
             },
           ],
         },
@@ -117,6 +158,7 @@ export class AppComponent {
       tags: ["Aviary", "Wildlife"],
       description: "Feathered creatures that fly and chirp",
       active: false,
+      reading: false,
       children: [
         {
           filename: "Sparrow",
@@ -124,6 +166,7 @@ export class AppComponent {
           description: "",
           active: false,
           children: [],
+          reading: false,
         },
         {
           filename: "Eagle",
@@ -132,6 +175,7 @@ export class AppComponent {
             "Majestic birds of prey known for their sight and strength",
           active: false,
           children: [],
+          reading: false,
         },
       ],
     },
@@ -141,6 +185,7 @@ export class AppComponent {
       description:
         "A group of vertebrate animals that are characterized by their ability to regulate body temperature and give live birth to their young ones.",
       active: false,
+      reading: false,
       children: [
         {
           filename: "Dog",
@@ -148,6 +193,7 @@ export class AppComponent {
           description: "",
           active: false,
           children: [],
+          reading: false,
         },
         {
           filename: "Whale",
@@ -155,6 +201,7 @@ export class AppComponent {
           description: "The largest animals on Earth that live in the oceans.",
           active: false,
           children: [],
+          reading: false,
         },
       ],
     },
