@@ -233,6 +233,15 @@ body {
     flex-grow: 1;
 }
 
+.min_width_max_content {
+    min-width: max-content;
+}
+
+.shrink {
+    display: flex;
+    flex-shrink: 1;
+}
+
 .h_100 {
     height: 100%;
 }
@@ -454,6 +463,8 @@ textarea {
 }
 
 .ProseMirror {
+    height: auto;
+    width: auto;
     :first-child {
         margin-top: 0;
     }

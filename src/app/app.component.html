@@ -1,7 +1,7 @@
 <div class="flex_col h_100 justify_end">
     <div class="flex_row grow overflow_hidden justify_strech">
         <div
-            class="rounded_t box padding margin flex_col justify_between bg overflow_hidden"
+            class="rounded_t box padding margin flex_col justify_between bg overflow_hidden min_width_max_content"
         >
             <div class="overflow_hidden flex_col w_12vw">
                 <div
@@ -73,9 +73,11 @@
         </div>
         <div
             #editorRef
-            class="rounded_tl grow box padding_thicc margin bg_h overflow_y_scroll flex_col"
+            class="rounded_tl box padding_thicc margin bg_h overflow_y_scroll grow"
         ></div>
-        <div class="rounded_tr box padding margin flex_col justify_between bg">
+        <div
+            class="rounded_tr box padding margin flex_col justify_between bg min_width_max_content"
+        >
             <div class="flex_col w_12vw">
                 <input
                     class="box padding rounded_tr bg_h grow"
