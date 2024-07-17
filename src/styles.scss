@@ -462,6 +462,13 @@ textarea {
     }
 }
 
+a {
+    color: $blue-dim;
+    :visited {
+        color: $purple-dim;
+    }
+}
+
 .ProseMirror {
     height: auto;
     width: auto;
