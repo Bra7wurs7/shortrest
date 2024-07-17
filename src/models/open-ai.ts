@@ -28,7 +28,7 @@ export interface OpenAiChatBody {
   user?: string;
 }
 
-export interface OpenAiChatCompletionResponse {
+export interface OpenAiChatResponse {
   id: string;
   choices: {
     finish_reason: OpenAiFinishReason;
@@ -71,15 +71,10 @@ export interface OpenAiChatCompletionResponse {
   };
 }
 
-export enum OpenAiMessageRole {
-  "system",
-  "user",
-  "assistant",
-}
+export type OpenAiMessageRole = "system" | "user" | "assistant";
 
-export enum OpenAiFinishReason {
-  "stop",
-  "length",
-  "content_filter",
-  "tool_calls",
-}
+export type OpenAiFinishReason =
+  | "stop"
+  | "length"
+  | "content_filter"
+  | "tool_calls";
