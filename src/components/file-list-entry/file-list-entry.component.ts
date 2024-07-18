@@ -1,5 +1,5 @@
 import { Component, input } from "@angular/core";
-import { fileListEntry } from "../../models/file-list-entry.model";
+import { FileListEntry } from "../../models/file-list-entry.model";
 import { CommonModule } from "@angular/common";
 
 @Component({
@@ -10,7 +10,7 @@ import { CommonModule } from "@angular/common";
   styleUrl: "./file-list-entry.component.scss",
 })
 export class FileListEntryComponent {
-  file = input.required<fileListEntry>();
+  file = input.required<FileListEntry>();
   isChild = input<boolean>(false);
 
   log(a: any) {

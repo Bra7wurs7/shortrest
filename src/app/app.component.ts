@@ -1,7 +1,7 @@
 import { CommonModule } from "@angular/common";
 import { AfterViewInit, Component, ElementRef, ViewChild } from "@angular/core";
 import { RouterOutlet } from "@angular/router";
-import { fileListEntry } from "../models/file-list-entry.model";
+import { FileListEntry } from "../models/file-list-entry.model";
 import { FileListEntryComponent } from "../components/file-list-entry/file-list-entry.component";
 import { defaultValueCtx, Editor, rootCtx } from "@milkdown/core";
 import { commonmark } from "@milkdown/preset-commonmark";
@@ -41,7 +41,7 @@ export class AppComponent implements AfterViewInit {
 
   ngAfterViewInit() {}
 
-  files: fileListEntry[] = [
+  files: FileListEntry[] = [
     {
       filename: "Flower",
       tags: ["Botanical", "Beautiful"],
