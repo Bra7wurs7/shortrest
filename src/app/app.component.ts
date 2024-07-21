@@ -7,11 +7,17 @@ import { defaultValueCtx, Editor, rootCtx } from "@milkdown/core";
 import { commonmark } from "@milkdown/preset-commonmark";
 import { nord } from "@milkdown/theme-nord";
 import { HttpClient } from "@angular/common/http";
+import { AuthorAssistantComponent } from "../components/author-assistant/author-assistant.component";
 
 @Component({
   selector: "app-root",
   standalone: true,
-  imports: [RouterOutlet, CommonModule, FileListEntryComponent],
+  imports: [
+    RouterOutlet,
+    CommonModule,
+    FileListEntryComponent,
+    AuthorAssistantComponent,
+  ],
   templateUrl: "./app.component.html",
   styleUrls: ["./app.component.scss"],
 })

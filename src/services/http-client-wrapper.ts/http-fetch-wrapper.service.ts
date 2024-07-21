@@ -5,8 +5,10 @@ import { Observable } from "rxjs";
 @Injectable({
   providedIn: "root",
 })
-export class HttpClientWrapperService {
-  constructor(private readonly httpClient: HttpClient) {}
+export class HttpFetchWrapperService {
+  constructor() {}
+
+  public;
 
   /**
    * Converts a record of http params into a string to be appended to any url
