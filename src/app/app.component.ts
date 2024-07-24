@@ -8,6 +8,7 @@ import { commonmark } from "@milkdown/preset-commonmark";
 import { nord } from "@milkdown/theme-nord";
 import { HttpClient } from "@angular/common/http";
 import { AuthorAssistantComponent } from "../components/author-assistant/author-assistant.component";
+import { SimpleHttpRequest } from "../models/simple-http-request.model";
 
 @Component({
   selector: "app-root",
@@ -46,6 +47,10 @@ export class AppComponent implements AfterViewInit {
   }
 
   ngAfterViewInit() {}
+
+  file: FileListEntry = {} as FileListEntry;
+
+  llm: SimpleHttpRequest = {} as SimpleHttpRequest;
 
   files: FileListEntry[] = [
     {

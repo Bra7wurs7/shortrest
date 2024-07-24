@@ -8,8 +8,6 @@ import { Observable } from "rxjs";
 export class HttpFetchWrapperService {
   constructor() {}
 
-  public;
-
   /**
    * Converts a record of http params into a string to be appended to any url
    * @param params An instance of Record<string, string> to be converted into a string suffix

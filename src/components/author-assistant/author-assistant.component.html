@@ -1,18 +1,87 @@
-<div class="flex_col w_12vw">
-    <input class="box padding rounded_tr bg_h grow" placeholder="Filename" />
+<div class="flex_col w_12vw overflow_scroll">
+    <span class="padding box_trl rounded_tr">Context</span>
+    <textarea
+        class="box padding bg_h margin_b grow"
+        rows="7"
+        [(ngModel)]="context"
+    ></textarea>
 </div>
-<div class="flex_row w_12vw">
-    <div
-        class="flex_row rounded box padding pseudo_input hover_highlight_border bg_h"
-    >
-        <input class="flex grow" placeholder="Randomness" value="0.5" />
-        <span class="icon iconoir-dice-six hover_cursor_pointer fg4"></span>
+<div class="flex_col w_12vw">
+    <div class="flex_row margin_b">
+        <div
+            class="flex_row rounded box padding pseudo_input hover_highlight_border bg_h margin_r"
+            title="The amount of prior tokens of the text the LLM gets to read before continuing"
+        >
+            <input
+                class="flex grow"
+                placeholder="Read Tokens"
+                [(ngModel)]="readTokens"
+            />
+            <span class="icon iconoir-glasses hover_cursor_pointer fg4"></span>
+        </div>
+        <div
+            class="flex_row rounded box padding pseudo_input hover_highlight_border bg_h"
+            title="Th amount of tokens the LLM may produce before being terminated"
+        >
+            <input
+                class="flex grow"
+                placeholder="Write Tokens"
+                [(ngModel)]="writeTokens"
+            />
+            <span
+                class="icon iconoir-edit-pencil hover_cursor_pointer fg4"
+            ></span>
+        </div>
     </div>
-    <div class="pseudo_element"></div>
-    <div
-        class="flex_row rounded box padding pseudo_input hover_highlight_border bg_h"
-    >
-        <input class="flex grow" placeholder="Variety" value="0.5" />
-        <span class="icon iconoir-palette hover_cursor_pointer fg4"></span>
+
+    <div class="flex_row margin_b">
+        <div
+            class="flex_row rounded box padding pseudo_input hover_highlight_border bg_h margin_r"
+            title="Seed: number that all random number generation is based on"
+        >
+            <input
+                class="flex grow"
+                placeholder="Randomness Seed"
+                [(ngModel)]="seed"
+            />
+            <span class="icon iconoir-soil-alt hover_cursor_pointer fg4"></span>
+        </div>
+        <div
+            class="flex_row rounded box padding pseudo_input hover_highlight_border bg_h margin_r"
+            title="Randomness (temperature): higher settings make more probable next token options more likely"
+        >
+            <input
+                class="flex grow"
+                placeholder="Randomness"
+                [(ngModel)]="temperature"
+            />
+            <span class="icon iconoir-dice-six hover_cursor_pointer fg4"></span>
+        </div>
+        <div
+            class="flex_row rounded box padding pseudo_input hover_highlight_border bg_h"
+            title="Variety (top_k): the portion of next token options to consider at all"
+        >
+            <input
+                class="flex grow"
+                placeholder="Variety"
+                [(ngModel)]="top_k"
+            />
+            <span class="icon iconoir-palette hover_cursor_pointer fg4"></span>
+        </div>
+    </div>
+
+    <div class="flex_row">
+        <div
+            class="box rounded padding grow margin_r hover_cursor_pointer hover_highlight_border"
+        >
+            <span class="grow">foo</span>
+            <span class="icon iconoir-restart fg4"></span>
+        </div>
+        <div
+            class="box rounded padding grow hover_cursor_pointer hover_highlight_border"
+        >
+            <span class="grow">foo</span>
+            <span class="icon iconoir-send-diagonal fg4"></span>
+        </div>
     </div>
 </div>

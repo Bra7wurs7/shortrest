@@ -68,7 +68,9 @@
             class="rounded_tl box padding_thicc margin bg_h overflow_y_scroll grow"
         ></div>
         <app-author-assistant
-            class="rounded_tr box padding margin flex_col justify_between bg min_width_max_content"
+            class="rounded_tr box padding margin flex_col justify_between bg min_width_max_content overflow_hidden"
+            [llm]="llm"
+            [file]="file"
         ></app-author-assistant>
     </div>
     <div class="flex_row">

@@ -112,6 +112,11 @@ body {
     border-right: none;
 }
 
+.box_trl {
+    border: $border-width solid $border-color;
+    border-bottom: none;
+}
+
 .thicker_border_l {
     border-left: $thicker-border-width solid $border-color;
 }
