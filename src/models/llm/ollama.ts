@@ -11,7 +11,7 @@ export interface OllamaChatBody {
     content: string;
 
     /** (optional): a list of images to include in the message (for multimodal models such as llava) */
-    images: string[];
+    images?: string[];
   }[];
 
   /** the format to return a response in. Currently the only accepted value is json */
@@ -24,7 +24,7 @@ export interface OllamaChatBody {
   stream: boolean;
 
   /** controls how long the model will stay loaded into memory following the request (default: 5m) */
-  keep_alive: string;
+  keep_alive?: string;
 }
 
 /** The body interface that POST /api/generate accepts. */
@@ -104,11 +104,14 @@ export interface OllamaOptions {
 export interface OllamaChatResponse {
   model: string;
   created_at: string;
-  message: {
-    role: OllamaMessageRole;
-    content: string;
-    images: string[] | null;
-  };
+  choices: {
+    index: number;
+    delta: {
+      role: OllamaMessageRole;
+      content: string;
+      images: string[] | null;
+    };
+  }[];
   done: boolean;
   total_duration?: number;
   load_duration?: number;

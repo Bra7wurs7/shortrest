@@ -33,16 +33,13 @@
             class="icon margin_r"
             [ngClass]="{
                 'iconoir-multiple-pages':
-                    file().children.length > 0 && file().description.length > 0,
+                    file().children.length > 0 && file().content.length > 0,
                 'iconoir-multiple-pages-empty':
-                    file().children.length > 0 &&
-                    file().description.length === 0,
+                    file().children.length > 0 && file().content.length === 0,
                 'iconoir-empty-page':
-                    file().children.length == 0 &&
-                    file().description.length == 0,
+                    file().children.length == 0 && file().content.length == 0,
                 'iconoir-page':
-                    file().children.length == 0 &&
-                    file().description.length > 0,
+                    file().children.length == 0 && file().content.length > 0,
                 fg4: !file().reading,
                 fg: file().reading,
             }"

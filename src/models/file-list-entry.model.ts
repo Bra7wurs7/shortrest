@@ -1,7 +1,7 @@
 export interface FileListEntry {
   filename: string;
   tags: string[];
-  description: string;
+  content: string;
   active: boolean;
   reading: boolean;
   children: FileListEntry[];

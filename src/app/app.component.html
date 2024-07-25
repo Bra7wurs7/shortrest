@@ -1,102 +1,86 @@
-<div class="flex_col h_100 justify_end">
-    <div class="flex_row grow overflow_hidden justify_strech">
-        <div
-            class="rounded_t box padding margin flex_col justify_between bg overflow_hidden min_width_max_content"
-        >
-            <div class="overflow_hidden flex_col w_12vw">
-                <div
-                    class="box rounded_t margin_b flex_row padding overflow_hidden bg_s"
-                >
-                    <span class="grow overflow_hidden bg_s text_overflow_fade">
-                        Lifeforms
-                    </span>
+<div class="flex_row h_100 grow overflow_hidden justify_strech">
+    <!-- LEFT SIDEBAR -->
+    <div
+        class="rounded_r box padding margin flex_col justify_between bg overflow_hidden min_width_max_content"
+    >
+        <div class="overflow_hidden flex_col w_12vw">
+            <div
+                class="box rounded_tr margin_b flex_row padding overflow_hidden bg_s"
+            >
+                <span class="grow overflow_hidden bg_s text_overflow_fade">
+                    Lifeforms
+                </span>
 
-                    <span
-                        class="icon iconoir-folder hover_cursor_pointer fg4 hover_fg margin_r"
-                    ></span>
-                </div>
-                <div class="overflow_y_scroll flex_col">
-                    @for (file of files; track file.filename) {
-                        <app-file-list-entry
-                            [file]="file"
-                            [isChild]="false"
-                        ></app-file-list-entry>
-                        <div class="pseudo_element"></div>
-                    }
-                </div>
+                <span
+                    class="icon iconoir-folder hover_cursor_pointer fg4 hover_fg margin_r"
+                ></span>
             </div>
-            <div class="w_12vw">
-                <div
-                    class="rounded_t box flex_row padding hover_highlight_border delete hover_cursor_pointer bg fg4 hover_fg justify_between overflow_hidden"
-                >
-                    <span class="bg text_overflow_fade overflow_hidden grow">
-                        Delete File
-                    </span>
-                    <span class="icon iconoir-page-minus margin_r"></span>
-                </div>
-                <div class="pseudo_element"></div>
-                <div
-                    class="box flex_row padding hover_highlight_border create hover_cursor_pointer bg fg4 hover_fg justify_between overflow_hidden"
-                >
-                    <span class="bg text_overflow_fade overflow_hidden grow">
-                        Create File
-                    </span>
-                    <span class="icon iconoir-page-plus bg margin_r"></span>
-                </div>
-                <div class="pseudo_element"></div>
-                <div
-                    class="box flex_row padding hover_highlight_border edit hover_cursor_pointer bg fg4 hover_fg justify_between overflow_hidden"
-                >
-                    <span class="bg text_overflow_fade overflow_hidden grow">
-                        Edit File
-                    </span>
-                    <span class="icon iconoir-page-edit margin_r"></span>
-                </div>
-                <div class="pseudo_element"></div>
-                <div
-                    class="box flex_row padding hover_highlight_border read hover_cursor_pointer bg fg4 hover_fg justify_between overflow_hidden"
-                >
-                    <span class="bg text_overflow_fade overflow_hidden grow">
-                        Read File
-                    </span>
-                    <span class="icon iconoir-page margin_r"></span>
-                </div>
+            <div class="overflow_y_scroll flex_col">
+                @for (file of files; track file.filename) {
+                    <app-file-list-entry
+                        [file]="file"
+                        [isChild]="false"
+                    ></app-file-list-entry>
+                    <div class="pseudo_element"></div>
+                }
             </div>
         </div>
-        <div
-            #editorRef
-            class="rounded_tl box padding_thicc margin bg_h overflow_y_scroll grow"
-        ></div>
-        <app-author-assistant
-            class="rounded_tr box padding margin flex_col justify_between bg min_width_max_content overflow_hidden"
-            [llm]="llm"
-            [file]="file"
-        ></app-author-assistant>
-    </div>
-    <div class="flex_row">
-        <div
-            class="rounded_bl box padding grow margin pseudo_input hover_highlight_border bg_s"
-        >
-            <input
-                class="flex grow"
-                placeholder="Type here to control shortrest"
-            />
+        <div class="w_12vw">
+            <div
+                class="rounded_tr box flex_row padding hover_highlight_border delete hover_cursor_pointer bg fg4 hover_fg justify_between overflow_hidden"
+            >
+                <span class="bg text_overflow_fade overflow_hidden grow">
+                    Delete File
+                </span>
+                <span class="icon iconoir-page-minus margin_r"></span>
+            </div>
+            <div class="pseudo_element"></div>
+            <div
+                class="box flex_row padding hover_highlight_border create hover_cursor_pointer bg fg4 hover_fg justify_between overflow_hidden"
+            >
+                <span class="bg text_overflow_fade overflow_hidden grow">
+                    Create File
+                </span>
+                <span class="icon iconoir-page-plus bg margin_r"></span>
+            </div>
+            <div class="pseudo_element"></div>
+            <div
+                class="box flex_row padding hover_highlight_border edit hover_cursor_pointer bg fg4 hover_fg justify_between overflow_hidden"
+            >
+                <span class="bg text_overflow_fade overflow_hidden grow">
+                    Edit File
+                </span>
+                <span class="icon iconoir-page-edit margin_r"></span>
+            </div>
+            <div class="pseudo_element"></div>
+            <div
+                class="rounded_br box flex_row padding hover_highlight_border read hover_cursor_pointer bg fg4 hover_fg justify_between overflow_hidden"
+            >
+                <span class="bg text_overflow_fade overflow_hidden grow">
+                    Read File
+                </span>
+                <span class="icon iconoir-page margin_r"></span>
+            </div>
         </div>
-        <div
-            class="rounded_br box padding margin flex_row centered_content hover_highlight_border fg4 bg_s"
-        >
-            <span
-                class="icon iconoir-code-brackets hover_cursor_pointer hover_fg margin_r"
-            ></span>
-            <span
-                class="icon iconoir-chat-bubble hover_cursor_pointer hover_fg margin_r"
-            ></span>
-            <span
-                class="icon iconoir-globe hover_cursor_pointer hover_fg margin_r"
-            ></span>
-            <span
-                class="icon iconoir-bonfire hover_cursor_pointer hover_fg"
-            ></span>
-        </div>
     </div>
+
+    <!-- CENTER AREA -->
+    <div class="flex_col grow margin">
+        <textarea
+            class="box rounded_t padding margin_b grow"
+            [(ngModel)]="defaultFile.content"
+        ></textarea>
+        <textarea
+            class="rounded_b box padding pseudo_input hover_highlight_border bg_s"
+            placeholder="Type here to control shortrest"
+            rows="1"
+        ></textarea>
+    </div>
+
+    <!-- RIGHT SIDEBAR -->
+    <app-author-assistant
+        class="rounded_l box padding margin flex_col justify_between bg min_width_max_content overflow_hidden"
+        [llm]="llm"
+        [file]="defaultFile"
+    ></app-author-assistant>
 </div>

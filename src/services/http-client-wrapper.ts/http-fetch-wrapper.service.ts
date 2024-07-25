@@ -1,12 +1,38 @@
 import { HttpClient } from "@angular/common/http";
 import { Injectable } from "@angular/core";
-import { Observable } from "rxjs";
+import { Observable, map } from "rxjs";
+import { SimpleHttpRequest } from "../../models/simple-http-request.model";
 
 @Injectable({
   providedIn: "root",
 })
 export class HttpFetchWrapperService {
   constructor() {}
+
+  public async streamPrompt(
+    request: SimpleHttpRequest,
+  ): Promise<Observable<Record<string, any>[]> | undefined> {
+    const response = await fetch(
+      request.url + this.httpParamsToStringSuffix(request.params),
+      {
+        method: "POST",
+        headers: { ...request.headers, "Content-Type": "application/json" },
+        body: JSON.stringify(request.body),
+      },
+    );
+
+    const reader = response.body
+      ?.pipeThrough(new TextDecoderStream())
+      .getReader();
+
+    if (reader) {
+      return this.readableStreamToObservable(reader).pipe(
+        map((a) => this.tolerantJsonParse(a)),
+      );
+    } else {
+      return;
+    }
+  }
 
   /**
    * Converts a record of http params into a string to be appended to any url

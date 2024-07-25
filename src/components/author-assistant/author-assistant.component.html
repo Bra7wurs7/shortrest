@@ -1,15 +1,19 @@
 <div class="flex_col w_12vw overflow_scroll">
-    <span class="padding box_trl rounded_tr">Context</span>
+    <span class="padding box_trl rounded_tl">System Prompt</span>
     <textarea
+        #meta_context_textarea
         class="box padding bg_h margin_b grow"
-        rows="7"
-        [(ngModel)]="context"
+        rows="10"
+        [(ngModel)]="meta_context"
+        (change)="
+            localStorage.setItem('meta_context', meta_context_textarea.value)
+        "
     ></textarea>
 </div>
 <div class="flex_col w_12vw">
     <div class="flex_row margin_b">
         <div
-            class="flex_row rounded box padding pseudo_input hover_highlight_border bg_h margin_r"
+            class="flex_row rounded_tl box padding pseudo_input hover_highlight_border bg_h margin_r"
             title="The amount of prior tokens of the text the LLM gets to read before continuing"
         >
             <input
@@ -20,7 +24,7 @@
             <span class="icon iconoir-glasses hover_cursor_pointer fg4"></span>
         </div>
         <div
-            class="flex_row rounded box padding pseudo_input hover_highlight_border bg_h"
+            class="flex_row rounded_tr box padding pseudo_input hover_highlight_border bg_h"
             title="Th amount of tokens the LLM may produce before being terminated"
         >
             <input
@@ -36,7 +40,7 @@
 
     <div class="flex_row margin_b">
         <div
-            class="flex_row rounded box padding pseudo_input hover_highlight_border bg_h margin_r"
+            class="flex_row rounded_bl box padding pseudo_input hover_highlight_border bg_h margin_r"
             title="Seed: number that all random number generation is based on"
         >
             <input
@@ -47,7 +51,7 @@
             <span class="icon iconoir-soil-alt hover_cursor_pointer fg4"></span>
         </div>
         <div
-            class="flex_row rounded box padding pseudo_input hover_highlight_border bg_h margin_r"
+            class="flex_row box padding pseudo_input hover_highlight_border bg_h margin_r"
             title="Randomness (temperature): higher settings make more probable next token options more likely"
         >
             <input
@@ -58,7 +62,7 @@
             <span class="icon iconoir-dice-six hover_cursor_pointer fg4"></span>
         </div>
         <div
-            class="flex_row rounded box padding pseudo_input hover_highlight_border bg_h"
+            class="flex_row rounded_br box padding pseudo_input hover_highlight_border bg_h"
             title="Variety (top_k): the portion of next token options to consider at all"
         >
             <input
@@ -72,13 +76,14 @@
 
     <div class="flex_row">
         <div
-            class="box rounded padding grow margin_r hover_cursor_pointer hover_highlight_border"
+            class="box rounded_l padding grow margin_r hover_cursor_pointer hover_highlight_border"
         >
             <span class="grow">foo</span>
             <span class="icon iconoir-restart fg4"></span>
         </div>
         <div
-            class="box rounded padding grow hover_cursor_pointer hover_highlight_border"
+            class="box rounded_r padding grow hover_cursor_pointer hover_highlight_border"
+            (click)="buildPrompt()"
         >
             <span class="grow">foo</span>
             <span class="icon iconoir-send-diagonal fg4"></span>
