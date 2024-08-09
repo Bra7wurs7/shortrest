@@ -1,27 +1,18 @@
 <div
-    class="thicker_border_l hover_highlight_border read hover_cursor_pointer user_select_none"
+    class="hover_cursor_pointer rounded user_select_none bg margin_b border_fg4"
     [ngClass]="{
-        box: !isChild(),
-        box_tbl: isChild(),
-        highlight_border_left: file().active,
+        border_l: file().active,
     }"
-    (click)="file().active = !file().active; $event.stopPropagation()"
-    (dblclick)="log('foo')"
     draggable="true"
 >
     <div
-        class="flex_row padding justify_between"
-        [ngClass]="{
-            bg: !file().active,
-            bg_s: file().active,
-        }"
+        class="flex_row box padding justify_between rounded hover_highlight_border"
+        (click)="file().active = !file().active; $event.stopPropagation()"
     >
         <div
-            class="align_end text_overflow_fade overflow_hidden grow"
+            class="align_end bg text_overflow_fade overflow_hidden grow"
             [ngClass]="{
                 fg4: !file().active,
-                bg_s: file().active,
-                bg: !file().active,
             }"
         >
             {{ file().filename }}
@@ -30,7 +21,7 @@
             }
         </div>
         <span
-            class="icon margin_r"
+            class="icon hover_fg"
             [ngClass]="{
                 'iconoir-multiple-pages':
                     file().children.length > 0 && file().content.length > 0,
@@ -50,6 +41,9 @@
             "
         ></span>
     </div>
+    @if (file().children.length > 0) {
+        <div class="pseudo_border"></div>
+    }
     <div class="smallpadding_left">
         @for (
             child of file().active ? file().children : [];
@@ -59,7 +53,6 @@
                 [file]="child"
                 [isChild]="true"
             ></app-file-list-entry>
-            <div class="pseudo_element"></div>
         }
     </div>
 </div>

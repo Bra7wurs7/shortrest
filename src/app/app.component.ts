@@ -7,6 +7,7 @@ import { HttpClient } from "@angular/common/http";
 import { AuthorAssistantComponent } from "../components/author-assistant/author-assistant.component";
 import { SimpleHttpRequest } from "../models/simple-http-request.model";
 import { FormsModule } from "@angular/forms";
+import { SystemAction } from "../models/system-action.model";
 
 @Component({
   selector: "app-root",
@@ -23,6 +24,50 @@ import { FormsModule } from "@angular/forms";
 })
 export class AppComponent implements AfterViewInit {
   title = "shortrest";
+
+  public system_actions: SystemAction[] = [
+    {
+      name: "New File",
+      description: "",
+      icon: "iconoir-empty-page",
+      command: "c",
+      type: "create",
+      action: (value) => {
+        console.log(value);
+      },
+    },
+    {
+      name: "Read File",
+      description: "",
+      icon: "iconoir-page",
+      command: "r",
+      type: "read",
+      action: (value) => {
+        console.log(value);
+      },
+    },
+    {
+      name: "Edit File",
+      description: "",
+      icon: "iconoir-page-edit",
+      command: "e",
+      type: "edit",
+      action: (value) => {
+        console.log(value);
+      },
+    },
+    {
+      name: "Remove File",
+      description: "",
+      icon: "iconoir-bin-half",
+      command: "rm",
+      type: "delete",
+      action: (value) => {
+        console.log(value);
+      },
+    },
+  ];
+
   defaultFile: FileListEntry = {
     filename: "default file",
     tags: [],
@@ -35,7 +80,7 @@ export class AppComponent implements AfterViewInit {
   ngAfterViewInit() {}
 
   llm: SimpleHttpRequest = {
-    url: new URL("http://192.168.111.235:11434/v1/chat/completions"),
+    url: new URL("http://127.0.0.1:11434/v1/chat/completions"),
     method: "POST",
     headers: {},
     body: {},
