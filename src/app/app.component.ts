@@ -3,7 +3,6 @@ import { AfterViewInit, Component, ElementRef, ViewChild } from "@angular/core";
 import { RouterOutlet } from "@angular/router";
 import { FileListEntry } from "../models/file-list-entry.model";
 import { FileListEntryComponent } from "../components/file-list-entry/file-list-entry.component";
-import { HttpClient } from "@angular/common/http";
 import { AuthorAssistantComponent } from "../components/author-assistant/author-assistant.component";
 import { SimpleHttpRequest } from "../models/simple-http-request.model";
 import { FormsModule } from "@angular/forms";
@@ -32,8 +31,15 @@ export class AppComponent implements AfterViewInit {
       icon: "iconoir-empty-page",
       command: "c",
       type: "create",
-      action: (value) => {
-        console.log(value);
+      action: (value: HTMLTextAreaElement) => {
+        this.files.push({
+          filename: value.value,
+          tags: [],
+          content: "",
+          active: false,
+          reading: false,
+          children: [],
+        });
       },
     },
     {

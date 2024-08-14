@@ -8,7 +8,7 @@
                 ></span>
                 <span class="text_upright fg4">Lifeforms</span>
             </div>
-            <div class="overflow_y_scroll flex_col">
+            <div class="overflow_y_scroll flex_col grow">
                 @for (file of files; track file.filename) {
                     <app-file-list-entry
                         [file]="file"
@@ -36,7 +36,6 @@
                         </span>
                         <div>:{{ sys_action.command }}</div>
                     </div>
-                    <span></span>
                 </div>
             }
         </div>
