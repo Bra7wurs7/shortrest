@@ -1,0 +1,9 @@
+<div class="overflow_y_scroll flex_col grow">
+    @for (file of files(); track file.filename) {
+        <app-file-list-entry
+            [file]="file"
+            [isChild]="false"
+        ></app-file-list-entry>
+        <div class="pseudo_border"></div>
+    }
+</div>

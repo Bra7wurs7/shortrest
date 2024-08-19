@@ -97,6 +97,10 @@ body {
     font-family: $sans;
 }
 
+.vertical_align_bottom {
+    vertical-align: bottom;
+}
+
 .user_select_none {
     user-select: none;
 }
@@ -567,4 +571,14 @@ a {
 
 .ProseMirror-focused {
     outline: none;
+}
+
+.grid-container {
+    display: grid;
+    .grid-item {
+    }
+}
+
+.transition_border_width {
+    transition: border-width 50ms;
 }

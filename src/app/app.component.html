@@ -1,55 +1,42 @@
 <div class="flex_row h_100 grow overflow_hidden justify_strech">
     <!-- LEFT SIDEBAR -->
     <div class="flex_col justify_between overflow_hidden w_15vw margin_r">
-        <div class="overflow_hidden flex_row">
-            <div class="flex_col box justify_between margin_b rounded">
-                <span
-                    class="icon iconoir-folder hover_cursor_pointer fg4 hover_fg padding"
-                ></span>
-                <span class="text_upright fg4">Lifeforms</span>
-            </div>
-            <div class="overflow_y_scroll flex_col grow">
-                @for (file of files; track file.filename) {
-                    <app-file-list-entry
-                        [file]="file"
-                        [isChild]="false"
-                    ></app-file-list-entry>
-                }
-            </div>
-        </div>
-        <div class="flex_col">
-            @for (sys_action of system_actions; track sys_action.command) {
-                <div
-                    class="rounded box flex_row padding hover_highlight_border hover_cursor_pointer fg4 hover_fg justify_between overflow_hidden margin_t {{
-                        sys_action.type
-                    }}"
-                    (click)="sys_action.action(controlBar)"
-                >
-                    <div class="flex_row grow">
+        <div class="flex_col justify_between grow">
+            <!--<app-file-list [files]="activeFolder.files"></app-file-list>-->
+            <div>
+                @for (sys_action of system_actions; track sys_action.command) {
+                    <div
+                        class="rounded box flex_row padding hover_highlight_border hover_cursor_pointer fg4 hover_fg justify_between overflow_hidden margin_t {{
+                            sys_action.type
+                        }}"
+                        (click)="sys_action.action(controlBar)"
+                    >
                         <span
-                            class="icon margin_r {{ sys_action.icon }}"
-                        ></span>
-                        <span
-                            class="bg_h text_overflow_fade overflow_hidden grow min_height_max_content grow"
+                            class="bg_h text_overflow_fade overflow_hidden min_height_max_content grow"
                         >
                             {{ sys_action.name }}
                         </span>
-                        <div>:{{ sys_action.command }}</div>
+                        <span
+                            class="icon margin_r {{ sys_action.icon }}"
+                        ></span>
                     </div>
-                </div>
-            }
+                }
+            </div>
         </div>
     </div>
 
     <!-- CENTER AREA -->
     <div class="flex_col grow">
-        <textarea
-            class="rounded_tl padding_thicc margin_b grow box hover_highlight_border bg"
-            [(ngModel)]="defaultFile.content"
-        ></textarea>
+        <div class="grow margin_b flex-row">
+            <textarea
+                class="box hover_highlight_border rounded_tl padding_thicc bg vertical_align_bottom"
+                [(ngModel)]="activeFiles[0].content"
+            ></textarea>
+        </div>
+
         <textarea
             #controlBar
-            class="box rounded_bl padding pseudo_input hover_highlight_border bg"
+            class="box padding pseudo_input hover_highlight_border bg"
             placeholder="Type here to control shortrest"
             rows="1"
         ></textarea>
@@ -60,6 +47,6 @@
         #authorAssistant
         class="margin_l rounded_r flex_col justify_between min_width_max_content overflow_hidden"
         [llm]="llm"
-        [file]="defaultFile"
+        [file]="activeFiles[0]"
     ></app-author-assistant>
 </div>

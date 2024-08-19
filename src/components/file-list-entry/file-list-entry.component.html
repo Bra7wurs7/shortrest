@@ -1,18 +1,23 @@
 <div
-    class="hover_cursor_pointer rounded user_select_none bg margin_b border_fg4"
+    class="hover_cursor_pointer transition_border_width rounded user_select_none border_fg4 bg_h"
     [ngClass]="{
-        border_l: file().active,
+        thick_border_l: file().active,
     }"
-    draggable="true"
 >
     <div
         class="flex_row box padding justify_between rounded hover_highlight_border"
+        [ngClass]="{
+            bg: file().active,
+            bg_h: !file().active,
+        }"
         (click)="file().active = !file().active; $event.stopPropagation()"
+        draggable="true"
     >
         <div
-            class="align_end bg text_overflow_fade overflow_hidden grow"
+            class="align_end bg_h text_overflow_fade overflow_hidden grow"
             [ngClass]="{
                 fg4: !file().active,
+                bg: file().active,
             }"
         >
             {{ file().filename }}
@@ -34,21 +39,15 @@
                 fg4: !file().reading,
                 fg: file().reading,
             }"
-            (click)="
-                $event.stopPropagation();
-                file().reading = !file().reading;
-                log(file().reading)
-            "
+            (click)="$event.stopPropagation(); file().reading = !file().reading"
         ></span>
     </div>
-    @if (file().children.length > 0) {
-        <div class="pseudo_border"></div>
-    }
     <div class="smallpadding_left">
         @for (
             child of file().active ? file().children : [];
             track child.filename
         ) {
+            <div class="pseudo_border"></div>
             <app-file-list-entry
                 [file]="child"
                 [isChild]="true"
