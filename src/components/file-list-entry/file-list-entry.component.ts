@@ -1,6 +1,6 @@
 import { Component, input } from "@angular/core";
-import { FileListEntry } from "../../models/file-list-entry.model";
 import { CommonModule } from "@angular/common";
+import { FileListEntry } from "../../models/file-list-entry.model";
 
 @Component({
   selector: "app-file-list-entry",
@@ -11,5 +11,6 @@ import { CommonModule } from "@angular/common";
 })
 export class FileListEntryComponent {
   file = input.required<FileListEntry>();
+  active = input<boolean>(false);
   isChild = input<boolean>(false);
 }

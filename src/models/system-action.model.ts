@@ -1,4 +1,5 @@
 export interface SystemAction {
+  visibleRegex: RegExp;
   name: string;
   description: string;
   icon: string;

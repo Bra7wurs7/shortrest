@@ -2,6 +2,8 @@
     <!-- LEFT SIDEBAR -->
     <div class="flex_col justify_between overflow_hidden w_15vw margin_r">
         <div class="flex_col justify_between grow">
+            
+            <div class="grow"></div>
             <!--<app-file-list [files]="activeFolder.files"></app-file-list>-->
             <div>
                 @for (sys_action of system_actions; track sys_action.command) {
@@ -28,9 +30,10 @@
     <!-- CENTER AREA -->
     <div class="flex_col grow">
         <div class="grow margin_b flex-row">
-            <textarea
-                class="box hover_highlight_border rounded_tl padding_thicc bg vertical_align_bottom"
-                [(ngModel)]="activeFiles[0].content"
+            <textarea *ngIf="files[activeFile]"
+                class="box hover_highlight_border rounded_tl padding_big bg vertical_align_bottom"
+                [(ngModel)]="files[activeFile].content"
+                (change)="saveFilesLocalStorage(files)"
             ></textarea>
         </div>
 
@@ -47,6 +50,7 @@
         #authorAssistant
         class="margin_l rounded_r flex_col justify_between min_width_max_content overflow_hidden"
         [llm]="llm"
-        [file]="activeFiles[0]"
+        [file]="files[activeFile]"
+        (token)="onToken($event)"
     ></app-author-assistant>
 </div>

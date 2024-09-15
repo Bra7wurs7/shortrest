@@ -1,6 +1,6 @@
 import { Component, input } from "@angular/core";
 import { FileListEntryComponent } from "../file-list-entry/file-list-entry.component";
-import { File } from "../../models/file.model";
+import { FileListEntry } from "../../models/file-list-entry.model";
 
 @Component({
   selector: "app-file-list",
@@ -10,5 +10,5 @@ import { File } from "../../models/file.model";
   styleUrl: "./file-list.component.scss",
 })
 export class FileListComponent {
-  files = input.required<File[]>();
+  files = input.required<FileListEntry[]>();
 }

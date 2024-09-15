@@ -62,9 +62,10 @@ $gray-dim: #a89984;
 $border-radius: 13px;
 $padding: 5px;
 $smallpadding: 3px;
-$thickpadding: 6px;
+$bigpadding: 6px;
 $margin: 3px;
 $smallmargin: 1px;
+$bigmarging: 7px;
 $border-width: 1px;
 $thicker-border-width: 3px;
 
@@ -95,6 +96,11 @@ body {
     background-color: $background-color;
     color: $foreground-color;
     font-family: $sans;
+}
+
+.align_text_bottom_left {
+    text-align: left;
+     vertical-align: bottom;
 }
 
 .vertical_align_bottom {
@@ -222,20 +228,32 @@ body {
     padding: $padding;
 }
 
+.padding_small {
+    padding: $smallpadding;
+}
+
 .padding_flat {
     padding: $smallpadding $padding $smallpadding $padding;
 }
 
-.padding_thicc {
-    padding: $thickpadding;
+.padding_big {
+    padding: $bigpadding;
 }
 
-.smallpadding_left {
+.padding_small_left {
     padding-left: $smallpadding;
 }
 
 .margin {
     margin: $margin;
+}
+
+.margin_small {
+    margin: $smallmargin;
+}
+
+.margin_b {
+    margin-bottom: $margin;
 }
 
 .margin_t {
@@ -439,6 +457,14 @@ body {
 
 .icon {
     font-size: 20px;
+}
+
+.mini {
+    font-size: 10px;
+}
+
+.nano {
+    font-size: 8px;
 }
 
 .pseudo_input:has(> input:focus) {

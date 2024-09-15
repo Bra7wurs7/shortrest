@@ -42,7 +42,7 @@
             (click)="$event.stopPropagation(); file().reading = !file().reading"
         ></span>
     </div>
-    <div class="smallpadding_left">
+    <div class="padding_small_left">
         @for (
             child of file().active ? file().children : [];
             track child.filename
