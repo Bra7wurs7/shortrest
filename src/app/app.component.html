@@ -2,24 +2,43 @@
     <!-- LEFT SIDEBAR -->
     <div class="flex_col justify_between overflow_hidden w_15vw margin_r">
         <div class="flex_col justify_between grow">
-            
-            <div class="grow"></div>
-            <!--<app-file-list [files]="activeFolder.files"></app-file-list>-->
+            <app-file-list
+                [files]="files"
+                [activeFile]="activeFile"
+                (fileActivated)="onFileActivated($event)"
+                (wheel)="
+                    setActiveFile(
+                        scrollIncrementDecrement(
+                            false,
+                            $event,
+                            this.activeFile,
+                            1,
+                            files.length - 1,
+                            0
+                        )
+                    )
+                "
+            ></app-file-list>
             <div>
-                @for (sys_action of system_actions; track sys_action.command) {
+                @for (system_action of system_actions; track system_action.command) {
                     <div
-                        class="rounded box flex_row padding hover_highlight_border hover_cursor_pointer fg4 hover_fg justify_between overflow_hidden margin_t {{
-                            sys_action.type
+                        class="box flex_row padding hover_cursor_pointer fg4 hover_fg justify_between overflow_hidden margin_t {{
+                            system_action.color
                         }}"
-                        (click)="sys_action.action(controlBar)"
+                        [ngClass]="{
+                            'highlight_border': system_action.highlighted(),
+                        }"
+                        (click)="system_action.action(controlBar)"
+                        (mouseenter)="system_action.highlighted.set(true)"
+                        (mouseleave)="system_action.highlighted.set(false)"
                     >
                         <span
                             class="bg_h text_overflow_fade overflow_hidden min_height_max_content grow"
                         >
-                            {{ sys_action.name }}
+                            {{ system_action.name }}
                         </span>
                         <span
-                            class="icon margin_r {{ sys_action.icon }}"
+                            class="icon margin_r {{ system_action.icon }} {{ system_action.highlighted() ? system_action.color : '' }}"
                         ></span>
                     </div>
                 }
@@ -29,26 +48,37 @@
 
     <!-- CENTER AREA -->
     <div class="flex_col grow">
-        <div class="grow margin_b flex-row">
-            <textarea *ngIf="files[activeFile]"
-                class="box hover_highlight_border rounded_tl padding_big bg vertical_align_bottom"
+        <div class="grow margin_b bg flex_row box hover_highlight_border pseudo_input">
+            <textarea
+                *ngIf="files[activeFile]"
+                class="padding_big vertical_align_bottom"
                 [(ngModel)]="files[activeFile].content"
                 (change)="saveFilesLocalStorage(files)"
+                [ngClass]="{
+                    rounded_tl: activeFile !== 0,
+                }"
             ></textarea>
         </div>
 
-        <textarea
+        <div class="box padding pseudo_input hover_highlight_border bg flex_row mono">
+            <span class="margin_r {{
+                highlightedSystemAction()?.color ?? ''
+            }}">{{highlightedSystemAction()?.command}}</span>
+            <textarea
             #controlBar
-            class="box padding pseudo_input hover_highlight_border bg"
+            [ngClass]="{
+                rounded_bl: activeFile !== 0,
+            }"
             placeholder="Type here to control shortrest"
             rows="1"
         ></textarea>
+        </div>
     </div>
 
     <!-- RIGHT SIDEBAR -->
     <app-author-assistant
         #authorAssistant
-        class="margin_l rounded_r flex_col justify_between min_width_max_content overflow_hidden"
+        class="margin_l flex_col justify_between min_width_max_content overflow_hidden"
         [llm]="llm"
         [file]="files[activeFile]"
         (token)="onToken($event)"

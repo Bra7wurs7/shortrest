@@ -15,7 +15,7 @@ $fg2: #d5c4a1;
 $fg3: #bdae93;
 $fg4: #a89984;
 
-// Green highlights CREATE actions (create new file, copy stuff)
+// Green highlights CREATE actions (create new file, create copy etc)
 $green: #b8bb26;
 $green-dim: #98971a;
 
@@ -33,10 +33,13 @@ $red-dim: #cc2412;
 
 $purple: #d3869b;
 $purple-dim: #b16286;
+
 $aqua: #8ec07c;
 $aqua-dim: #689d6a;
+
 $orange: #fe8019;
 $orange-dim: #d65d0e;
+
 $gray: #928374;
 $gray-dim: #a89984;
 
@@ -67,7 +70,7 @@ $margin: 3px;
 $smallmargin: 1px;
 $bigmarging: 7px;
 $border-width: 1px;
-$thicker-border-width: 3px;
+$thicker-border-width: 2px;
 
 // Style -> Colors
 $border-color: $bg3;
@@ -98,9 +101,37 @@ body {
     font-family: $sans;
 }
 
+.mono {
+    font-family: $mono;
+}
+
+.yellow {
+    color: $yellow;
+}
+
+.blue {
+    color: $blue;
+}
+
+.green {
+    color: $green;
+}
+
+.red {
+    color: $red;
+}
+
+.purple {
+    color: $purple;
+}
+
+.fire {
+    color: $orange;
+}
+
 .align_text_bottom_left {
     text-align: left;
-     vertical-align: bottom;
+    vertical-align: bottom;
 }
 
 .vertical_align_bottom {
@@ -113,6 +144,48 @@ body {
 
 .box {
     border: $border-width solid transparent;
+}
+
+.pseudo_input:has(> textarea:focus) {
+    border-color: $border-color-highlighted;
+}
+
+.hover_highlight_border {
+    &:hover {
+        border-color: $border-color-highlighted;
+    }
+}
+
+.highlight_border {
+    border-color: $border-color-highlighted;
+    &.yellow {
+        border-color: $yellow;
+    }
+
+    &.blue {
+        border-color: $blue;
+    }
+
+    &.green {
+        border-color: $green;
+    }
+
+    &.red {
+        border-color: $red;
+    }
+
+    &.purple {
+        border-color: $purple;
+    }
+
+    &.fire {
+        border-color: $orange;
+        animation: shadowPulse 3s infinite ease-in-out;
+    }
+}
+
+.highlight_border_left {
+    border-left-color: $border-color-highlighted;
 }
 
 .box_tbl {
@@ -424,9 +497,6 @@ body {
     color: $bg3;
 }
 
-%text_overflow_fade_base {
-}
-
 .text_overflow_fade {
     position: relative;
     white-space: nowrap;
@@ -465,39 +535,6 @@ body {
 
 .nano {
     font-size: 8px;
-}
-
-.pseudo_input:has(> input:focus) {
-    border-color: $border-color-highlighted;
-}
-
-.hover_highlight_border {
-    &:hover {
-        border-color: $border-color-highlighted;
-        &.edit {
-            border-color: $yellow;
-        }
-
-        &.read {
-            border-color: $blue;
-        }
-
-        &.create {
-            border-color: $green;
-        }
-
-        &.delete {
-            border-color: $red;
-        }
-    }
-}
-
-.highlight_border {
-    border-color: $border-color-highlighted;
-}
-
-.highlight_border_left {
-    border-left-color: $border-color-highlighted;
 }
 
 .hover_bg_s {
@@ -607,4 +644,14 @@ a {
 
 .transition_border_width {
     transition: border-width 50ms;
+}
+
+@keyframes shadowPulse {
+    0%,
+    100% {
+        box-shadow: 0px -3px 9px 2px rgba($aqua, 0.4); // Taller and slightly enlarged shadow to look like a flame
+    }
+    50% {
+        box-shadow: 0px -1px 6px 1px rgba($aqua, 0.4); // Original size of shadow, but taller for the flame effect
+    }
 }

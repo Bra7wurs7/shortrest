@@ -1,14 +1,20 @@
-import { Component, input } from "@angular/core";
-import { FileListEntryComponent } from "../file-list-entry/file-list-entry.component";
-import { FileListEntry } from "../../models/file-list-entry.model";
+import { Component, input, output } from "@angular/core";
+import { NamedNode } from "../../models/node.model";
+import { CommonModule } from "@angular/common";
+import { ParseNamePipe } from "../../pipes/parse-name.pipe";
 
 @Component({
   selector: "app-file-list",
   standalone: true,
-  imports: [FileListEntryComponent],
+  imports: [CommonModule, ParseNamePipe],
   templateUrl: "./file-list.component.html",
-  styleUrl: "./file-list.component.scss",
 })
 export class FileListComponent {
-  files = input.required<FileListEntry[]>();
+  files = input.required<NamedNode[]>();
+  fileActivated = output<number>();
+  activeFile = input.required<number | undefined>();
+
+  public onClickedFile(index: number) {
+    this.fileActivated.emit(index);
+  }
 }

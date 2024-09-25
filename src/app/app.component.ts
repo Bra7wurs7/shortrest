@@ -1,7 +1,6 @@
 import { CommonModule } from "@angular/common";
-import { AfterViewInit, Component, ElementRef, ViewChild } from "@angular/core";
+import { AfterViewInit, Component, computed, signal } from "@angular/core";
 import { RouterOutlet } from "@angular/router";
-import { FileListEntry } from "../models/file-list-entry.model";
 import { AuthorAssistantComponent } from "../components/author-assistant/author-assistant.component";
 import { SimpleHttpRequest } from "../models/simple-http-request.model";
 import { FormsModule } from "@angular/forms";
@@ -18,48 +17,64 @@ import { NamedNode } from "../models/node.model";
     CommonModule,
     AuthorAssistantComponent,
     FormsModule,
-    FileListComponent,
+    FileListComponent
   ],
   templateUrl: "./app.component.html",
-  styleUrls: ["./app.component.scss"],
 })
 export class AppComponent implements AfterViewInit {
   title = "shortrest";
 
+  public scrollIncrementDecrement = scrollIncrementDecrement;
+
   public system_actions: SystemAction[] = [
+    {
+      visibleRegex: new RegExp(".*"),
+      name: "Experiment",
+      description: "",
+      icon: "iconoir-bonfire",
+      command: "x",
+      color: "fire",
+      action: (value: HTMLTextAreaElement) => {
+        this.foobar(this.folders[this.activeFolder].nodes, value.value);
+      },
+      highlighted: signal(false),
+    },
     {
       visibleRegex: new RegExp(".*"),
       name: "List Files",
       description: "",
-      icon: "iconoir-list",
-      command: "c",
-      type: "create",
+      icon: "iconoir-doc-magnifying-glass",
+      command: "l",
+      color: "purple",
       action: (value: HTMLTextAreaElement) => {
         this.newFile(this.folders[this.activeFolder].nodes, value.value);
       },
+      highlighted: signal(false),
+    },
+    {
+      visibleRegex: new RegExp(""),
+      name: "Show File",
+      description: "",
+      icon: "iconoir-page",
+      command: "s",
+      color: "blue",
+      action: (value: HTMLTextAreaElement) => {
+        this.openFile(this.folders[this.activeFolder].nodes, value.value);
+        this.editFile(value.value);
+      },
+      highlighted: signal(false),
     },
     {
       visibleRegex: new RegExp(".*"),
       name: "New File",
       description: "",
       icon: "iconoir-empty-page",
-      command: "c",
-      type: "create",
+      command: "n",
+      color: "green",
       action: (value: HTMLTextAreaElement) => {
         this.newFile(this.folders[this.activeFolder].nodes, value.value);
       },
-    },
-    {
-      visibleRegex: new RegExp(""),
-      name: "Read File",
-      description: "",
-      icon: "iconoir-page",
-      command: "r",
-      type: "read",
-      action: (value: HTMLTextAreaElement) => {
-        this.openFile(this.folders[this.activeFolder].nodes, value.value)
-        this.editFile(value.value)
-      },
+      highlighted: signal(false),
     },
     {
       visibleRegex: new RegExp(""),
@@ -67,34 +82,46 @@ export class AppComponent implements AfterViewInit {
       description: "",
       icon: "iconoir-page-edit",
       command: "e",
-      type: "edit",
+      color: "yellow",
       action: (value: HTMLTextAreaElement) => {
-        this.editFile(value.value)
+        this.editFile(value.value);
       },
+      highlighted: signal(false),
     },
     {
       visibleRegex: new RegExp(""),
       name: "Remove File",
       description: "",
       icon: "iconoir-bin-half",
-      command: "rm",
-      type: "delete",
+      command: "r",
+      color: "red",
       action: (value: HTMLTextAreaElement) => {
-        this.removeFile(this.folders[this.activeFolder].nodes, value.value);
+        this.removeFile(
+          this.folders[this.activeFolder].nodes,
+          this.files,
+          value.value,
+        );
       },
+      highlighted: signal(false),
     },
   ];
+
+  highlightedSystemAction = computed(() => 
+    this.system_actions.find((sa) => { return sa.highlighted()})
+  )
 
   files: NamedNode[] = this.loadFilesLocalStorage();
   activeFile: number = 0;
 
-  folders: NamedNodeMap[] = [{
-    name: "Root",
-    nodes: new Map(),
-  }];
+  folders: NamedNodeMap[] = [
+    {
+      name: "Root",
+      nodes: new Map(),
+    },
+  ];
   activeFolder: number = 0;
 
-  ngAfterViewInit() { }
+  ngAfterViewInit() {}
 
   llm: SimpleHttpRequest = {
     url: new URL("http://127.0.0.1:11434/v1/chat/completions"),
@@ -109,18 +136,31 @@ export class AppComponent implements AfterViewInit {
       const newFile: NamedNode = {
         name: fileName,
         content: "",
-        tags: [],
       };
       map.set(fileName, newFile);
       console.log("New file created:", newFile);
     }
   }
 
-  removeFile(map: Map<string, NamedNode>, fileName: string) {
+  removeFile(
+    map: Map<string, NamedNode>,
+    array: NamedNode[],
+    fileName: string,
+  ) {
     if (map.has(fileName)) {
       map.delete(fileName);
       console.log("File removed:", fileName);
     }
+    // Remove from files array
+    const index = array.findIndex((file) => file.name === fileName);
+    if (index !== -1) {
+      array.splice(index, 1);
+    }
+    // Shift index if removed file is before active file
+    if (index < this.activeFile && index !== -1) {
+      this.activeFile--;
+    }
+    this.saveFilesLocalStorage(this.files);
   }
 
   openFile(map: Map<string, NamedNode>, fileName: string): boolean {
@@ -130,12 +170,14 @@ export class AppComponent implements AfterViewInit {
       this.files.push(copy);
       return true;
     } else {
-      return false
+      return false;
     }
   }
 
   editFile(fileName: string): boolean {
-    const openFileIndex = this.files.findIndex((file) => file.name === fileName);
+    const openFileIndex = this.files.findIndex(
+      (file) => file.name === fileName,
+    );
     if (openFileIndex !== -1) {
       this.activeFile = openFileIndex;
       return true;
@@ -155,9 +197,12 @@ export class AppComponent implements AfterViewInit {
       const existingFile = map.get(file.name);
       if (existingFile !== undefined) {
         existingFile.content = file.content;
-        existingFile.tags = file.tags;
       }
     }
+  }
+
+  foobar(map: Map<string, NamedNode>, value: string) {
+    console.log(value);
   }
 
   deepCopy<A>(obj: A): A {
@@ -167,7 +212,7 @@ export class AppComponent implements AfterViewInit {
   saveFilesLocalStorage(files: NamedNode[]) {
     localStorage.setItem("files", JSON.stringify(files));
   }
-  
+
   loadFilesLocalStorage(): NamedNode[] {
     const files = localStorage.getItem("files");
     return files !== null ? JSON.parse(files) : [];
@@ -180,4 +225,40 @@ export class AppComponent implements AfterViewInit {
       this.saveFilesLocalStorage(this.files);
     }
   }
+
+  onFileActivated(index: number) {
+    if (index >= 0 && index < this.files.length) {
+      this.activeFile = index;
+    } else {
+      console.error("Invalid file index:", index);
+    }
+  }
+
+  setActiveFile(index: number) {
+    this.activeFile = index;
+  }
 }
+
+export function scrollIncrementDecrement(
+  invert: boolean,
+  e: WheelEvent,
+  n: number,
+  step: number = 1,
+  max: number = 100,
+  min: number = 0,
+): number {
+  if (invert ? e.deltaY > 0 : e.deltaY < 0) {
+    if (n - step >= min) {
+      return n - step;
+    }
+  } else {
+    if (n + step <= max) {
+      return n + step;
+    }
+  }
+  return n;
+}
+function Computed() {
+  throw new Error("Function not implemented.");
+}
+
