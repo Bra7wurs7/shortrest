@@ -3,10 +3,10 @@ import { WritableSignal } from "@angular/core";
 export interface SystemAction {
   visibleRegex: RegExp;
   name: string;
-  description: string;
+  advice: string;
   icon: string;
   command: string;
   color: string;
-  action: (param: HTMLTextAreaElement) => void;
+  action: (param: HTMLInputElement) => void;
   highlighted: WritableSignal<boolean>;
 }

@@ -28,7 +28,7 @@
                         [ngClass]="{
                             'highlight_border': system_action.highlighted(),
                         }"
-                        (click)="system_action.action(controlBar)"
+                        (click)="systemActionOnClick(system_action, controlBar)"
                         (mouseenter)="system_action.highlighted.set(true)"
                         (mouseleave)="system_action.highlighted.set(false)"
                     >
@@ -61,17 +61,18 @@
         </div>
 
         <div class="box padding pseudo_input hover_highlight_border bg flex_row mono">
-            <span class="margin_r {{
-                highlightedSystemAction()?.color ?? ''
-            }}">{{highlightedSystemAction()?.command}}</span>
-            <textarea
+            @if (highlightedSystemAction()) {
+                <span class="margin_r preserve_whitespace {{
+                    highlightedSystemAction()?.color ?? ''
+                }}">{{highlightedSystemAction()?.command + " "}}</span>
+            }
+            <input
             #controlBar
-            [ngClass]="{
-                rounded_bl: activeFile !== 0,
-            }"
-            placeholder="Type here to control shortrest"
+            [placeholder]="highlightedSystemAction()?.advice ?? 'Type here to control shortrest'"
             rows="1"
-        ></textarea>
+            (keydown)="systemBarOnKeyDown($event)"
+            (keyup)="systemBarOnKeyUp($event)"
+        >
         </div>
     </div>
 

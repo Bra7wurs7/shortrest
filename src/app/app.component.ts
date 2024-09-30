@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { AfterViewInit, Component, computed, signal } from "@angular/core";
+import { AfterViewInit, Component, computed, ElementRef, signal, ViewChild } from "@angular/core";
 import { RouterOutlet } from "@angular/router";
 import { AuthorAssistantComponent } from "../components/author-assistant/author-assistant.component";
 import { SimpleHttpRequest } from "../models/simple-http-request.model";
@@ -24,17 +24,19 @@ import { NamedNode } from "../models/node.model";
 export class AppComponent implements AfterViewInit {
   title = "shortrest";
 
+  @ViewChild('controlBar') control_bar!: ElementRef<HTMLInputElement>;
+
   public scrollIncrementDecrement = scrollIncrementDecrement;
 
   public system_actions: SystemAction[] = [
     {
       visibleRegex: new RegExp(".*"),
       name: "Experiment",
-      description: "",
+      advice: "Let the AI enjoy some rest, allowing it to do what it wants",
       icon: "iconoir-bonfire",
       command: "x",
       color: "fire",
-      action: (value: HTMLTextAreaElement) => {
+      action: (value: HTMLInputElement) => {
         this.foobar(this.folders[this.activeFolder].nodes, value.value);
       },
       highlighted: signal(false),
@@ -42,11 +44,11 @@ export class AppComponent implements AfterViewInit {
     {
       visibleRegex: new RegExp(".*"),
       name: "List Files",
-      description: "",
+      advice: "Optinally add filters like file names or tabs",
       icon: "iconoir-doc-magnifying-glass",
       command: "l",
       color: "purple",
-      action: (value: HTMLTextAreaElement) => {
+      action: (value: HTMLInputElement) => {
         this.newFile(this.folders[this.activeFolder].nodes, value.value);
       },
       highlighted: signal(false),
@@ -54,11 +56,11 @@ export class AppComponent implements AfterViewInit {
     {
       visibleRegex: new RegExp(""),
       name: "Show File",
-      description: "",
+      advice: "Enter the name of the file to show",
       icon: "iconoir-page",
       command: "s",
       color: "blue",
-      action: (value: HTMLTextAreaElement) => {
+      action: (value: HTMLInputElement) => {
         this.openFile(this.folders[this.activeFolder].nodes, value.value);
         this.editFile(value.value);
       },
@@ -67,23 +69,25 @@ export class AppComponent implements AfterViewInit {
     {
       visibleRegex: new RegExp(".*"),
       name: "New File",
-      description: "",
+      advice: "Enter a name for the new file",
       icon: "iconoir-empty-page",
       command: "n",
       color: "green",
-      action: (value: HTMLTextAreaElement) => {
+      action: (value: HTMLInputElement) => {
         this.newFile(this.folders[this.activeFolder].nodes, value.value);
+        this.openFile(this.folders[this.activeFolder].nodes, value.value);
+        this.editFile(value.value);
       },
       highlighted: signal(false),
     },
     {
       visibleRegex: new RegExp(""),
       name: "Edit File",
-      description: "",
+      advice: "Enter the name of the file to edit",
       icon: "iconoir-page-edit",
       command: "e",
       color: "yellow",
-      action: (value: HTMLTextAreaElement) => {
+      action: (value: HTMLInputElement) => {
         this.editFile(value.value);
       },
       highlighted: signal(false),
@@ -91,11 +95,11 @@ export class AppComponent implements AfterViewInit {
     {
       visibleRegex: new RegExp(""),
       name: "Remove File",
-      description: "",
+      advice: "Enter the name of the file you want to delete",
       icon: "iconoir-bin-half",
       command: "r",
       color: "red",
-      action: (value: HTMLTextAreaElement) => {
+      action: (value: HTMLInputElement) => {
         this.removeFile(
           this.folders[this.activeFolder].nodes,
           this.files,
@@ -106,9 +110,13 @@ export class AppComponent implements AfterViewInit {
     },
   ];
 
-  highlightedSystemAction = computed(() => 
-    this.system_actions.find((sa) => { return sa.highlighted()})
-  )
+  highlightedSystemAction = computed(() =>
+    this.system_actions.find((sa) => { return sa.highlighted() })
+  );
+
+  highlightedSystemActionIndex = computed(() =>
+    this.system_actions.findIndex((sa) => { return sa.highlighted() })
+  );
 
   files: NamedNode[] = this.loadFilesLocalStorage();
   activeFile: number = 0;
@@ -121,7 +129,7 @@ export class AppComponent implements AfterViewInit {
   ];
   activeFolder: number = 0;
 
-  ngAfterViewInit() {}
+  ngAfterViewInit() { }
 
   llm: SimpleHttpRequest = {
     url: new URL("http://127.0.0.1:11434/v1/chat/completions"),
@@ -237,6 +245,66 @@ export class AppComponent implements AfterViewInit {
   setActiveFile(index: number) {
     this.activeFile = index;
   }
+
+  systemActionOnClick(system_action: SystemAction, control_bar: HTMLInputElement) {
+    system_action.action(control_bar);
+  }
+
+  systemBarOnKeyDown(e: KeyboardEvent) {
+    const action = this.highlightedSystemAction();
+    const index = this.highlightedSystemActionIndex();
+    switch (e.key) {
+      case ("ArrowUp"):
+        e.preventDefault();
+        if (index === -1) {
+          this.system_actions[this.system_actions.length - 1].highlighted.set(true);
+        } else {
+          const newIndex = index - 1;
+          this.system_actions[index].highlighted.set(false);
+          if (newIndex >= 0)
+            this.system_actions[newIndex].highlighted.set(true);
+        }
+        break;
+      case ("ArrowDown"):
+        e.preventDefault();
+        if (index !== -1) {
+          const newIndex = index + 1;
+          this.system_actions[index].highlighted.set(false);
+          if (newIndex < this.system_actions.length)
+            this.system_actions[newIndex].highlighted.set(true);
+        }
+        break;
+      case ("Enter"):
+        if (action) {
+          action.action(this.control_bar.nativeElement)
+          //this.control_bar.nativeElement.value = "";
+        }
+        break;
+      case ("Backspace"):
+        if (this.control_bar.nativeElement.value === "" && action) {
+          action.highlighted.set(false);
+        }
+        break;
+
+    }
+  }
+
+  systemBarOnKeyUp(e: KeyboardEvent) {
+    const action = this.highlightedSystemAction();
+    const index = this.highlightedSystemActionIndex();
+    switch (e.key) {
+      case (" "):
+        if (this.highlightedSystemAction() === undefined) {
+          const command = this.control_bar.nativeElement.value.split(" ")[0];
+          const command_action = this.system_actions.find((sa) => sa.command === command);
+          if (command_action) {
+            command_action.highlighted.set(true);
+            this.control_bar.nativeElement.value = this.control_bar.nativeElement.value.replace(command + " ", "");
+          }
+        }
+        break;
+    }
+  }
 }
 
 export function scrollIncrementDecrement(
@@ -261,4 +329,3 @@ export function scrollIncrementDecrement(
 function Computed() {
   throw new Error("Function not implemented.");
 }
-
