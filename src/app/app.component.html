@@ -1,87 +1,82 @@
 <div class="flex_row h_100 grow overflow_hidden justify_strech">
-    <!-- LEFT SIDEBAR -->
-    <div class="flex_col justify_between overflow_hidden w_15vw margin_r">
-        <div class="flex_col justify_between grow">
-            <app-file-list
-                [files]="files"
-                [activeFile]="activeFile"
-                (fileActivated)="onFileActivated($event)"
-                (wheel)="
-                    setActiveFile(
-                        scrollIncrementDecrement(
-                            false,
-                            $event,
-                            this.activeFile,
-                            1,
-                            files.length - 1,
-                            0
-                        )
-                    )
-                "
-            ></app-file-list>
-            <div>
-                @for (system_action of system_actions; track system_action.command) {
-                    <div
-                        class="box flex_row padding hover_cursor_pointer fg4 hover_fg justify_between overflow_hidden margin_t {{
-                            system_action.color
-                        }}"
-                        [ngClass]="{
-                            'highlight_border': system_action.highlighted(),
-                        }"
-                        (click)="systemActionOnClick(system_action, controlBar)"
-                        (mouseenter)="system_action.highlighted.set(true)"
-                        (mouseleave)="system_action.highlighted.set(false)"
-                    >
-                        <span
-                            class="bg_h text_overflow_fade overflow_hidden min_height_max_content grow"
-                        >
-                            {{ system_action.name }}
-                        </span>
-                        <span
-                            class="icon margin_r {{ system_action.icon }} {{ system_action.highlighted() ? system_action.color : '' }}"
-                        ></span>
-                    </div>
-                }
-            </div>
+  <!-- LEFT SIDEBAR -->
+  <div class="flex_col justify_between overflow_hidden sidebar_width margin_r">
+    <div class="flex_col justify_between grow">
+        <div>
+          @for (system_action of system_actions; track system_action.command) {
+          <div
+            class="box flex_row padding hover_cursor_pointer fg4 hover_fg justify_between overflow_hidden margin_b {{
+              system_action.color
+            }}"
+            [ngClass]="{
+                              'highlight_border': system_action.highlighted(),
+                          }"
+            (click)="systemActionOnClick(system_action, controlBar)"
+            (mouseenter)="system_action.highlighted.set(true)"
+            (mouseleave)="system_action.highlighted.set(false)"
+          >
+            <span
+              class="bg_h text_overflow_fade overflow_hidden min_height_max_content grow"
+            >
+              {{ system_action.name }}
+            </span>
+            <span
+              class="icon margin_r {{ system_action.icon }} {{
+                system_action.highlighted() ? system_action.color : ''
+              }}"
+            ></span>
+          </div>
+          }
         </div>
+      <app-file-list
+        [files]="activeArchive()"
+        [activeFile]="0"
+        (fileActivated)="openFile(this.activeArchive(), $event)"
+      ></app-file-list>
     </div>
+  </div>
 
-    <!-- CENTER AREA -->
-    <div class="flex_col grow">
-        <div class="grow margin_b bg flex_row box hover_highlight_border pseudo_input">
-            <textarea
-                *ngIf="files[activeFile]"
-                class="padding_big vertical_align_bottom"
-                [(ngModel)]="files[activeFile].content"
-                (change)="saveFilesLocalStorage(files)"
-                [ngClass]="{
-                    rounded_tl: activeFile !== 0,
-                }"
-            ></textarea>
-        </div>
-
-        <div class="box padding pseudo_input hover_highlight_border bg flex_row mono">
-            @if (highlightedSystemAction()) {
-                <span class="margin_r preserve_whitespace {{
-                    highlightedSystemAction()?.color ?? ''
-                }}">{{highlightedSystemAction()?.command + " "}}</span>
-            }
-            <input
-            #controlBar
-            [placeholder]="highlightedSystemAction()?.advice ?? 'Type here to control shortrest'"
-            rows="1"
-            (keydown)="systemBarOnKeyDown($event)"
-            (keyup)="systemBarOnKeyUp($event)"
-        >
-        </div>
+  <!-- CENTER AREA -->
+  <div class="flex_col grow">
+    <div
+      class="box rounded_tr margin_b padding pseudo_input hover_highlight_border bg flex_row mono"
+    >
+      @if (highlightedSystemAction()) {
+      <span
+        class="margin_r preserve_whitespace {{
+          highlightedSystemAction()?.color ?? ''
+        }}"
+        >{{ highlightedSystemAction()?.command + " " }}</span
+      >
+      }
+      <input
+        #controlBar
+        [placeholder]="
+          highlightedSystemAction()?.advice ?? 'Type here to control shortrest'
+        "
+        rows="1"
+        (keydown)="systemBarOnKeyDown($event)"
+        (keyup)="systemBarOnKeyUp($event)"
+      />
+      <span class="icon rounded  iconoir-open-book margin_r fg4"></span>
+      <span class="icon rounded iconoir-edit-pencil"></span>
     </div>
+    <div class="grow bg flex_row box rounded_br hover_highlight_border pseudo_input">
+      <textarea
+        *ngIf="this.activeFile()"
+        class="padding_big vertical_align_bottom"
+        [(ngModel)]="this.activeFile().content"
+        (ngModelChange)="saveActiveArchive()"
+      ></textarea>
+    </div>
+  </div>
 
-    <!-- RIGHT SIDEBAR -->
-    <app-author-assistant
-        #authorAssistant
-        class="margin_l flex_col justify_between min_width_max_content overflow_hidden"
-        [llm]="llm"
-        [file]="files[activeFile]"
-        (token)="onToken($event)"
-    ></app-author-assistant>
+  <!-- RIGHT SIDEBAR -->
+  <app-author-assistant
+    #rightSidebar
+    class="margin_l flex_col justify_between min_width_max_content overflow_hidden"
+    [llm]="llm"
+    [file]="activeFile()"
+    (token)="onToken($event)"
+  ></app-author-assistant>
 </div>

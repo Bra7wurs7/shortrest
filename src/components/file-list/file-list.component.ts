@@ -1,5 +1,5 @@
 import { Component, input, output } from "@angular/core";
-import { NamedNode } from "../../models/node.model";
+import { FileContent } from "../../models/file-content.model";
 import { CommonModule } from "@angular/common";
 import { ParseNamePipe } from "../../pipes/parse-name.pipe";
 
@@ -10,11 +10,11 @@ import { ParseNamePipe } from "../../pipes/parse-name.pipe";
   templateUrl: "./file-list.component.html",
 })
 export class FileListComponent {
-  files = input.required<NamedNode[]>();
-  fileActivated = output<number>();
+  files = input.required<Map<string, FileContent>>();
+  fileActivated = output<string>();
   activeFile = input.required<number | undefined>();
 
-  public onClickedFile(index: number) {
+  public onClickedFile(index: string) {
     this.fileActivated.emit(index);
   }
 }

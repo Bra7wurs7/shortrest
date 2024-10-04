@@ -43,6 +43,11 @@ $orange-dim: #d65d0e;
 $gray: #928374;
 $gray-dim: #a89984;
 
+$half-sidebar-width: 9vw;
+$sidebar-width: 18vw;
+$expanded-sidebar-width: 42vw;
+
+
 // Using local font for somewhat uniform look between browsers and operating systems
 @font-face {
     font-family: "geist";
@@ -62,7 +67,7 @@ $gray-dim: #a89984;
 // Style Variables
 
 // Style -> Spacing
-$border-radius: 13px;
+$border-radius: 7px;
 $padding: 5px;
 $smallpadding: 3px;
 $bigpadding: 6px;
@@ -76,7 +81,6 @@ $thicker-border-width: 2px;
 $border-color: $bg3;
 $border-color-highlighted: $bg3;
 $background-color: $bg_h;
-$foreground-color: $fg;
 
 // Style -> Fonts
 $sans: geist, sans;
@@ -97,7 +101,7 @@ body {
 :root {
     height: 100%;
     background-color: $background-color;
-    color: $foreground-color;
+    color: $fg;
     font-family: $sans;
 }
 
@@ -428,9 +432,9 @@ body {
     width: 100%;
 }
 
-.w_15vw {
+.sidebar_width {
     box-sizing: border-box;
-    width: 15vw;
+    width: $sidebar-width;
 }
 
 .bg_h {
@@ -471,6 +475,10 @@ body {
             );
         }
     }
+}
+
+.fg {
+    color: $fg !important;
 }
 
 .fg1 {

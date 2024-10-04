@@ -1,16 +1,16 @@
 import { Pipe, PipeTransform } from "@angular/core";
-import { ParsedNodeName } from "../models/node.model"; // Make sure to import the correct interface or model
+import { ParsedFileName } from "../models/parsed-file-name.model";
 
 @Pipe({
   name: "parseName",
   standalone: true,
 })
 export class ParseNamePipe implements PipeTransform {
-  transform(value: string): ParsedNodeName {
+  transform(value: string): ParsedFileName {
     const pattern = /^(?:\((.*?)\))? ?([^\.]+)?(?:\.(.*))?$/; // Matches the provided string format with optional groups for tags and extensions.
     const match = value.match(pattern);
 
-    let parsedNode: ParsedNodeName = {
+    let parsedNode: ParsedFileName = {
       name: "",
       tags: [],
       ext: "",
