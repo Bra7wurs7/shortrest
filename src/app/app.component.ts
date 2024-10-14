@@ -19,6 +19,7 @@ import { FormsModule } from '@angular/forms';
 import { SystemAction } from '../models/system-action.model';
 import { FileListComponent } from '../components/file-list/file-list.component';
 import { FileContent } from '../models/file-content.model';
+import { FilesService } from '../services/files/files.service';
 
 @Component({
   selector: 'app-root',
@@ -34,26 +35,17 @@ import { FileContent } from '../models/file-content.model';
 })
 export class AppComponent implements OnInit {
   @ViewChild('rightSidebar') rightSidebar!: AuthorAssistantComponent;
+  @ViewChild('controlBar') control_bar!: ElementRef<HTMLInputElement>;
+
+  filesService = inject(FilesService);
 
   title = 'shortrest';
 
-  allArchives: Map<string, Map<string, FileContent>> = new Map();
+  activeArchiveName: WritableSignal<string> = signal('Unnamed Archive');
+  activeArchiveFiles: Signal<Promise<string[]>> = computed(() => this.filesService.listFilesInArchive(this.activeArchiveName()));
 
-  activeArchiveName: WritableSignal<string> = signal('');
-  activeArchive: Signal<Map<string, FileContent>> = computed(
-    () => this.allArchives.get(this.activeArchiveName()) ?? new Map()
-  );
-
-  activeFileName: WritableSignal<string> = signal('');
-  activeFile: Signal<FileContent> = computed(
-    () =>
-      this.activeArchive().get(this.activeFileName()) ?? {
-        name: '',
-        content: '',
-      }
-  );
-
-  @ViewChild('controlBar') control_bar!: ElementRef<HTMLInputElement>;
+  activeFileName: string = '';
+  activeFile: string | Blob = '';
 
   protected system_actions: SystemAction[] = [
     {
@@ -63,10 +55,7 @@ export class AppComponent implements OnInit {
       icon: 'iconoir-page',
       command: 's',
       color: 'blue',
-      action: (value: HTMLInputElement) => {
-        this.openFile(this.activeArchive(), value.value);
-        this.editFile(value.value);
-      },
+      action: (value: HTMLInputElement) => {},
       highlighted: signal(false),
     },
     {
@@ -76,23 +65,17 @@ export class AppComponent implements OnInit {
       icon: 'iconoir-empty-page',
       command: 'n',
       color: 'green',
-      action: (value: HTMLInputElement) => {
-        this.newFile(this.activeArchive(), value.value);
-        this.openFile(this.activeArchive(), value.value);
-        this.editFile(value.value);
-      },
+      action: (value: HTMLInputElement) => {},
       highlighted: signal(false),
     },
     {
       visibleRegex: new RegExp(''),
-      name: 'Edit File',
-      advice: 'Enter the name of the file to edit',
+      name: 'Save File',
+      advice: 'Enter a name under which to save the current file',
       icon: 'iconoir-page-edit',
       command: 'e',
       color: 'yellow',
-      action: (value: HTMLInputElement) => {
-        this.editFile(value.value);
-      },
+      action: (value: HTMLInputElement) => {},
       highlighted: signal(false),
     },
     {
@@ -102,24 +85,18 @@ export class AppComponent implements OnInit {
       icon: 'iconoir-bin-half',
       command: 'r',
       color: 'red',
-      action: (value: HTMLInputElement) => {
-        this.removeFile(this.activeArchive(), value.value);
-      },
+      action: (value: HTMLInputElement) => {},
       highlighted: signal(false),
     },
     {
       visibleRegex: new RegExp('.*'),
       name: 'Add to prompt',
-      advice: 'Adds information from the named file to the right sidebar, for the AI to read',
+      advice:
+        'Adds information from the named file to the right sidebar, for the AI to read',
       icon: 'iconoir-bonfire',
       command: 'x',
       color: 'fire',
-      action: (value: HTMLInputElement) => {
-        const fileContent = this.activeArchive().get(value.value);
-        if (fileContent !== undefined) {
-          this.rightSidebar.addInformation(fileContent.content)
-        }
-      },
+      action: (value: HTMLInputElement) => {},
       highlighted: signal(false),
     },
   ];
@@ -144,8 +121,7 @@ export class AppComponent implements OnInit {
     params: {},
   };
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 
   /**
    * Triggered whenever the right sidebar emits a string token
@@ -155,7 +131,7 @@ export class AppComponent implements OnInit {
     if (token === '') {
       this.saveActiveArchive();
     } else {
-      this.activeFile().content += token;
+      this.activeFile += token;
     }
   }
 
@@ -240,34 +216,27 @@ export class AppComponent implements OnInit {
     return;
   }
 
-  newFile(map: Map<string, FileContent>, fileName: string) {
-    if (!map.has(fileName)) {
-      const newFile: FileContent = {
-        content: '',
-      };
-      map.set(fileName, newFile);
-      this.activeFileName.set(fileName);
-    }
+  newFile(fileName: string = 'nameless file') {
+    // @TODO Add save check for current file
+    this.activeFileName = fileName;
+    this.activeFile = '';
   }
 
-  removeFile(map: Map<string, FileContent>, fileName: string) {
-    if (map.has(fileName)) {
-      map.delete(fileName);
-      this.activeFileName.set('');
-    }
+  removeFile(fileName: string) {
+    this.filesService.removeFileFromArchive(this.activeArchiveName(), fileName);
   }
 
-  openFile(map: Map<string, FileContent>, fileName: string): boolean {
-    if (map.has(fileName)) {
-      this.activeFileName.set(fileName);
-      return true;
-    } else {
-      return false;
-    }
+  openFile(fileName: string) {
+    // @TODO Add save check for current file
+    this.activeFileName = fileName;
+    this.filesService
+      .getFileFromArchive(this.activeArchiveName(), fileName)
+      .then((fileContent) => (this.activeFile = fileContent));
   }
 
-  editFile(fileName: string): boolean {
-    return false;
+  saveFile(fileName: string) {
+    // @TODO add same fileName Check
+    this.filesService.saveFileToArchive(this.activeArchiveName(), fileName, this.activeFile);
   }
 
   deepCopy<A>(obj: A): A {

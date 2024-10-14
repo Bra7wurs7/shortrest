@@ -10,7 +10,7 @@ import { ParseNamePipe } from "../../pipes/parse-name.pipe";
   templateUrl: "./file-list.component.html",
 })
 export class FileListComponent {
-  files = input.required<Map<string, FileContent>>();
+  files = input.required<string[] | null>();
   fileActivated = output<string>();
   activeFile = input.required<number | undefined>();
 

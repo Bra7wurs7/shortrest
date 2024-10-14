@@ -1,5 +1,5 @@
 <div class="overflow_y_scroll flex_col grow">
-    @for (file of files(); track file[0]) {
+    @for (file of files() ?? []; track file) {
         <div
             class="hover_cursor_pointer transition_border_width user_select_none border_fg4 bg_h"
             [ngClass]="{
@@ -16,7 +16,7 @@
                     rounded_tl: $first,
                     rounded_bl: $last,
                 }"
-                (click)="onClickedFile(file[0])"
+                (click)="onClickedFile(file)"
             >
                 <div
                     class="align_items bg_h text_overflow_fade overflow_hidden grow flex"
@@ -26,8 +26,8 @@
                     }"
                 >
                     <span>
-                        {{ (file[0] | parseName).name }}
-                        @for (tag of (file[0] | parseName).tags; track tag) {
+                        {{ (file | parseName).name }}
+                        @for (tag of (file | parseName).tags; track tag) {
                             <span class="margin_l small_font color_bg3"
                                 >#{{ tag }}</span
                             >
@@ -36,7 +36,7 @@
                 </div>
                 <!-- File Extension -->
                 <div class="text-right align_items">
-                    {{ (file[0] | parseName).ext }}
+                    {{ (file | parseName).ext }}
                 </div>
             </div>
         </div>

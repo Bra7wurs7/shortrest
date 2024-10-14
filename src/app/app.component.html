@@ -29,9 +29,9 @@
           }
         </div>
       <app-file-list
-        [files]="activeArchive()"
+        [files]="activeArchiveFiles() | async"
         [activeFile]="0"
-        (fileActivated)="openFile(this.activeArchive(), $event)"
+        (fileActivated)="openFile($event)"
       ></app-file-list>
     </div>
   </div>
@@ -63,10 +63,10 @@
     </div>
     <div class="grow bg flex_row box rounded_br hover_highlight_border pseudo_input">
       <textarea
-        *ngIf="this.activeFile()"
         class="padding_big vertical_align_bottom"
-        [(ngModel)]="this.activeFile().content"
+        [(ngModel)]="this.activeFile"
         (ngModelChange)="saveActiveArchive()"
+        (keydown)="textInputOnKeyDown($event)"
       ></textarea>
     </div>
   </div>
@@ -76,7 +76,7 @@
     #rightSidebar
     class="margin_l flex_col justify_between min_width_max_content overflow_hidden"
     [llm]="llm"
-    [file]="activeFile()"
+    [file]="activeFile"
     (token)="onToken($event)"
   ></app-author-assistant>
 </div>

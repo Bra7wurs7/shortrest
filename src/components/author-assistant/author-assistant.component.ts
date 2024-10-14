@@ -19,7 +19,7 @@ import { FileContent } from "../../models/file-content.model";
   templateUrl: "./author-assistant.component.html",
 })
 export class AuthorAssistantComponent {
-  file = input.required<FileContent>();
+  file = input.required<string | Blob>();
   llm = input.required<SimpleHttpRequest>();
   token = output<string>();
 
@@ -118,7 +118,7 @@ export class AuthorAssistantComponent {
         {
           role: "assistant",
           content: `${
-            this.file().content.slice(-this.contextReadTokens * 8) as string
+            this.file().slice(-this.contextReadTokens * 8) as string
           }`,
         },
         {
@@ -185,7 +185,7 @@ export class AuthorAssistantComponent {
         },
         {
           role: "assistant",
-          content: this.file().content.slice(-this.readTokens * 4) as string,
+          content: this.file().slice(-this.readTokens * 4) as string,
         },
       ],
       options: {
