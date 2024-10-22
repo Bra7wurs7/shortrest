@@ -1,82 +1,131 @@
-<div class="flex_row h_100 grow overflow_hidden justify_strech">
-  <!-- LEFT SIDEBAR -->
-  <div class="flex_col justify_between overflow_hidden sidebar_width margin_r">
-    <div class="flex_col justify_between grow">
-        <div>
-          @for (system_action of system_actions; track system_action.command) {
-          <div
-            class="box flex_row padding hover_cursor_pointer fg4 hover_fg justify_between overflow_hidden margin_b {{
-              system_action.color
-            }}"
+<div class="flex_row h_100 justify_strech">
+    <!-- LEFT SIDEBAR -->
+    <div class="flex_col space_between margin_r sidebar_width">
+        <div
+            class="box margin_b padding pseudo_input hover_highlight_border flex_row mono"
             [ngClass]="{
-                              'highlight_border': system_action.highlighted(),
-                          }"
-            (click)="systemActionOnClick(system_action, controlBar)"
-            (mouseenter)="system_action.highlighted.set(true)"
-            (mouseleave)="system_action.highlighted.set(false)"
-          >
+                highlight_border: controlBar.value,
+            }"
+        >
+            @if (highlightedSystemAction()) {
+                <span
+                    class="margin_r preserve_whitespace {{
+                        highlightedSystemAction()?.color ?? ''
+                    }}"
+                    >{{ highlightedSystemAction()?.command + " " }}</span
+                >
+            }
+            <input
+                #controlBar
+                [placeholder]="
+                    highlightedSystemAction()?.advice ??
+                    'Type here to control shortrest'
+                "
+                (keydown)="systemBarOnKeyDown($event)"
+                (keyup)="systemBarOnKeyUp($event)"
+            />
+
             <span
-              class="bg_h text_overflow_fade overflow_hidden min_height_max_content grow"
-            >
-              {{ system_action.name }}
-            </span>
-            <span
-              class="icon margin_r {{ system_action.icon }} {{
-                system_action.highlighted() ? system_action.color : ''
-              }}"
+                class="icon rounded iconoir-edit-pencil"
+                [ngClass]="{
+                    fg4: !editMode,
+                    hover_cursor_pointer: !(editMode && !readMode),
+                }"
+                (click)="editMode = !editMode || !readMode"
             ></span>
-          </div>
-          }
+            <span
+                class="icon rounded iconoir-eye margin_r"
+                [ngClass]="{
+                    fg4: !readMode,
+                    hover_cursor_pointer: !(readMode && !editMode),
+                }"
+                (click)="readMode = !readMode || !editMode"
+            ></span>
         </div>
-      <app-file-list
-        [files]="activeArchiveFiles() | async"
-        [activeFile]="0"
-        (fileActivated)="openFile($event)"
-      ></app-file-list>
+        <div class="flex_col sidebar_width space_between grow">
+            <div>
+                @for (
+                    system_action of system_actions;
+                    track system_action.command
+                ) {
+                    <div
+                        class="box flex_row padding hover_cursor_pointer fg4 space_between overflow_hidden margin_b {{
+                            system_action.color
+                        }}"
+                        [ngClass]="{
+                            highlight_border: system_action.highlighted(),
+                            fg: system_action.highlighted(),
+                        }"
+                        (click)="systemActionOnClick(system_action, controlBar)"
+                        (mouseenter)="system_action.highlighted.set(true)"
+                        (mouseleave)="system_action.highlighted.set(false)"
+                    >
+                        <span
+                            class="bg_h text_overflow_fade overflow_hidden min_height_max_content grow"
+                        >
+                            {{ system_action.name }}
+                        </span>
+                        <span
+                            class="icon margin_r {{ system_action.icon }} {{
+                                system_action.highlighted()
+                                    ? system_action.color
+                                    : ''
+                            }}"
+                        ></span>
+                    </div>
+                }
+            </div>
+            <app-file-list
+                [files]="activeArchiveFiles | filterFiles: controlBar.value"
+                [activeFile]="this.activeFileName"
+                [systemBar]="controlBar.value"
+                (fileActivated)="openFile($event)"
+                (wheel)="
+                    scrollIndexIncrementDecrement(
+                        true,
+                        $event,
+                        activeArchiveFiles
+                    )
+                "
+            >
+            </app-file-list>
+        </div>
     </div>
-  </div>
 
-  <!-- CENTER AREA -->
-  <div class="flex_col grow">
-    <div
-      class="box rounded_tr margin_b padding pseudo_input hover_highlight_border bg flex_row mono"
-    >
-      @if (highlightedSystemAction()) {
-      <span
-        class="margin_r preserve_whitespace {{
-          highlightedSystemAction()?.color ?? ''
-        }}"
-        >{{ highlightedSystemAction()?.command + " " }}</span
-      >
-      }
-      <input
-        #controlBar
-        [placeholder]="
-          highlightedSystemAction()?.advice ?? 'Type here to control shortrest'
-        "
-        rows="1"
-        (keydown)="systemBarOnKeyDown($event)"
-        (keyup)="systemBarOnKeyUp($event)"
-      />
-      <span class="icon rounded  iconoir-open-book margin_r fg4"></span>
-      <span class="icon rounded iconoir-edit-pencil"></span>
-    </div>
-    <div class="grow bg flex_row box rounded_br hover_highlight_border pseudo_input">
-      <textarea
-        class="padding_big vertical_align_bottom"
-        [(ngModel)]="this.activeFile"
-        (ngModelChange)="saveActiveArchive()"
-        (keydown)="textInputOnKeyDown($event)"
-      ></textarea>
-    </div>
-  </div>
+    <!-- CENTER AREA -->
+    <div class="flex_col grow">
+        <div class="grow bg flex_row rounded_r overflow_hidden justify_end">
+            @if (editMode) {
+                <textarea
+                    class="bg box rounded_r padding_big vertical_align_bottom hover_highlight_border"
+                    [ngClass]="{
+                        w_50: editMode && readMode,
+                        rounded_r: !(editMode && readMode),
+                    }"
+                    [(ngModel)]="this.activeFile"
+                    (ngModelChange)="saveActiveArchive()"
+                    (keydown)="textInputOnKeyDown($event)"
+                ></textarea>
+            }
 
-  <!-- RIGHT SIDEBAR -->
-  <app-author-assistant
-    #rightSidebar
-    class="margin_l flex_col justify_between min_width_max_content overflow_hidden"
-    [llm]="llm"
-    [file]="activeFile"
-    (token)="onToken($event)"
-  ></app-author-assistant>
+            @if (readMode) {
+                <div
+                    class="w_50 bg_s padding overflow_y_scroll"
+                    [ngClass]="{
+                        w_50: editMode && readMode,
+                    }"
+                    [innerHtml]="this.activeFile | parseMarkdown | async"
+                ></div>
+            }
+        </div>
+    </div>
+
+    <!-- RIGHT SIDEBAR -->
+    <app-author-assistant
+        #rightSidebar
+        class="margin_l flex_col space_between"
+        [llm]="llm"
+        [file]="activeFile"
+        (token)="onToken($event)"
+    ></app-author-assistant>
 </div>

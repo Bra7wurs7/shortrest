@@ -7,6 +7,7 @@ export interface SystemAction {
   icon: string;
   command: string;
   color: string;
-  action: (param: HTMLInputElement) => void;
+  action: (self: SystemAction, param: HTMLInputElement) => void;
+  paramRequired: boolean;
   highlighted: WritableSignal<boolean>;
 }

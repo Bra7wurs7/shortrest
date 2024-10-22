@@ -1,23 +1,21 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { AuthorAssistantComponent } from "../src/components/author-assistant.component";
 
-import { AuthorAssistantComponent } from './author-assistant.component';
-
-describe('AuthorAssistantComponent', () => {
+describe("AuthorAssistantComponent", () => {
   let component: AuthorAssistantComponent;
   let fixture: ComponentFixture<AuthorAssistantComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AuthorAssistantComponent]
-    })
-    .compileComponents();
-    
+      imports: [AuthorAssistantComponent],
+    }).compileComponents();
+
     fixture = TestBed.createComponent(AuthorAssistantComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 });
