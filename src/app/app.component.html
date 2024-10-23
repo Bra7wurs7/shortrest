@@ -23,6 +23,7 @@
                 "
                 (keydown)="systemBarOnKeyDown($event)"
                 (keyup)="systemBarOnKeyUp($event)"
+                (blur)="onBlurSystemBar()"
             />
 
             <span
@@ -76,6 +77,7 @@
                 }
             </div>
             <app-file-list
+                #fileList
                 [files]="activeArchiveFiles | filterFiles: controlBar.value"
                 [activeFile]="this.activeFileName"
                 [systemBar]="controlBar.value"

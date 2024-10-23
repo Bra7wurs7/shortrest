@@ -38,6 +38,7 @@ import { FilterFilesPipe } from "../pipes/filter-files.pipe";
 })
 export class AppComponent {
   @ViewChild("rightSidebar") rightSidebar!: AuthorAssistantComponent;
+  @ViewChild("fileList") fileList!: FileListComponent;
   @ViewChild("controlBar") control_bar!: ElementRef<HTMLInputElement>;
 
   filesService = inject(FilesService);
@@ -202,6 +203,7 @@ export class AppComponent {
   }
 
   systemBarOnKeyDown(e: KeyboardEvent) {
+    console.log(e);
     const action = this.highlightedSystemAction();
     const index = this.highlightedSystemActionIndex();
     switch (e.key) {
@@ -238,6 +240,9 @@ export class AppComponent {
           action.highlighted.set(false);
         }
         break;
+      case "Tab":
+        this.fileList.tabHighlightedFile();
+        e.preventDefault();
     }
   }
 
@@ -309,6 +314,10 @@ export class AppComponent {
 
   deepCopy<A>(obj: A): A {
     return JSON.parse(JSON.stringify(obj));
+  }
+
+  onBlurSystemBar() {
+    this.fileList.resetHighlightedFile();
   }
 
   scrollIncrementDecrement(

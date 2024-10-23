@@ -24,7 +24,8 @@ import { ParseNamePipe } from "../pipes/parse-name.pipe";
               bg_h: activeFile() !== file,
               rounded_tl: $first,
               rounded_bl: $last,
-              highlight_border: file === systemBar(),
+              highlight_border:
+                file === systemBar() || $index === highlightedFile,
             }"
             (click)="onClickedFile(file)"
           >
@@ -58,6 +59,18 @@ export class FileListComponent {
   files = input.required<string[] | null>();
   fileActivated = output<string>();
   activeFile = input.required<string | undefined>();
+  highlightedFile: number = -1;
+
+  public tabHighlightedFile() {
+    const files = this.files();
+    if (files !== null) {
+      this.highlightedFile = (this.highlightedFile + 1) % files.length;
+    }
+  }
+
+  public resetHighlightedFile() {
+    this.highlightedFile = -1;
+  }
 
   public onClickedFile(index: string) {
     this.fileActivated.emit(index);
