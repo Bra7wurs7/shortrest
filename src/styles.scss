@@ -45,7 +45,7 @@ $gray-dim: #a89984;
 
 $half-sidebar-width: 9vw;
 $sidebar-width: 18vw;
-$expanded-sidebar-width: 42vw;
+$expanded-sidebar-width: 42vw; 
 
 // Using local font for somewhat uniform look between browsers and operating systems
 @font-face {
@@ -85,6 +85,9 @@ $background-color: $bg_h;
 $sans: geist, sans;
 $mono: geist-mono, mono;
 $serif: bitter, serif;
+
+// Style -> Icons
+$icon: 20px;
 
 html {
     height: 100%;
@@ -368,6 +371,22 @@ img {
     padding-left: $smallpadding;
 }
 
+.padding_b {
+    padding-bottom: $padding;
+}
+
+.padding_l {
+    padding-left: $padding;
+}
+
+.padding_r {
+    padding-right: $padding;
+}
+
+.padding_t {
+    padding-top: $padding;
+}
+
 .margin {
     margin: $margin;
 }
@@ -589,7 +608,7 @@ img {
 }
 
 .icon {
-    font-size: 20px;
+    font-size: $icon;
 }
 
 .mini {

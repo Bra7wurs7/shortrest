@@ -13,7 +13,6 @@ import {
   WritableSignal,
 } from "@angular/core";
 import { RouterOutlet } from "@angular/router";
-import { AuthorAssistantComponent } from "../components/author-assistant.component";
 import { SimpleHttpRequest } from "../models/simple-http-request.model";
 import { FormsModule } from "@angular/forms";
 import { SystemAction } from "../models/system-action.model";
@@ -21,6 +20,10 @@ import { FileListComponent } from "../components/file-list.component";
 import { FilesService } from "../services/files/files.service";
 import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
 import { FilterFilesPipe } from "../pipes/filter-files.pipe";
+import { HttpFetchWrapperService } from "../services/http-client-wrapper/http-fetch-wrapper.service";
+import { OllamaChatBody, OllamaChatResponse } from "../models/ollama";
+import { Context } from "../models/context.model";
+import { PromptComponent } from "../components/prompt.component";
 
 @Component({
   selector: "app-root",
@@ -28,20 +31,20 @@ import { FilterFilesPipe } from "../pipes/filter-files.pipe";
   imports: [
     RouterOutlet,
     CommonModule,
-    AuthorAssistantComponent,
     FormsModule,
     FileListComponent,
     ParseMarkdownPipe,
     FilterFilesPipe,
+    PromptComponent
   ],
   templateUrl: "./app.component.html",
 })
 export class AppComponent {
-  @ViewChild("rightSidebar") rightSidebar!: AuthorAssistantComponent;
   @ViewChild("fileList") fileList!: FileListComponent;
   @ViewChild("controlBar") control_bar!: ElementRef<HTMLInputElement>;
 
   filesService = inject(FilesService);
+  protected http = inject(HttpFetchWrapperService);
 
   title = "shortrest";
 
@@ -132,7 +135,7 @@ export class AppComponent {
       action: (self: SystemAction, system_input: HTMLInputElement) => {
         this.filesService
           .getFileFromArchive(this.activeArchiveName, system_input.value)
-          .then((file) => this.rightSidebar.addInformation(file));
+          .then((file) => this.addInformation(file));
       },
       highlighted: signal(false),
       paramRequired: false,
@@ -161,6 +164,7 @@ export class AppComponent {
 
   constructor() {
     this.updateActiveArchiveFiles();
+    this.loadContext();
   }
 
   updateActiveArchiveFiles() {
@@ -203,24 +207,30 @@ export class AppComponent {
   }
 
   systemBarOnKeyDown(e: KeyboardEvent) {
-    console.log(e);
-    const action = this.highlightedSystemAction();
-    const index = this.highlightedSystemActionIndex();
+    const highlightedSystemAction = this.highlightedSystemAction();
+    const highlightedSystemActionIndex = this.highlightedSystemActionIndex();
     switch (e.key) {
       case "ArrowUp":
         e.preventDefault();
-        if (index !== -1) {
-          const newIndex = index - 1;
-          this.system_actions[index].highlighted.set(false);
+        if (highlightedSystemActionIndex !== -1) {
+          const newIndex = highlightedSystemActionIndex - 1;
+          this.system_actions[highlightedSystemActionIndex].highlighted.set(
+            false,
+          );
           if (newIndex >= 0)
             this.system_actions[newIndex].highlighted.set(true);
+        } else {
+          this.fileList.iterateHighlightedFiles();
         }
+
         break;
       case "ArrowDown":
         e.preventDefault();
-        const newIndex = index + 1;
-        if (index !== -1) {
-          this.system_actions[index].highlighted.set(false);
+        const newIndex = highlightedSystemActionIndex + 1;
+        if (highlightedSystemActionIndex !== -1) {
+          this.system_actions[highlightedSystemActionIndex].highlighted.set(
+            false,
+          );
         }
         if (newIndex < this.system_actions.length) {
           this.system_actions[newIndex].highlighted.set(true);
@@ -228,20 +238,26 @@ export class AppComponent {
         break;
       case "Enter":
         if (e.ctrlKey) {
-          this.rightSidebar.buildPrompt();
+          this.buildPrompt();
         }
-        if (action) {
-          action.action(action, this.control_bar.nativeElement);
+        if (highlightedSystemAction) {
+          highlightedSystemAction.action(
+            highlightedSystemAction,
+            this.control_bar.nativeElement,
+          );
           //this.control_bar.nativeElement.value = "";
         }
         break;
       case "Backspace":
-        if (this.control_bar.nativeElement.value === "" && action) {
-          action.highlighted.set(false);
+        if (
+          this.control_bar.nativeElement.value === "" &&
+          highlightedSystemAction
+        ) {
+          highlightedSystemAction.highlighted.set(false);
         }
         break;
       case "Tab":
-        this.fileList.tabHighlightedFile();
+        this.fileList.iterateHighlightedFiles();
         e.preventDefault();
     }
   }
@@ -270,7 +286,7 @@ export class AppComponent {
     switch (e.key) {
       case "Enter":
         if (e.ctrlKey) {
-          this.rightSidebar.buildPrompt();
+          this.buildPrompt();
         }
         break;
     }
@@ -359,5 +375,135 @@ export class AppComponent {
       index = index - 1 < 0 ? activeArchiveFiles.length - 1 : index - 1; // Wrap around to the end if we're at the beginning
     }
     this.openFile(activeArchiveFiles[index]);
+  }
+
+  protected context_prompts: Context[] = [];
+  protected readTokens: string = '384';
+  protected writeTokens: string = '128';
+
+  protected contextReadTokens: string = '1024';
+  protected contextWriteTokens: string = '256';
+
+  protected advancedSettings: boolean = false;
+
+  protected seed: number = 0;
+  protected temperature: number = 0.5;
+  protected top_k: number = 1;
+
+  public addInformation(information: string | Blob) {
+    if (information instanceof Blob) {
+      throw Error('Not Implemented');
+    }
+    this.context_prompts.push({
+      collapsed: false,
+      visible: false,
+      type: 'static',
+      content: information,
+      dynamic_content: '',
+    });
+  }
+
+  protected onAddContextClick() {
+    this.context_prompts.push({
+      collapsed: false,
+      type: 'static',
+      content: '',
+      dynamic_content: '',
+      visible: true,
+    });
+    this.saveContext();
+  }
+
+  protected onRemoveContextClick(i: number) {
+    this.context_prompts.splice(i, 1);
+    this.saveContext();
+  }
+
+  protected saveContext() {
+    localStorage.setItem('context', JSON.stringify(this.context_prompts));
+  }
+
+  protected loadContext() {
+    const context = localStorage.getItem('context');
+    if (context) {
+      this.context_prompts = JSON.parse(context);
+    }
+  }
+
+  protected computeContexts() {
+    for (const context of this.context_prompts) {
+      switch (context.type) {
+        case 'dynamic':
+          //this.computeDynamicContext(context);
+          break;
+        case 'static':
+          break;
+      }
+    }
+  }
+
+  public buildPrompt(): SimpleHttpRequest {
+    const activeContexts: Context[] = this.context_prompts.filter(
+      (c) => c.visible
+    );
+    const body: OllamaChatBody = {
+      model: 'dolphin-mistral',
+      format: 'json',
+      stream: true,
+      max_tokens: +this.writeTokens,
+      messages: [
+        {
+          role: 'system',
+          content: activeContexts
+            .map((c) => {
+              switch (c.type) {
+                case 'dynamic':
+                  return c.dynamic_content;
+                  break;
+                case 'static':
+                  return c.content;
+                  break;
+              }
+            })
+            .join('\n'),
+        },
+        {
+          role: 'assistant',
+          content: this.activeFile.slice(-this.readTokens * 4) as string,
+        },
+      ],
+      options: {
+        temperature: this.temperature,
+        seed: this.seed,
+        top_k: this.top_k,
+      },
+    };
+
+    this.http.streamPrompt({ ...this.llm, body: body }).then((o) => {
+      const sub = o?.subscribe((streamFragment) => {
+        const asTyped = streamFragment as unknown as OllamaChatResponse[];
+        for (const fragment of asTyped) {
+          this.onToken(fragment.choices[0].delta.content);
+          if (fragment.done) {
+            sub?.unsubscribe();
+            this.computeContexts();
+            this.saveActiveArchive();
+            if (this.advancedSettings) {
+              this.onClickReloadDynamicContexts();
+            }
+          }
+        }
+      });
+    });
+
+    return { ...this.llm, body: body };
+  }
+
+  protected onClickReloadDynamicContexts() {
+    for (const context of this.context_prompts) {
+      if (context.type === 'dynamic') {
+        //this.computeDynamicContext(context);
+      }
+    }
   }
 }

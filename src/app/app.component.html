@@ -1,133 +1,281 @@
 <div class="flex_row h_100 justify_strech">
-    <!-- LEFT SIDEBAR -->
-    <div class="flex_col space_between margin_r sidebar_width">
-        <div
-            class="box margin_b padding pseudo_input hover_highlight_border flex_row mono"
-            [ngClass]="{
+  <!-- LEFT SIDEBAR -->
+  <div class="flex_col space_between margin_r sidebar_width">
+    <div
+      class="box margin_b padding pseudo_input hover_highlight_border flex_row mono"
+      [ngClass]="{
                 highlight_border: controlBar.value,
             }"
-        >
-            @if (highlightedSystemAction()) {
-                <span
-                    class="margin_r preserve_whitespace {{
-                        highlightedSystemAction()?.color ?? ''
-                    }}"
-                    >{{ highlightedSystemAction()?.command + " " }}</span
-                >
-            }
-            <input
-                #controlBar
-                [placeholder]="
-                    highlightedSystemAction()?.advice ??
-                    'Type here to control shortrest'
-                "
-                (keydown)="systemBarOnKeyDown($event)"
-                (keyup)="systemBarOnKeyUp($event)"
-                (blur)="onBlurSystemBar()"
-            />
-
-            <span
-                class="icon rounded iconoir-edit-pencil"
-                [ngClass]="{
-                    fg4: !editMode,
-                    hover_cursor_pointer: !(editMode && !readMode),
-                }"
-                (click)="editMode = !editMode || !readMode"
-            ></span>
-            <span
-                class="icon rounded iconoir-eye margin_r"
-                [ngClass]="{
-                    fg4: !readMode,
-                    hover_cursor_pointer: !(readMode && !editMode),
-                }"
-                (click)="readMode = !readMode || !editMode"
-            ></span>
-        </div>
-        <div class="flex_col sidebar_width space_between grow">
-            <div>
-                @for (
-                    system_action of system_actions;
-                    track system_action.command
-                ) {
-                    <div
-                        class="box flex_row padding hover_cursor_pointer fg4 space_between overflow_hidden margin_b {{
-                            system_action.color
-                        }}"
-                        [ngClass]="{
+    >
+      @if (highlightedSystemAction()) {
+      <span
+        class="margin_r preserve_whitespace {{
+          highlightedSystemAction()?.color ?? ''
+        }}"
+        >{{ highlightedSystemAction()?.command + " " }}</span
+      >
+      }
+      <input
+        #controlBar
+        [placeholder]="
+          highlightedSystemAction()?.advice ?? 'Type here to control shortrest'
+        "
+        (keydown)="systemBarOnKeyDown($event)"
+        (keyup)="systemBarOnKeyUp($event)"
+        (blur)="onBlurSystemBar()"
+      />
+      <span
+        class="icon rounded iconoir-check fg4 hover_cursor_pointer hover_fg"
+      ></span>
+      <span
+        class="icon rounded iconoir-xmark fg4 hover_cursor_pointer hover_fg"
+        (click)="controlBar.value = ''"
+      ></span>
+    </div>
+    <div class="flex_col sidebar_width space_between grow">
+      <div>
+        @for ( system_action of system_actions; track system_action.command ) {
+        <div
+          class="box flex_row padding hover_cursor_pointer fg4 space_between overflow_hidden margin_b {{
+            system_action.color
+          }}"
+          [ngClass]="{
                             highlight_border: system_action.highlighted(),
                             fg: system_action.highlighted(),
                         }"
-                        (click)="systemActionOnClick(system_action, controlBar)"
-                        (mouseenter)="system_action.highlighted.set(true)"
-                        (mouseleave)="system_action.highlighted.set(false)"
-                    >
-                        <span
-                            class="bg_h text_overflow_fade overflow_hidden min_height_max_content grow"
-                        >
-                            {{ system_action.name }}
-                        </span>
-                        <span
-                            class="icon margin_r {{ system_action.icon }} {{
-                                system_action.highlighted()
-                                    ? system_action.color
-                                    : ''
-                            }}"
-                        ></span>
-                    </div>
-                }
-            </div>
-            <app-file-list
-                #fileList
-                [files]="activeArchiveFiles | filterFiles: controlBar.value"
-                [activeFile]="this.activeFileName"
-                [systemBar]="controlBar.value"
-                (fileActivated)="openFile($event)"
-                (wheel)="
-                    scrollIndexIncrementDecrement(
-                        true,
-                        $event,
-                        activeArchiveFiles
-                    )
-                "
-            >
-            </app-file-list>
+          (click)="systemActionOnClick(system_action, controlBar)"
+          (mouseenter)="system_action.highlighted.set(true)"
+          (mouseleave)="system_action.highlighted.set(false)"
+        >
+          <span
+            class="bg_h text_overflow_fade overflow_hidden min_height_max_content grow"
+          >
+            {{ system_action.name }}
+          </span>
+          <span
+            class="icon {{ system_action.icon }} {{
+              system_action.highlighted() ? system_action.color : ''
+            }}"
+          ></span>
         </div>
+        }
+      </div>
+      <div>
+        <div class="border_b border_bg flex_row justify_end">
+          <span
+            class="icon rounded iconoir-code"
+            [ngClass]="{
+                            fg4: !editMode,
+                            hover_cursor_pointer: !(editMode && !readMode),
+                        }"
+            (click)="editMode = !editMode || !readMode"
+          ></span>
+          <span
+            class="icon rounded iconoir-edit-pencil"
+            [ngClass]="{
+                            fg4: !editMode,
+                            hover_cursor_pointer: !(editMode && !readMode),
+                        }"
+            (click)="editMode = !editMode || !readMode"
+          ></span>
+          <span
+            class="icon rounded iconoir-open-book"
+            [ngClass]="{
+                            fg4: !readMode,
+                            hover_cursor_pointer: !(readMode && !editMode),
+                        }"
+            (click)="readMode = !readMode || !editMode"
+          ></span>
+          <span
+            class="icon rounded iconoir-floppy-disk-arrow-in"
+            [ngClass]="{
+                            fg4: !editMode,
+                            hover_cursor_pointer: !(editMode && !readMode),
+                        }"
+            (click)="editMode = !editMode || !readMode"
+          ></span>
+        </div>
+        <app-file-list
+          #fileList
+          [files]="activeArchiveFiles | filterFiles : controlBar.value"
+          [activeFile]="this.activeFileName"
+          [systemBar]="controlBar.value"
+          (fileActivated)="
+            controlBar.value === $event
+              ? openFile($event)
+              : (controlBar.value = $event)
+          "
+          (wheel)="
+            scrollIndexIncrementDecrement(true, $event, activeArchiveFiles)
+          "
+        >
+        </app-file-list>
+      </div>
     </div>
+  </div>
 
-    <!-- CENTER AREA -->
-    <div class="flex_col grow">
-        <div class="grow bg flex_row rounded_r overflow_hidden justify_end">
-            @if (editMode) {
-                <textarea
-                    class="bg box rounded_r padding_big vertical_align_bottom hover_highlight_border"
-                    [ngClass]="{
+  <!-- CENTER AREA -->
+  <div class="flex_col grow">
+    <div class="grow bg flex_row rounded_r overflow_hidden justify_end">
+      @if (editMode) {
+      <textarea
+        class="bg box rounded_r padding_big vertical_align_bottom hover_highlight_border"
+        [ngClass]="{
                         w_50: editMode && readMode,
                         rounded_r: !(editMode && readMode),
                     }"
-                    [(ngModel)]="this.activeFile"
-                    (ngModelChange)="saveActiveArchive()"
-                    (keydown)="textInputOnKeyDown($event)"
-                ></textarea>
-            }
-
-            @if (readMode) {
-                <div
-                    class="w_50 bg_s padding overflow_y_scroll"
-                    [ngClass]="{
+        [(ngModel)]="this.activeFile"
+        (ngModelChange)="saveActiveArchive()"
+        (keydown)="textInputOnKeyDown($event)"
+      ></textarea>
+      } @if (readMode) {
+      <div
+        class="w_50 bg_s padding overflow_y_scroll"
+        [ngClass]="{
                         w_50: editMode && readMode,
                     }"
-                    [innerHtml]="this.activeFile | parseMarkdown | async"
-                ></div>
-            }
+        [innerHtml]="this.activeFile | parseMarkdown | async"
+      ></div>
+      }
+    </div>
+  </div>
+
+  <!-- RIGHT SIDEBAR -->
+  <div class="margin_l flex_col space_between">
+    <div
+      class="flex_col sidebar_width bg grow space_between overflow_hidden margin_b rounded_tl"
+    >
+      <div class="flex_col overflow_scroll">
+        @for (prompt of context_prompts; track prompt) {
+        <app-prompt
+          [prompt]="prompt"
+          [file]="activeFile"
+          [llm]="llm"
+          (remove)="onRemoveContextClick($index)"
+        ></app-prompt>
+        }
+        <div
+          class="box rounded padding flex_row space_between hover_highlight_border bg_s hover_cursor_pointer fg4 hover_fg"
+          [ngClass]="{
+            rounded_tr: context_prompts.length === 0,
+          }"
+          (click)="onAddContextClick()"
+        >
+          <span
+            class="overflow_hidden grow text_overflow_fade bg_s user_select_none"
+            >Provide information</span
+          >
+          <span class="icon iconoir-plus"></span>
         </div>
+      </div>
+
+      <div class="flex_col">
+        <div class="flex_row">
+          <div class="flex_row">
+            <div
+              class="flex_row rounded_tl box padding pseudo_input hover_highlight_border bg_h grow"
+              title="How many text tokens into the past the LLM gets to read before starting to produce a continuation."
+            >
+              <input
+                class="flex"
+                placeholder="Read Tokens"
+                [(ngModel)]="readTokens"
+              />
+              <span
+                class="icon iconoir-data-transfer-up hover_cursor_pointer fg4"
+              ></span>
+            </div>
+            <div
+              class="flex_row box padding pseudo_input hover_highlight_border bg_h grow"
+              title="The amount of new text tokens the LLM may produce before being terminated"
+            >
+              <input
+                class="flex"
+                placeholder="Write Tokens"
+                [(ngModel)]="writeTokens"
+              />
+              <span
+                class="icon iconoir-data-transfer-down hover_cursor_pointer fg4"
+              ></span>
+            </div>
+          </div>
+          <div class="flex_row">
+            <div
+              class="box flex_col centered_content padding fg4 hover_highlight_border bg_s"
+              title="Trigger a generation request for the current dynamic contexts"
+            >
+              <span
+                class="icon iconoir-reload-window hover_cursor_pointer"
+                (click)="onClickReloadDynamicContexts()"
+              ></span>
+            </div>
+            <div
+              class="box flex_col centered_content padding hover_highlight_border bg_s"
+              title="Automatically trigger a generation request for the current dynamic contexts when the text changes"
+              [ngClass]="{
+                fg1: advancedSettings,
+                fg4: !advancedSettings,
+              }"
+              (click)="advancedSettings = !advancedSettings"
+            >
+              <span class="icon iconoir-settings hover_cursor_pointer"></span>
+            </div>
+          </div>
+        </div>
+        @if(advancedSettings){
+        <div class="flex_row margin_t margin_b">
+          <div
+            class="flex_row box padding pseudo_input hover_highlight_border bg_h margin_r"
+            title="Seed: number that all random number generation is based on"
+          >
+            <input
+              class="flex"
+              placeholder="Randomness Seed"
+              [(ngModel)]="seed"
+            />
+            <span class="icon iconoir-soil-alt hover_cursor_pointer fg4"></span>
+          </div>
+          <div>
+            <div
+              class="flex_row box padding pseudo_input hover_highlight_border bg_h margin_b"
+              title="Randomness (temperature): higher settings make more probable next token options more likely"
+            >
+              <input
+                class="flex"
+                placeholder="Randomness"
+                [(ngModel)]="temperature"
+              />
+              <span
+                class="icon iconoir-dice-six hover_cursor_pointer fg4"
+              ></span>
+            </div>
+            <div
+              class="flex_row box padding pseudo_input hover_highlight_border bg_h"
+              title="Variety (top_k): the portion of next token options to consider at all"
+            >
+              <input class="flex" placeholder="Variety" [(ngModel)]="top_k" />
+              <span
+                class="icon iconoir-palette hover_cursor_pointer fg4"
+              ></span>
+            </div>
+          </div>
+        </div>
+        }
+      </div>
     </div>
 
-    <!-- RIGHT SIDEBAR -->
-    <app-author-assistant
-        #rightSidebar
-        class="margin_l flex_col space_between"
-        [llm]="llm"
-        [file]="activeFile"
-        (token)="onToken($event)"
-    ></app-author-assistant>
+    <div class="flex_col sidebar_width">
+      <div class="flex_row">
+        <div
+          class="box rounded_bl padding flex_row grow hover_cursor_pointer hover_highlight_border bg fg4 hover_fg overflow_hidden"
+          (click)="buildPrompt()"
+        >
+          <span class="overflow_hidden grow text_overflow_fade bg"
+            >Continue Text</span
+          >
+          <span class="icon iconoir-brain-electricity margin_r"></span>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

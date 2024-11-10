@@ -13,8 +13,6 @@ import { ParseNamePipe } from "../pipes/parse-name.pipe";
           class="hover_cursor_pointer transition_border_width user_select_none border_fg4 bg_h"
           [ngClass]="{
             thick_border_l: activeFile() === file,
-            rounded_tl: $first,
-            rounded_bl: $last,
           }"
         >
           <div
@@ -22,8 +20,6 @@ import { ParseNamePipe } from "../pipes/parse-name.pipe";
             [ngClass]="{
               bg: activeFile() === file,
               bg_h: activeFile() !== file,
-              rounded_tl: $first,
-              rounded_bl: $last,
               highlight_border:
                 file === systemBar() || $index === highlightedFile,
             }"
@@ -61,10 +57,17 @@ export class FileListComponent {
   activeFile = input.required<string | undefined>();
   highlightedFile: number = -1;
 
-  public tabHighlightedFile() {
+  public iterateHighlightedFiles() {
     const files = this.files();
-    if (files !== null) {
-      this.highlightedFile = (this.highlightedFile + 1) % files.length;
+    if (files !== null && this.highlightedFile !== 0) {
+      // Start from the last index and decrement to iterate backwards, but skip it when the first element is highlighted
+      this.highlightedFile =
+        this.highlightedFile === -1
+          ? files.length - 1
+          : this.highlightedFile - 1;
+    } else {
+      // If files are null or if the first element is highlighted, set it to none
+      this.resetHighlightedFile();
     }
   }
 
