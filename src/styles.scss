@@ -45,7 +45,7 @@ $gray-dim: #a89984;
 
 $half-sidebar-width: 9vw;
 $sidebar-width: 18vw;
-$expanded-sidebar-width: 42vw; 
+$expanded-sidebar-width: 42vw;
 
 // Using local font for somewhat uniform look between browsers and operating systems
 @font-face {
@@ -69,12 +69,12 @@ $expanded-sidebar-width: 42vw;
 $border-radius: 7px;
 $padding: 5px;
 $smallpadding: 3px;
-$bigpadding: 6px;
+$bigpadding: 5px;
 $margin: 3px;
 $smallmargin: 1px;
 $bigmarging: 7px;
-$border-width: 1px;
-$thicker-border-width: 2px;
+$border-width: 2px;
+$thicker-border-width: 4px;
 
 // Style -> Colors
 $border-color: $bg3;
@@ -89,6 +89,8 @@ $serif: bitter, serif;
 // Style -> Icons
 $icon: 20px;
 
+
+// Base HTML Element Styles
 html {
     height: 100%;
 }
@@ -98,6 +100,66 @@ body {
     height: 100%;
     margin: 0;
     padding: $smallpadding;
+}
+
+input {
+    /* Remove background color and borders */
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    box-sizing: border-box;
+    width: 100%;
+
+    /* Remove padding and margins */
+    padding: 0;
+    margin: 0;
+
+    /* Set font to inherit from parent element */
+    font-size: inherit;
+    font-family: inherit;
+
+    /* Reset text color, appearance and cursor */
+    color: inherit;
+    appearance: none;
+    -webkit-appearance: none;
+
+    &:focus {
+        outline: none;
+    }
+}
+
+textarea {
+    /* Remove background color and borders */
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+    box-sizing: border-box;
+    width: 100%;
+    resize: none;
+
+    /* Remove padding and margins */
+    padding: 0;
+    margin: 0;
+
+    /* Set font to inherit from parent element */
+    font-size: inherit;
+    font-family: inherit;
+
+    /* Reset text color, appearance and cursor */
+    color: inherit;
+    appearance: none;
+    -webkit-appearance: none;
+
+    &:focus {
+        outline: none;
+    }
+}
+
+a {
+    color: $blue-dim;
+    :visited {
+        color: $purple-dim;
+    }
 }
 
 table {
@@ -144,6 +206,10 @@ img {
     margin-left: $margin;
 }
 
+.box_sizing_border_box {
+    box-sizing: border-box;
+}
+
 :root {
     height: 100%;
     background-color: $background-color;
@@ -179,15 +245,6 @@ img {
     color: $orange;
 }
 
-.relative {
-    position: relative;
-}
-
-.align_text_bottom_left {
-    text-align: left;
-    vertical-align: bottom;
-}
-
 .vertical_align_bottom {
     vertical-align: bottom;
 }
@@ -196,11 +253,15 @@ img {
     user-select: none;
 }
 
-.box {
+.border {
     border: $border-width solid transparent;
 }
 
 .pseudo_input:has(> input:focus) {
+    border-color: $border-color-highlighted;
+}
+
+.border_on_focus:focus {
     border-color: $border-color-highlighted;
 }
 
@@ -238,13 +299,8 @@ img {
     }
 }
 
-.highlight_border_left {
+.border_l_highlighted {
     border-left-color: $border-color-highlighted;
-}
-
-.box_tbl {
-    border: $border-width solid transparent;
-    border-right: none;
 }
 
 .border_t {
@@ -263,27 +319,35 @@ img {
     border-left: $border-width solid transparent;
 }
 
-.thick_border_l {
+.border_l_thick {
     border-left: $thicker-border-width solid transparent;
 }
 
-.border_bg {
+.border_color_bg {
     border-color: $bg;
 }
 
-.border_bg_s {
+.border_color_bg_s {
     border-color: $bg_s;
 }
 
-.border_bg_h {
+.border_color_bg_h {
     border-color: $bg_h;
 }
 
-.border_fg4 {
+.border_color_fg4 {
     border-color: $fg4;
 }
 
-.small_font {
+.border_bottom_color_bg {
+    border-bottom-color: $bg;
+}
+
+.border_bottom_color_fg4 {
+    border-bottom-color: $fg4;
+}
+
+.font_size_small {
     font-size: small;
 }
 
@@ -293,12 +357,7 @@ img {
     align-items: center;
 }
 
-.box_tbl {
-    border: $border-width solid $border-color;
-    border-right: none;
-}
-
-.box_trl {
+.border_trl {
     border: $border-width solid $border-color;
     border-bottom: none;
 }
@@ -415,16 +474,6 @@ img {
     margin-bottom: $margin;
 }
 
-.pseudo_element {
-    padding-bottom: $smallpadding;
-    padding-right: $smallpadding;
-}
-
-.pseudo_border {
-    padding-bottom: $border-width;
-    padding-right: $border-width;
-}
-
 .flex_row {
     display: flex;
     flex-direction: row;
@@ -473,19 +522,6 @@ img {
     flex-grow: 1;
 }
 
-.min_width_max_content {
-    min-width: max-content;
-}
-
-.min_height_max_content {
-    min-height: max-content;
-}
-
-.shrink {
-    display: flex;
-    flex-shrink: 1;
-}
-
 .h_100 {
     height: 100%;
 }
@@ -506,7 +542,34 @@ img {
     width: 50%;
 }
 
-.sidebar_width {
+.w_34px_highlighted_w_150px {
+    width: 34px;
+    transition: width 0.1s;
+
+    &.highlighted {
+        width: 150px;
+    }
+}
+
+.max_w_0_highlighted_max_w_200px {
+    max-width: 0;
+    transition: max-width 0.1s;
+
+    &.highlighted {
+        max-width: 200px;
+    }
+}
+
+opacity_0_highlighted_opacity_1 {
+    opacity: 0;
+    transition: opacity 0.1s;
+
+    &.highlighted {
+        opacity: 1;
+    }
+}
+
+.width_sibedar_width {
     box-sizing: border-box;
     width: $sidebar-width;
 }
@@ -551,32 +614,28 @@ img {
     }
 }
 
-.fg {
+.color_fg {
     color: $fg !important;
 }
 
-.fg1 {
+.color_fg1 {
     color: $fg1;
 }
 
-.fg2 {
+.color_fg2 {
     color: $fg2;
 }
 
-.fg3 {
+.color_fg3 {
     color: $fg3;
 }
 
-.fg4 {
+.color_fg4 {
     color: $fg4;
 }
 
-.small_font {
-    font-size: small;
-}
-
-.color_bg3 {
-    color: $bg3;
+.color_border_color {
+    color: $border-color;
 }
 
 .text_overflow_fade {
@@ -603,26 +662,12 @@ img {
     }
 }
 
-.hover_fg:hover {
+.hover_color_fg:hover {
     color: $fg;
 }
 
 .icon {
     font-size: $icon;
-}
-
-.mini {
-    font-size: 10px;
-}
-
-.nano {
-    font-size: 8px;
-}
-
-.hover_bg_s {
-    &:hover {
-        background-color: $bg_s;
-    }
 }
 
 .hover_cursor_pointer {
@@ -639,89 +684,6 @@ img {
 
 .overflow_hidden {
     overflow: hidden;
-}
-
-.grid {
-    display: grid;
-}
-
-// Base HTML Element Styles
-input {
-    /* Remove background color and borders */
-    background-color: transparent;
-    border: none;
-    box-shadow: none;
-    box-sizing: border-box;
-    width: 100%;
-
-    /* Remove padding and margins */
-    padding: 0;
-    margin: 0;
-
-    /* Set font to inherit from parent element */
-    font-size: inherit;
-    font-family: inherit;
-
-    /* Reset text color, appearance and cursor */
-    color: inherit;
-    appearance: none;
-    -webkit-appearance: none;
-
-    &:focus {
-        outline: none;
-    }
-}
-
-textarea {
-    /* Remove background color and borders */
-    background-color: transparent;
-    border: none;
-    box-shadow: none;
-    box-sizing: border-box;
-    width: 100%;
-    resize: none;
-
-    /* Remove padding and margins */
-    padding: 0;
-    margin: 0;
-
-    /* Set font to inherit from parent element */
-    font-size: inherit;
-    font-family: inherit;
-
-    /* Reset text color, appearance and cursor */
-    color: inherit;
-    appearance: none;
-    -webkit-appearance: none;
-
-    &:focus {
-        outline: none;
-    }
-}
-
-a {
-    color: $blue-dim;
-    :visited {
-        color: $purple-dim;
-    }
-}
-
-.ProseMirror {
-    height: auto;
-    width: auto;
-    :first-child {
-        margin-top: 0;
-    }
-}
-
-.ProseMirror-focused {
-    outline: none;
-}
-
-.grid-container {
-    display: grid;
-    .grid-item {
-    }
 }
 
 .transition_border_width {

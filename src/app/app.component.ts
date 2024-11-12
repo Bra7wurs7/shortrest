@@ -80,7 +80,7 @@ export class AppComponent {
       visibleRegex: new RegExp(".*"),
       name: "New File",
       advice: "Enter new filename",
-      icon: "iconoir-empty-page",
+      icon: "iconoir-page-plus",
       command: "n",
       color: "green",
       action: (self: SystemAction, system_input: HTMLInputElement) => {
@@ -108,6 +108,22 @@ export class AppComponent {
       paramRequired: true,
     },
     {
+      visibleRegex: new RegExp(".*"),
+      name: "Add to prompt",
+      advice:
+        "Adds information from the named file to the right sidebar, for the AI to read",
+      icon: "iconoir-bonfire",
+      command: "x",
+      color: "fire",
+      action: (self: SystemAction, system_input: HTMLInputElement) => {
+        this.filesService
+          .getFileFromArchive(this.activeArchiveName, system_input.value)
+          .then((file) => this.addInformation(file));
+      },
+      highlighted: signal(false),
+      paramRequired: false,
+    },
+    {
       visibleRegex: new RegExp(""),
       name: "Remove File",
       advice: "Enter undesired filename",
@@ -123,22 +139,6 @@ export class AppComponent {
       },
       highlighted: signal(false),
       paramRequired: true,
-    },
-    {
-      visibleRegex: new RegExp(".*"),
-      name: "Add to prompt",
-      advice:
-        "Adds information from the named file to the right sidebar, for the AI to read",
-      icon: "iconoir-bonfire",
-      command: "x",
-      color: "fire",
-      action: (self: SystemAction, system_input: HTMLInputElement) => {
-        this.filesService
-          .getFileFromArchive(this.activeArchiveName, system_input.value)
-          .then((file) => this.addInformation(file));
-      },
-      highlighted: signal(false),
-      paramRequired: false,
     },
   ];
 

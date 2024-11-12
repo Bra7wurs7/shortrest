@@ -10,13 +10,13 @@ import { ParseNamePipe } from "../pipes/parse-name.pipe";
     <div class="overflow_y_scroll flex_col grow">
       @for (file of files() ?? []; track file) {
         <div
-          class="hover_cursor_pointer transition_border_width user_select_none border_fg4 bg_h"
+          class="hover_cursor_pointer transition_border_width user_select_none border_color_fg4 bg_h margin_b"
           [ngClass]="{
-            thick_border_l: activeFile() === file,
+            border_l_thick: activeFile() === file,
           }"
         >
           <div
-            class="flex_row box padding space_between align_items hover_highlight_border w-full"
+            class="flex_row border padding space_between align_items hover_highlight_border w-full"
             [ngClass]="{
               bg: activeFile() === file,
               bg_h: activeFile() !== file,
@@ -28,14 +28,13 @@ import { ParseNamePipe } from "../pipes/parse-name.pipe";
             <div
               class="align_items bg_h text_overflow_fade overflow_hidden grow flex"
               [ngClass]="{
-                fg4: false,
                 bg: activeFile() === file,
               }"
             >
               <span>
                 {{ (file | parseName).name }}
                 @for (tag of (file | parseName).tags; track tag) {
-                  <span class="margin_l small_font color_bg3">#{{ tag }}</span>
+                  <span class="margin_l font_size_small color_border_color">#{{ tag }}</span>
                 }
               </span>
             </div>
@@ -45,7 +44,6 @@ import { ParseNamePipe } from "../pipes/parse-name.pipe";
             </div>
           </div>
         </div>
-        <div class="pseudo_border"></div>
       }
     </div>
   `,
