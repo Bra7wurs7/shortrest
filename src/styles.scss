@@ -1,4 +1,4 @@
-// Color Scheme: GruvBox Dark
+// Dark Color Scheme: GruvBox Dark
 $bg_h: #1d2021;
 $bg: #282828;
 $bg_s: #32302f;
@@ -88,7 +88,6 @@ $serif: bitter, serif;
 
 // Style -> Icons
 $icon: 20px;
-
 
 // Base HTML Element Styles
 html {
@@ -216,6 +215,8 @@ img {
     color: $fg;
     font-family: $sans;
 }
+
+// Font
 
 .mono {
     font-family: $mono;
@@ -474,6 +475,76 @@ img {
     margin-bottom: $margin;
 }
 
+// Position
+.position_absolute {
+    position: absolute;
+}
+
+.position_relative {
+    position: relative;
+}
+
+.from_right {
+    left: 100%;
+    margin-left: $margin;
+}
+
+.from_left {
+    right: 100%;
+    margin-right: $margin;
+}
+
+.from_bottom {
+    top: 100%;
+    margin-top: $margin;
+}
+
+.from_top {
+    bottom: 100%;
+    margin-bottom: $margin;
+}
+
+.top_0 {
+    top: 0;
+}
+
+.max_width_sidebar_width {
+    max-width: $sidebar-width;
+    min-width: $sidebar-width;
+}
+
+.z_index_2 {
+    z-index: 2;
+}
+
+.z_index_5 {
+    z-index: 5;
+}
+
+/*
+.collapse_hide_until_parent_hover > * {
+    pointer-events: none;
+}
+*/
+
+.collapse_but_allow_revival {
+    transition:
+        visibility 0.15s,
+        opacity 0.1s ease;
+    opacity: 0;
+    visibility: collapse;
+    overflow: hidden;
+}
+
+.revive_children_on_hover:hover {
+    .collapse_but_allow_revival,
+    .collapse_but_allow_revival * {
+        transition: visibility 0.15s;
+        opacity: 1;
+        visibility: visible;
+    }
+}
+
 .flex_row {
     display: flex;
     flex-direction: row;
@@ -522,8 +593,12 @@ img {
     flex-grow: 1;
 }
 
-.h_100 {
+.height_1 {
     height: 100%;
+}
+
+.height_inherit {
+    height: inherit;
 }
 
 .h_auto {
@@ -574,6 +649,10 @@ opacity_0_highlighted_opacity_1 {
     width: $sidebar-width;
 }
 
+.width_inherit {
+    width: inherit;
+}
+
 .bg_h {
     background-color: $bg_h;
     &.text_overflow_fade {
@@ -614,6 +693,21 @@ opacity_0_highlighted_opacity_1 {
     }
 }
 
+.hover_bg_s:hover {
+    transition: background-color 0.1s ease-out;
+    background-color: $bg_s;
+}
+
+.hover_bg:hover {
+    transition: background-color 0.1s ease-out;
+    background-color: $bg;
+}
+
+.hover_bg_h:hover {
+    transition: background-color 0.1s ease-out;
+    background-color: $bg_h;
+}
+
 .color_fg {
     color: $fg !important;
 }
@@ -636,6 +730,10 @@ opacity_0_highlighted_opacity_1 {
 
 .color_border_color {
     color: $border-color;
+}
+
+.color_bg_s {
+    color: $bg_s;
 }
 
 .text_overflow_fade {
