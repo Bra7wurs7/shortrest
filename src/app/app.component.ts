@@ -56,7 +56,7 @@ import { ParseNamePipe } from "../pipes/parse-name.pipe";
             >
               <div class="flex_row space_between grow">
                 <span
-                  >⭥<span class="color_fg4 font_size_small">(Up/Down)</span>
+                  >⭥ <span class="color_fg4 font_size_small">(Down/Up)</span>
                 </span>
                 <span>Select File</span>
               </div>
@@ -158,7 +158,9 @@ import { ParseNamePipe } from "../pipes/parse-name.pipe";
             >
               List of other archives in the indexeddb
             </div>
-            <span class="border padding overflow_hidden text_overflow_fade">{{ activeArchiveName }}</span>
+            <span class="border padding overflow_hidden text_overflow_fade">{{
+              activeArchiveName
+            }}</span>
             <div>
               <span
                 class="border flex icon color_fg4 rounded_tl rounded_tr rounded_bl iconoir-archive padding hover_highlight_border hover_color_fg"
@@ -211,16 +213,17 @@ import { ParseNamePipe } from "../pipes/parse-name.pipe";
             }
           </div>
           <div class="flex_row grow margin_b">
-            <div
+            @for(openedFile of openedFileNames; track openedFile){
+              <div
               class="flex border padding margin_r hover_highlight_border hover_bg_s hover_cursor_pointer user_select_none"
+              [ngClass]="{
+                color_fg4: openedFile !== activeFileName,
+                hover_bg_s: openedFile === activeFileName
+                }"
             >
-              Apple
+              {{openedFile}}
             </div>
-            <div
-              class="flex border padding margin_r hover_highlight_border color_fg4 hover_cursor_pointer user_select_none"
-            >
-              Braeburn
-            </div>
+            }
           </div>
           <div class="flex_row margin_b">
             <div class="flex">
@@ -280,7 +283,9 @@ import { ParseNamePipe } from "../pipes/parse-name.pipe";
 
       <!-- RIGHT SIDEBAR -->
       <div class="margin_l flex_col space_between">
-        <div class="flex flex_row space_between overflow_hidden width_sibedar_width">
+        <div
+          class="flex flex_row space_between overflow_hidden width_sibedar_width"
+        >
           <div class="flex flex_row margin_b overflow_hidden">
             <div
               class="border overflow_hidden text_overflow_fade padding rounded_tl margin_r hover_highlight_border color_fg4 bg hover_cursor_pointer user_select_none"
@@ -469,6 +474,8 @@ export class AppComponent {
   activeFileName: string = "";
   activeFile: string | Blob = "";
 
+  openedFileNames: string[] = [];
+
   editMode: boolean = true;
   readMode: boolean = false;
 
@@ -502,6 +509,19 @@ export class AppComponent {
       color: "green",
       action: (self: SystemAction, system_input: HTMLInputElement) => {
         this.newFile(system_input.value);
+      },
+      highlighted: signal(false),
+      paramRequired: false,
+    },
+    {
+      visibleRegex: new RegExp(".*"),
+      name: "Edit File",
+      advice: "Enter filename",
+      icon: "iconoir-page-edit",
+      command: "e",
+      color: "yellow",
+      action: (self: SystemAction, system_input: HTMLInputElement) => {
+        this.editFile(system_input.value);
       },
       highlighted: signal(false),
       paramRequired: false,
@@ -677,15 +697,19 @@ export class AppComponent {
   }
 
   public iterateHighlightedFiles(steps: number) {
+    console.log("before: " + this.highlightedFile);
     const files = this.activeArchiveFiles;
     if (files !== null) {
-      // Calculate the new highlighted file index based on the current index and steps
+      const foo = this.highlightedFile + steps;
       this.highlightedFile =
-        (this.highlightedFile + steps + files.length) % files.length;
+        foo < 0 || foo >= files.length
+          ? -1
+          : (this.highlightedFile + steps + files.length) % files.length;
     } else {
       // If files are null, set it to none
       this.highlightedFile = -1;
     }
+    console.log("after: " + this.highlightedFile);
   }
 
   async saveActiveArchive() {
@@ -706,10 +730,18 @@ export class AppComponent {
 
   openFile(fileName: string) {
     // @TODO Add save check for current file
-    this.activeFileName = fileName;
+    this.openedFileNames.push(fileName);
+  }
+
+  editFile(fileName: string) {
+    // @TODO Add save check for current file
     this.filesService
       .getFileFromArchive(this.activeArchiveName, fileName)
       .then((fileContent) => (this.activeFile = fileContent));
+    this.activeFileName = fileName;
+    if (!this.openedFileNames.includes(fileName)) {
+      this.openedFileNames.push(fileName);
+    }
   }
 
   saveFile(fileName: string) {
@@ -770,7 +802,7 @@ export class AppComponent {
     } else {
       index = index - 1 < 0 ? activeArchiveFiles.length - 1 : index - 1; // Wrap around to the end if we're at the beginning
     }
-    this.openFile(activeArchiveFiles[index]);
+    this.editFile(activeArchiveFiles[index]);
   }
 
   protected context_prompts: Context[] = [];
