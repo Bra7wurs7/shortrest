@@ -4,6 +4,7 @@ import {
   computed,
   ElementRef,
   inject,
+  Signal,
   signal,
   ViewChild,
 } from "@angular/core";
@@ -179,50 +180,56 @@ import { ParseNamePipe } from "../pipes/parse-name.pipe";
               track system_action.command
             ) {
               <div
-                class="position_relative border box_sizing_border_box w_34px_highlighted_w_150px flex_row padding hover_cursor_pointer color_fg4 overflow_hidden margin_r revive_children_on_hover {{
-                  system_action.color
-                }}"
-                [ngClass]="{
-                  highlighted: system_action.highlighted(),
-                  highlight_border: system_action.highlighted(),
-                  color_fg: system_action.highlighted(),
-                }"
-                (click)="systemActionOnClick(system_action, controlBar)"
-                (mouseenter)="system_action.highlighted.set(true)"
-                (mouseleave)="system_action.highlighted.set(false)"
+                class="padding_r"
+                (mouseenter)="highlightedSystemActionIndex.set($index)"
+                (mouseleave)="highlightedSystemActionIndex.set(-1)"
               >
-                <span
-                  class="bg_h text_overflow_fade overflow_hidden grow max_w_0_highlighted_max_w_200px opacity_0_highlighted_opacity_1"
-                  [ngClass]="{
-                    highlighted: system_action.highlighted(),
-                  }"
-                >
-                  {{ system_action.name }}
-                </span>
-                <span
-                  class="icon {{ system_action.icon }} {{
-                    system_action.highlighted() ? system_action.color : ''
-                  }}"
-                ></span>
                 <div
-                  class="position_absolute border border_color_bg_s bg_h padding from_right top_0 rounded_r z_index_5"
+                  class="position_relative border box_sizing_border_box w_34px_highlighted_w_150px flex_row padding hover_cursor_pointer color_fg4 overflow_hidden revive_children_on_hover {{
+                    system_action.color
+                  }}"
+                  [ngClass]="{
+                    highlighted: $index === highlightedSystemActionIndex(),
+                    highlight_border: $index === highlightedSystemActionIndex(),
+                    color_fg: $index === highlightedSystemActionIndex(),
+                  }"
+                  (click)="systemActionOnClick(system_action, controlBar)"
                 >
-                  aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaah
+                  <span
+                    class="bg_h text_overflow_fade overflow_hidden grow max_w_0_highlighted_max_w_200px opacity_0_highlighted_opacity_1"
+                    [ngClass]="{
+                      highlighted: $index === highlightedSystemActionIndex(),
+                    }"
+                  >
+                    {{ system_action.name }}
+                  </span>
+                  <span
+                    class="icon {{ system_action.icon }} {{
+                      $index === highlightedSystemActionIndex()
+                        ? system_action.color
+                        : ''
+                    }}"
+                  ></span>
+                  <div
+                    class="position_absolute border border_color_bg_s bg_h padding from_right top_0 rounded_r z_index_5"
+                  >
+                    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaah
+                  </div>
                 </div>
               </div>
             }
           </div>
           <div class="flex_row grow margin_b">
-            @for(openedFile of openedFileNames; track openedFile){
+            @for (openedFile of openedFileNames; track openedFile) {
               <div
-              class="flex border padding margin_r hover_highlight_border hover_bg_s hover_cursor_pointer user_select_none"
-              [ngClass]="{
-                color_fg4: openedFile !== activeFileName,
-                hover_bg_s: openedFile === activeFileName
+                class="flex border padding margin_r hover_highlight_border hover_bg_s hover_cursor_pointer user_select_none"
+                [ngClass]="{
+                  color_fg4: openedFile !== activeFileName,
+                  hover_bg_s: openedFile === activeFileName,
                 }"
-            >
-              {{openedFile}}
-            </div>
+              >
+                {{ openedFile }}
+              </div>
             }
           </div>
           <div class="flex_row margin_b">
@@ -497,7 +504,6 @@ export class AppComponent {
           this.openFile(system_input.value);
         }
       },
-      highlighted: signal(false),
       paramRequired: true,
     },
     {
@@ -508,9 +514,13 @@ export class AppComponent {
       command: "n",
       color: "green",
       action: (self: SystemAction, system_input: HTMLInputElement) => {
-        this.newFile(system_input.value);
+        if (system_input.value == "") {
+          this.highlightSystemAction(this.system_actions, self);
+          system_input.select();
+        } else {
+          this.newFile(system_input.value);
+        }
       },
-      highlighted: signal(false),
       paramRequired: false,
     },
     {
@@ -521,9 +531,13 @@ export class AppComponent {
       command: "e",
       color: "yellow",
       action: (self: SystemAction, system_input: HTMLInputElement) => {
-        this.editFile(system_input.value);
+        if (system_input.value == "") {
+          this.highlightSystemAction(this.system_actions, self);
+          system_input.select();
+        } else {
+          this.editFile(system_input.value);
+        }
       },
-      highlighted: signal(false),
       paramRequired: false,
     },
     {
@@ -539,7 +553,6 @@ export class AppComponent {
           .getFileFromArchive(this.activeArchiveName, system_input.value)
           .then((file) => this.addInformation(file));
       },
-      highlighted: signal(false),
       paramRequired: false,
     },
     {
@@ -556,22 +569,15 @@ export class AppComponent {
         }
         this.removeFile(system_input.value);
       },
-      highlighted: signal(false),
       paramRequired: true,
     },
   ];
 
-  highlightedSystemAction = computed(() =>
-    this.system_actions.find((sa) => {
-      return sa.highlighted();
-    }),
+  highlightedSystemAction: Signal<undefined | SystemAction> = computed(
+    () => this.system_actions[this.highlightedSystemActionIndex()],
   );
 
-  highlightedSystemActionIndex = computed(() =>
-    this.system_actions.findIndex((sa) => {
-      return sa.highlighted();
-    }),
-  );
+  highlightedSystemActionIndex = signal(-1);
 
   llm: SimpleHttpRequest = {
     url: new URL("http://127.0.0.1:11434/v1/chat/completions"),
@@ -595,15 +601,9 @@ export class AppComponent {
       });
   }
 
-  /** Highlight one system action while unhighlighting all others */
   highlightSystemAction(systemActions: SystemAction[], action: SystemAction) {
-    for (let sa of systemActions) {
-      if (sa === action) {
-        sa.highlighted.set(true);
-      } else {
-        sa.highlighted.set(false);
-      }
-    }
+    const index = systemActions.findIndex((sa) => sa === action);
+    this.highlightedSystemActionIndex.set(index);
   }
 
   /**
@@ -650,7 +650,7 @@ export class AppComponent {
           this.control_bar.nativeElement.value === "" &&
           this.highlightedSystemAction()
         ) {
-          this.highlightedSystemAction()!.highlighted.set(false);
+          this.highlightedSystemActionIndex.set(-1);
         }
         break;
       case "Tab":
@@ -658,10 +658,9 @@ export class AppComponent {
         // Iterate through system actions when Tab is pressed, regardless of shift key
         const newIndex =
           highlightedSystemActionIndex + 1 >= this.system_actions.length
-            ? 0
+            ? -1
             : highlightedSystemActionIndex + 1;
-        this.highlightedSystemAction()?.highlighted.set(false);
-        this.system_actions[newIndex].highlighted.set(true);
+        this.highlightedSystemActionIndex.set(newIndex);
     }
   }
 
@@ -676,7 +675,7 @@ export class AppComponent {
             (sa) => sa.command === command,
           );
           if (command_action) {
-            command_action.highlighted.set(true);
+            this.highlightSystemAction(this.system_actions, command_action);
             this.control_bar.nativeElement.value =
               this.control_bar.nativeElement.value.replace(command + " ", "");
           }

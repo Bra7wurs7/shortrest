@@ -9,5 +9,4 @@ export interface SystemAction {
   color: string;
   action: (self: SystemAction, param: HTMLInputElement) => void;
   paramRequired: boolean;
-  highlighted: WritableSignal<boolean>;
 }
