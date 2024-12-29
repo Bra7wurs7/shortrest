@@ -49,18 +49,18 @@ $expanded-sidebar-width: 42vw;
 
 // Using local font for somewhat uniform look between browsers and operating systems
 @font-face {
-    font-family: "geist";
-    src: url(assets/fonts/Geist.ttf) format("truetype");
+  font-family: "geist";
+  src: url(assets/fonts/Geist.ttf) format("truetype");
 }
 
 @font-face {
-    font-family: "geist-mono";
-    src: url(assets/fonts/GeistMono.ttf) format("truetype");
+  font-family: "geist-mono";
+  src: url(assets/fonts/GeistMono.ttf) format("truetype");
 }
 
 @font-face {
-    font-family: "bitter";
-    src: url(assets/fonts/Bitter.ttf) format("truetype");
+  font-family: "bitter";
+  src: url(assets/fonts/Bitter.ttf) format("truetype");
 }
 
 // Style Variables
@@ -78,7 +78,6 @@ $thicker-border-width: 4px;
 
 // Style -> Colors
 $border-color: $bg3;
-$border-color-highlighted: $bg3;
 $background-color: $bg_h;
 
 // Style -> Fonts
@@ -91,434 +90,454 @@ $icon: 20px;
 
 // Base HTML Element Styles
 html {
-    height: 100%;
+  height: 100%;
 }
 
 body {
-    box-sizing: border-box;
-    height: 100%;
-    margin: 0;
-    padding: $smallpadding;
+  box-sizing: border-box;
+  height: 100%;
+  margin: 0;
+  padding: $smallpadding;
 }
 
 input {
-    /* Remove background color and borders */
-    background-color: transparent;
-    border: none;
-    box-shadow: none;
-    box-sizing: border-box;
-    width: 100%;
+  /* Remove background color and borders */
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  box-sizing: border-box;
+  width: 100%;
 
-    /* Remove padding and margins */
-    padding: 0;
-    margin: 0;
+  /* Remove padding and margins */
+  padding: 0;
+  margin: 0;
 
-    /* Set font to inherit from parent element */
-    font-size: inherit;
-    font-family: inherit;
+  /* Set font to inherit from parent element */
+  font-size: inherit;
+  font-family: inherit;
 
-    /* Reset text color, appearance and cursor */
-    color: inherit;
-    appearance: none;
-    -webkit-appearance: none;
+  /* Reset text color, appearance and cursor */
+  color: inherit;
+  appearance: none;
+  -webkit-appearance: none;
 
-    &:focus {
-        outline: none;
-    }
+  &:focus {
+    outline: none;
+  }
 }
 
 textarea {
-    /* Remove background color and borders */
-    background-color: transparent;
-    border: none;
-    box-shadow: none;
-    box-sizing: border-box;
-    width: 100%;
-    resize: none;
+  /* Remove background color and borders */
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  box-sizing: border-box;
+  width: 100%;
+  resize: none;
 
-    /* Remove padding and margins */
-    padding: 0;
-    margin: 0;
+  /* Remove padding and margins */
+  padding: 0;
+  margin: 0;
 
-    /* Set font to inherit from parent element */
-    font-size: inherit;
-    font-family: inherit;
+  /* Set font to inherit from parent element */
+  font-size: inherit;
+  font-family: inherit;
 
-    /* Reset text color, appearance and cursor */
-    color: inherit;
-    appearance: none;
-    -webkit-appearance: none;
+  /* Reset text color, appearance and cursor */
+  color: inherit;
+  appearance: none;
+  -webkit-appearance: none;
 
-    &:focus {
-        outline: none;
-    }
+  &:focus {
+    outline: none;
+  }
 }
 
 a {
-    color: $blue-dim;
-    :visited {
-        color: $purple-dim;
-    }
+  color: $blue-dim;
+  :visited {
+    color: $purple-dim;
+  }
 }
 
 table {
-    width: 100%;
-    border-collapse: collapse;
+  width: 100%;
+  border-collapse: collapse;
 
-    th,
-    td {
-        padding: $smallpadding;
-        vertical-align: top; // Align text to the top of the cell
-        font-size: small; // Make font size smaller by one level
-        border: $border-width solid $bg_s;
-    }
+  th,
+  td {
+    padding: $smallpadding;
+    vertical-align: top; // Align text to the top of the cell
+    font-size: small; // Make font size smaller by one level
+    border: $border-width solid $bg_s;
+  }
 
-    th {
-        color: $fg2;
-    }
+  th {
+    color: $fg2;
+  }
 
-    tr:nth-child(even) {
-        background-color: $bg;
-    }
+  tr:nth-child(even) {
+    background-color: $bg;
+  }
 
-    td:hover {
-        background-color: $bg_h;
-    }
+  td:hover {
+    background-color: $bg_h;
+  }
 }
 
 code {
-    padding: $padding;
-    background-color: $bg_h;
-    border-radius: $border-radius;
-    display: flex;
-    flex-grow: 1;
-    overflow-x: scroll;
+  padding: $padding;
+  background-color: $bg_h;
+  border-radius: $border-radius;
+  display: flex;
+  flex-grow: 1;
+  overflow-x: scroll;
 }
 
 img {
-    border-radius: $border-radius;
-    border: 1px solid $border-color;
-    float: right;
-    margin-left: 10px; // Adjust this value as needed for spacing between image and text.
-    max-width: 100%;
-    margin-bottom: $margin;
-    margin-left: $margin;
+  border-radius: $border-radius;
+  border: 1px solid $border-color;
+  float: right;
+  margin-left: 10px; // Adjust this value as needed for spacing between image and text.
+  max-width: 100%;
+  margin-bottom: $margin;
+  margin-left: $margin;
 }
 
 .box_sizing_border_box {
-    box-sizing: border-box;
+  box-sizing: border-box;
 }
 
 :root {
-    height: 100%;
-    background-color: $background-color;
-    color: $fg;
-    font-family: $sans;
+  height: 100%;
+  background-color: $background-color;
+  color: $fg;
+  font-family: $sans;
 }
 
 // Font
 
 .mono {
-    font-family: $mono;
+  font-family: $mono;
 }
 
 .yellow {
-    color: $yellow;
+  color: $yellow;
 }
 
 .blue {
-    color: $blue;
+  color: $blue;
 }
 
 .green {
-    color: $green;
+  color: $green;
 }
 
 .red {
-    color: $red;
+  color: $red;
 }
 
 .purple {
-    color: $purple;
+  color: $purple;
 }
 
 .fire {
-    color: $orange;
+  color: $orange;
 }
 
 .vertical_align_bottom {
-    vertical-align: bottom;
+  vertical-align: bottom;
 }
 
 .user_select_none {
-    user-select: none;
+  user-select: none;
 }
 
 .border {
-    border: $border-width solid transparent;
+  border: $border-width solid transparent;
 }
 
 .pseudo_input:has(> input:focus) {
-    border-color: $border-color-highlighted;
+  border-color: $bg3;
 }
 
 .border_on_focus:focus {
-    border-color: $border-color-highlighted;
+  border-color: $bg3;
 }
 
 .hover_highlight_border {
-    &:hover {
-        border-color: $border-color-highlighted;
-    }
+  &:hover {
+    border-color: $bg3;
+  }
 }
 
 .highlight_border {
-    border-color: $border-color-highlighted;
-    &.yellow {
-        border-color: $yellow;
-    }
+  border-color: $bg3;
+  &.yellow {
+    border-color: $yellow;
+  }
 
-    &.blue {
-        border-color: $blue;
-    }
+  &.blue {
+    border-color: $blue;
+  }
 
-    &.green {
-        border-color: $green;
-    }
+  &.green {
+    border-color: $green;
+  }
 
-    &.red {
-        border-color: $red;
-    }
+  &.red {
+    border-color: $red;
+  }
 
-    &.purple {
-        border-color: $purple;
-    }
+  &.purple {
+    border-color: $purple;
+  }
 
-    &.fire {
-        border-color: $orange;
-        animation: shadowPulse 3s infinite ease-in-out;
-    }
+  &.fire {
+    border-color: $orange;
+    animation: shadowPulse 3s infinite ease-in-out;
+  }
 }
 
 .border_l_highlighted {
-    border-left-color: $border-color-highlighted;
+  border-left-color: $bg3;
 }
 
 .border_t {
-    border-top: $border-width solid transparent;
+  border-top: $border-width solid transparent;
 }
 
 .border_r {
-    border-right: $border-width solid transparent;
+  border-right: $border-width solid transparent;
 }
 
 .border_b {
-    border-bottom: $border-width solid transparent;
+  border-bottom: $border-width solid transparent;
 }
 
 .border_l {
-    border-left: $border-width solid transparent;
+  border-left: $border-width solid transparent;
 }
 
 .border_l_thick {
-    border-left: $thicker-border-width solid transparent;
+  border-left: $thicker-border-width solid transparent;
 }
 
 .border_color_bg {
-    border-color: $bg;
+  border-color: $bg;
 }
 
 .border_color_bg_s {
-    border-color: $bg_s;
+  border-color: $bg_s;
 }
 
 .border_color_bg_h {
-    border-color: $bg_h;
+  border-color: $bg_h;
 }
 
 .border_color_fg4 {
-    border-color: $fg4;
+  border-color: $fg4;
+}
+
+.border_color_bg3 {
+  border-color: $bg3;
+}
+
+.border_top_color_bg3 {
+  border-top-color: $bg3;
 }
 
 .border_bottom_color_bg {
-    border-bottom-color: $bg;
+  border-bottom-color: $bg;
+}
+
+.border_bottom_color_bg_s {
+  border-bottom-color: $bg_s;
+}
+
+.border_right_color_bg_s {
+  border-right-color: $bg_s;
 }
 
 .border_bottom_color_fg4 {
-    border-bottom-color: $fg4;
+  border-bottom-color: $fg4;
 }
 
 .font_size_small {
-    font-size: small;
+  font-size: small;
 }
 
 .text_upright {
-    writing-mode: vertical-rl;
-    display: flex;
-    align-items: center;
+  writing-mode: vertical-rl;
+  display: flex;
+  align-items: center;
 }
 
 .border_trl {
-    border: $border-width solid $border-color;
-    border-bottom: none;
+  border: $border-width solid $border-color;
+  border-bottom: none;
 }
 
 .max_height {
-    max-height: 30vh;
+  max-height: 30vh;
 }
 
 .min_height {
-    max-height: 10vh;
+  max-height: 10vh;
 }
 
 .rounded {
-    border-radius: $border-radius;
+  border-radius: $border-radius;
 }
 
 .rounded_tl {
-    border-top-left-radius: $border-radius;
+  border-top-left-radius: $border-radius;
 }
 
 .rounded_tr {
-    border-top-right-radius: $border-radius;
+  border-top-right-radius: $border-radius;
 }
 
 .rounded_bl {
-    border-bottom-left-radius: $border-radius;
+  border-bottom-left-radius: $border-radius;
 }
 
 .rounded_br {
-    border-bottom-right-radius: $border-radius;
+  border-bottom-right-radius: $border-radius;
 }
 
 .rounded_t {
-    border-top-left-radius: $border-radius;
-    border-top-right-radius: $border-radius;
+  border-top-left-radius: $border-radius;
+  border-top-right-radius: $border-radius;
 }
 
 .rounded_r {
-    border-top-right-radius: $border-radius;
-    border-bottom-right-radius: $border-radius;
+  border-top-right-radius: $border-radius;
+  border-bottom-right-radius: $border-radius;
 }
 
 .rounded_b {
-    border-bottom-left-radius: $border-radius;
-    border-bottom-right-radius: $border-radius;
+  border-bottom-left-radius: $border-radius;
+  border-bottom-right-radius: $border-radius;
 }
 
 .rounded_l {
-    border-top-left-radius: $border-radius;
-    border-bottom-left-radius: $border-radius;
+  border-top-left-radius: $border-radius;
+  border-bottom-left-radius: $border-radius;
 }
 
 .padding {
-    padding: $padding;
+  padding: $padding;
 }
 
 .padding_small {
-    padding: $smallpadding;
+  padding: $smallpadding;
 }
 
 .padding_flat {
-    padding: $smallpadding $padding $smallpadding $padding;
+  padding: $smallpadding $padding $smallpadding $padding;
 }
 
 .padding_big {
-    padding: $bigpadding;
+  padding: $bigpadding;
 }
 
 .padding_small_left {
-    padding-left: $smallpadding;
+  padding-left: $smallpadding;
 }
 
 .padding_b {
-    padding-bottom: $padding;
+  padding-bottom: $padding;
 }
 
 .padding_l {
-    padding-left: $padding;
+  padding-left: $padding;
 }
 
 .padding_r {
-    padding-right: $padding;
+  padding-right: $padding;
 }
 
 .padding_t {
-    padding-top: $padding;
+  padding-top: $padding;
 }
 
 .margin {
-    margin: $margin;
+  margin: $margin;
 }
 
 .margin_small {
-    margin: $smallmargin;
+  margin: $smallmargin;
 }
 
 .margin_b {
-    margin-bottom: $margin;
+  margin-bottom: $margin;
 }
 
 .margin_t {
-    margin-top: $margin;
+  margin-top: $margin;
 }
 
 .margin_r {
-    margin-right: $margin;
+  margin-right: $margin;
 }
 
 .margin_l {
-    margin-left: $margin;
+  margin-left: $margin;
 }
 
 .margin_b {
-    margin-bottom: $margin;
+  margin-bottom: $margin;
 }
 
 // Position
 .position_absolute {
-    position: absolute;
+  position: absolute;
 }
 
 .position_relative {
-    position: relative;
+  position: relative;
 }
 
 .from_right {
-    left: 100%;
-    margin-left: $margin;
+  left: 100%;
 }
 
 .from_left {
-    right: 100%;
-    margin-right: $margin;
+  right: 100%;
 }
 
 .from_bottom {
-    top: 100%;
-    margin-top: $margin;
+  top: 100%;
 }
 
 .from_top {
-    bottom: 100%;
-    margin-bottom: $margin;
+  bottom: 100%;
 }
 
 .top_0 {
-    top: 0;
+  top: 0;
+}
+
+.left_0 {
+  left: 0;
+}
+
+.right_0 {
+  right: 0;
 }
 
 .max_width_sidebar_width {
-    max-width: $sidebar-width;
-    min-width: $sidebar-width;
+  max-width: $sidebar-width;
+  min-width: $sidebar-width;
 }
 
 .z_index_2 {
-    z-index: 2;
+  z-index: 2;
 }
 
 .z_index_5 {
-    z-index: 5;
+  z-index: 5;
 }
 
 /*
@@ -528,272 +547,266 @@ img {
 */
 
 .collapse_but_allow_revival {
-    transition:
-        visibility 0.15s,
-        opacity 0.1s ease;
-    opacity: 0;
-    visibility: collapse;
-    overflow: hidden;
+  transition: visibility 0.15s;
+  opacity: 0;
+  visibility: collapse;
+  overflow: hidden;
 }
 
 .revive_children_on_hover:hover {
-    .collapse_but_allow_revival,
-    .collapse_but_allow_revival * {
-        transition: visibility 0.15s;
-        opacity: 1;
-        visibility: visible;
-    }
+  .collapse_but_allow_revival,
+  .collapse_but_allow_revival * {
+    transition: visibility 0.15s;
+    opacity: 1;
+    visibility: visible;
+  }
 }
 
 .flex_row {
-    display: flex;
-    flex-direction: row;
+  display: flex;
+  flex-direction: row;
 }
 
 .flex_col {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 .align_end {
-    align-items: end;
+  align-items: end;
 }
 
 .align_stretch {
-    align-items: stretch;
+  align-items: stretch;
 }
 
 .justify_end {
-    justify-content: end;
+  justify-content: end;
 }
 
 .justify_center {
-    justify-content: center;
+  justify-content: center;
 }
 
 .space_between {
-    justify-content: space-between;
+  justify-content: space-between;
 }
 
 .justify_strech {
-    justify-content: stretch;
+  justify-content: stretch;
 }
 
 .centered_content {
-    align-items: center;
-    justify-content: center;
+  align-items: center;
+  justify-content: center;
 }
 
 .flex {
-    display: flex;
+  display: flex;
 }
 
 .grow {
-    display: flex;
-    flex-grow: 1;
+  display: flex;
+  flex-grow: 1;
 }
 
 .height_1 {
-    height: 100%;
+  height: 100%;
 }
 
 .height_inherit {
-    height: inherit;
+  height: inherit;
 }
 
 .h_auto {
-    height: auto;
+  height: auto;
 }
 
 .h_max_content {
-    height: max-content;
+  height: max-content;
 }
 
 .w_100 {
-    width: 100%;
+  width: 100%;
 }
 
 .w_50 {
-    width: 50%;
+  width: 50%;
 }
 
 .w_34px_highlighted_w_150px {
-    width: 34px;
-    transition: width 0.1s;
+  width: 34px;
+  transition: width 0.1s;
 
-    &.highlighted {
-        width: 150px;
-    }
+  &.highlighted {
+    width: 150px;
+  }
 }
 
 .max_w_0_highlighted_max_w_200px {
-    max-width: 0;
-    transition: max-width 0.1s;
+  max-width: 0;
+  transition: max-width 0.1s;
 
-    &.highlighted {
-        max-width: 200px;
-    }
+  &.highlighted {
+    max-width: 200px;
+  }
 }
 
 opacity_0_highlighted_opacity_1 {
-    opacity: 0;
-    transition: opacity 0.1s;
+  opacity: 0;
+  transition: opacity 0.1s;
 
-    &.highlighted {
-        opacity: 1;
-    }
+  &.highlighted {
+    opacity: 1;
+  }
 }
 
 .width_sibedar_width {
-    box-sizing: border-box;
-    width: $sidebar-width;
+  box-sizing: border-box;
+  width: $sidebar-width;
 }
 
 .width_inherit {
-    width: inherit;
+  width: inherit;
 }
 
 .bg_h {
-    background-color: $bg_h;
-    &.text_overflow_fade {
-        &:before {
-            background: linear-gradient(to right, transparent 90%, $bg_h);
-        }
+  background-color: $bg_h;
+  &.text_overflow_fade {
+    &:before {
+      background: linear-gradient(to right, transparent 90%, $bg_h);
     }
+  }
 }
 
 .bg {
-    background-color: $bg;
-    &.text_overflow_fade {
-        &:before {
-            background: linear-gradient(to right, transparent 90%, $bg);
-        }
+  background-color: $bg;
+  &.text_overflow_fade {
+    &:before {
+      background: linear-gradient(to right, transparent 90%, $bg);
     }
+  }
 }
 
 .bg_s {
-    background-color: $bg_s;
-    &.text_overflow_fade {
-        &:before {
-            background: linear-gradient(to right, transparent 90%, $bg_s);
-        }
+  background-color: $bg_s;
+  &.text_overflow_fade {
+    &:before {
+      background: linear-gradient(to right, transparent 90%, $bg_s);
     }
+  }
 }
 
 .bg_b {
-    background-color: $border-color;
-    &.text_overflow_fade {
-        &:before {
-            background: linear-gradient(
-                to right,
-                transparent 90%,
-                $border-color
-            );
-        }
+  background-color: $border-color;
+  &.text_overflow_fade {
+    &:before {
+      background: linear-gradient(to right, transparent 90%, $border-color);
     }
+  }
 }
 
 .hover_bg_s:hover {
-    transition: background-color 0.1s ease-out;
-    background-color: $bg_s;
+  transition: background-color 0.1s ease-out;
+  background-color: $bg_s;
 }
 
 .hover_bg:hover {
-    transition: background-color 0.1s ease-out;
-    background-color: $bg;
+  transition: background-color 0.1s ease-out;
+  background-color: $bg;
 }
 
 .hover_bg_h:hover {
-    transition: background-color 0.1s ease-out;
-    background-color: $bg_h;
+  transition: background-color 0.1s ease-out;
+  background-color: $bg_h;
 }
 
 .color_fg {
-    color: $fg !important;
+  color: $fg !important;
 }
 
 .color_fg1 {
-    color: $fg1;
+  color: $fg1;
 }
 
 .color_fg2 {
-    color: $fg2;
+  color: $fg2;
 }
 
 .color_fg3 {
-    color: $fg3;
+  color: $fg3;
 }
 
 .color_fg4 {
-    color: $fg4;
+  color: $fg4;
 }
 
 .color_border_color {
-    color: $border-color;
+  color: $border-color;
 }
 
 .color_bg_s {
-    color: $bg_s;
+  color: $bg_s;
 }
 
 .text_overflow_fade {
-    position: relative;
-    white-space: nowrap;
+  position: relative;
+  white-space: nowrap;
 
-    &:before {
-        pointer-events: none;
-        content: "";
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        left: 0;
-        top: 0;
-        &.bg {
-            background: linear-gradient(to right, transparent 90%, $bg);
-        }
-        &.bg_s {
-            background: linear-gradient(to right, transparent 90%, $bg_s);
-        }
-        &.bg_h {
-            background: linear-gradient(to right, transparent 90%, $bg_h);
-        }
+  &:before {
+    pointer-events: none;
+    content: "";
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    &.bg {
+      background: linear-gradient(to right, transparent 90%, $bg);
     }
+    &.bg_s {
+      background: linear-gradient(to right, transparent 90%, $bg_s);
+    }
+    &.bg_h {
+      background: linear-gradient(to right, transparent 90%, $bg_h);
+    }
+  }
 }
 
 .hover_color_fg:hover {
-    color: $fg;
+  color: $fg;
 }
 
 .icon {
-    font-size: $icon;
+  font-size: $icon;
 }
 
 .hover_cursor_pointer {
-    cursor: pointer;
+  cursor: pointer;
 }
 
 .overflow_scroll {
-    overflow: scroll;
+  overflow: scroll;
 }
 
 .overflow_y_scroll {
-    overflow-y: scroll;
+  overflow-y: scroll;
 }
 
 .overflow_hidden {
-    overflow: hidden;
+  overflow: hidden;
 }
 
 .transition_border_width {
-    transition: border-width 50ms;
+  transition: border-width 50ms;
 }
 
 @keyframes shadowPulse {
-    0%,
-    100% {
-        box-shadow: 0px -3px 9px 2px rgba($aqua, 0.4); // Taller and slightly enlarged shadow to look like a flame
-    }
-    50% {
-        box-shadow: 0px -1px 6px 1px rgba($aqua, 0.4); // Original size of shadow, but taller for the flame effect
-    }
+  0%,
+  100% {
+    box-shadow: 0px -3px 9px 2px rgba($aqua, 0.4); // Taller and slightly enlarged shadow to look like a flame
+  }
+  50% {
+    box-shadow: 0px -1px 6px 1px rgba($aqua, 0.4); // Original size of shadow, but taller for the flame effect
+  }
 }

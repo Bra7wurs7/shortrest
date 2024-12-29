@@ -19,6 +19,7 @@ import { OllamaChatBody, OllamaChatResponse } from "../models/ollama";
 import { Context } from "../models/context.model";
 import { PromptComponent } from "../components/prompt.component";
 import { ParseNamePipe } from "../pipes/parse-name.pipe";
+import { InteractiveTool } from "../models/interactive_tool";
 
 @Component({
   selector: "app-root",
@@ -45,10 +46,10 @@ import { ParseNamePipe } from "../pipes/parse-name.pipe";
           }"
         >
           <div
-            class="flex_col border_b border_r border_color_bg position_absolute bg_h padding from_right from_bottom rounded_r rounded_bl z_index_2 collapse_but_allow_revival max_width_sidebar_width"
+            class="flex_col border_t border_l border_color_bg3 position_absolute bg_h padding from_right from_bottom rounded_r rounded_bl z_index_2 collapse_but_allow_revival max_width_sidebar_width"
           >
             <div
-              class="border rounded_r rounded_bl bg border_color_bg_s padding_small flex margin_b font_size_small"
+              class="border rounded_r rounded_bl border_color_bg_s padding_small flex margin_b font_size_small"
             >
               Type a filename into the control bar to filter files and actions.
             </div>
@@ -219,46 +220,39 @@ import { ParseNamePipe } from "../pipes/parse-name.pipe";
               </div>
             }
           </div>
-          <div class="flex_row grow margin_b">
+          <div class="flex_row margin_b">
             @for (openedFile of openedFileNames; track openedFile) {
               <div
-                class="flex border padding margin_r hover_highlight_border hover_bg_s hover_cursor_pointer user_select_none"
-                [ngClass]="{
-                  color_fg4: openedFile !== activeFileName,
-                  hover_bg_s: openedFile === activeFileName,
-                }"
+                class="flex margin_r  hover_cursor_pointer user_select_none position_relative revive_children_on_hover"
               >
-                {{ openedFile }}
+                <div
+                  class="position_absolute border from_bottom right_0 bg_h collapse_but_allow_revival flex_col"
+                >
+                  @for (tool of interactive_tools; track tool) {
+                    <span
+                      class="flex icon {{
+                        tool.icon
+                      }} border padding hover_highlight_border hover_cursor_pointer"
+                      [ngClass]="{
+                        color_fg4: !tool.active,
+                        bg_s: tool.active,
+                      }"
+                      (click)="tool.active = !tool.active"
+                    ></span>
+                  }
+                </div>
+                <div
+                  class="border padding hover_highlight_border hover_bg_s"
+                  [ngClass]="{
+                    color_fg4: openedFile !== activeFileName,
+                    hover_bg_s: openedFile === activeFileName,
+                  }"
+                >
+                  {{ openedFile }}
+                </div>
               </div>
             }
-          </div>
-          <div class="flex_row margin_b">
-            <div class="flex">
-              <span
-                class="flex rounded_t icon color_fg4 iconoir-code border padding margin_r hover_highlight_border"
-                (click)="editMode = !editMode || !readMode"
-              ></span>
-              <span
-                class="flex rounded_t icon iconoir-edit-pencil border padding margin_r"
-                [ngClass]="{
-                  color_fg4: !editMode,
-                  hover_cursor_pointer: !(editMode && !readMode),
-                  hover_highlight_border: !(editMode && !readMode),
-                  border_bottom_color_fg4: editMode,
-                }"
-                (click)="editMode = !editMode || !readMode"
-              ></span>
-              <span
-                class="flex rounded_t icon iconoir-open-book border padding"
-                [ngClass]="{
-                  color_fg4: !readMode,
-                  hover_cursor_pointer: !(readMode && !editMode),
-                  hover_highlight_border: !(readMode && !editMode),
-                  border_bottom_color_fg4: readMode,
-                }"
-                (click)="readMode = !readMode || !editMode"
-              ></span>
-            </div>
+            <div class="flex"></div>
           </div>
         </div>
         <div
@@ -295,17 +289,12 @@ import { ParseNamePipe } from "../pipes/parse-name.pipe";
         >
           <div class="flex flex_row margin_b overflow_hidden">
             <div
-              class="border overflow_hidden text_overflow_fade padding rounded_tl margin_r hover_highlight_border color_fg4 bg hover_cursor_pointer user_select_none"
+              class="border overflow_hidden text_overflow_fade padding rounded_t margin_r hover_highlight_border color_fg4 bg hover_cursor_pointer user_select_none"
             >
-              Author
+              Unknown Text
             </div>
             <div
-              class="border overflow_hidden text_overflow_fade padding margin_r hover_highlight_border bg_s hover_cursor_pointer user_select_none"
-            >
-              Apple Generator
-            </div>
-            <div
-              class="flex border padding rounded_tr hover_highlight_border border_color_bg hover_cursor_pointer color_fg4 hover_color_fg"
+              class="flex border padding rounded_t hover_highlight_border hover_cursor_pointer color_fg4 hover_color_fg"
             >
               <span class="icon iconoir-plus"></span>
             </div>
@@ -330,14 +319,14 @@ import { ParseNamePipe } from "../pipes/parse-name.pipe";
               ></app-prompt>
             }
             <div
-              class="border rounded_br rounded_bl rounded_tr padding flex_row space_between hover_highlight_border bg_s hover_cursor_pointer color_fg4 hover_color_fg"
+              class="border_b border rounded_br rounded_bl rounded_tr padding flex_row space_between hover_highlight_border bg hover_cursor_pointer color_fg4 hover_color_fg"
               [ngClass]="{
                 rounded_tl: context_prompts.length > 0,
               }"
               (click)="onAddContextClick()"
             >
               <span
-                class="overflow_hidden grow text_overflow_fade bg_s user_select_none"
+                class="overflow_hidden grow text_overflow_fade bg user_select_none"
                 >Provide information</span
               >
               <span class="icon iconoir-plus"></span>
@@ -385,12 +374,12 @@ import { ParseNamePipe } from "../pipes/parse-name.pipe";
                   ></span>
                 </div>
                 <div
-                  class="border flex_col centered_content padding hover_highlight_border bg_s"
+                  class="border border_color_bg_s flex_col centered_content padding hover_highlight_border"
                   title="Automatically trigger a generation request for the current dynamic contexts when the text changes"
                   [ngClass]="{
                     color_fg1: advancedSettings,
                     color_fg4: !advancedSettings,
-                    border_bottom_color_fg4: advancedSettings,
+                    bg_s: advancedSettings,
                   }"
                   (click)="advancedSettings = !advancedSettings"
                 >
@@ -570,6 +559,21 @@ export class AppComponent {
         this.removeFile(system_input.value);
       },
       paramRequired: true,
+    },
+  ];
+
+  interactive_tools: InteractiveTool[] = [
+    {
+      icon: "iconoir-code",
+      active: false,
+    },
+    {
+      icon: "iconoir-edit-pencil",
+      active: true,
+    },
+    {
+      icon: "iconoir-open-book",
+      active: false,
     },
   ];
 
