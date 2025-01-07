@@ -4,6 +4,7 @@ export interface SystemAction {
   visibleRegex: RegExp;
   name: string;
   advice: string;
+  description: (s: string) => string;
   icon: string;
   command: string;
   color: string;

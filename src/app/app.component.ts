@@ -46,10 +46,10 @@ import { InteractiveTool } from "../models/interactive_tool";
           }"
         >
           <div
-            class="flex_col border_t border_l border_color_bg3 position_absolute bg_h padding from_right from_bottom rounded_r rounded_bl z_index_2 collapse_but_allow_revival max_width_sidebar_width"
+            class="flex_col border_t border_l border_color_bg3 position_absolute bg_h padding_small from_right from_bottom rounded_r rounded_bl z_index_2 collapse_but_allow_revival max_width_sidebar_width"
           >
             <div
-              class="border rounded_r rounded_bl border_color_bg_s padding_small flex margin_b font_size_small"
+              class="border rounded_r rounded_bl border_color_bg_s padding flex margin_b font_size_small"
             >
               Type a filename into the control bar to filter files and actions.
             </div>
@@ -87,18 +87,33 @@ import { InteractiveTool } from "../models/interactive_tool";
           <input
             #controlBar
             [placeholder]="
-              highlightedSystemAction()?.advice ??
-              'Type here to control shortrest'
+              highlightedFile > -1
+                ? (highlightedSystemAction()?.description(
+                    activeArchiveFiles[highlightedFile]
+                  ) ??
+                  'Do what with ' + activeArchiveFiles[highlightedFile] + '?')
+                : (highlightedSystemAction()?.advice ??
+                  'Type here to control shortrest')
             "
             (keydown)="systemBarOnKeyDown($event)"
             (keyup)="systemBarOnKeyUp($event)"
             (blur)="onBlurSystemBar()"
             class="mono"
           />
-          <span
-            class="icon rounded iconoir-xmark color_fg4 hover_cursor_pointer hover_color_fg"
-            (click)="controlBar.value = ''; highlightedFile = -1"
-          ></span>
+          @if (
+            controlBar.value !== "" ||
+            highlightedFile !== -1 ||
+            highlightedSystemActionIndex() !== -1
+          ) {
+            <span
+              class="icon rounded iconoir-xmark color_fg4 hover_cursor_pointer hover_color_fg"
+              (click)="
+                controlBar.value = '';
+                highlightedFile = -1;
+                highlightedSystemActionIndex.set(-1)
+              "
+            ></span>
+          }
         </div>
         <div class="flex_col width_sibedar_width space_between grow">
           <div
@@ -125,7 +140,11 @@ import { InteractiveTool } from "../models/interactive_tool";
                       highlight_border:
                         file === controlBar.value || $index === highlightedFile,
                     }"
-                    (click)="highlightedFile = $index"
+                    (click)="
+                      highlightedFile !== $index
+                        ? (highlightedFile = $index)
+                        : editFile(file)
+                    "
                   >
                     <div
                       class="align_items bg_h text_overflow_fade overflow_hidden grow flex"
@@ -186,7 +205,7 @@ import { InteractiveTool } from "../models/interactive_tool";
                 (mouseleave)="highlightedSystemActionIndex.set(-1)"
               >
                 <div
-                  class="position_relative border box_sizing_border_box w_34px_highlighted_w_150px flex_row padding hover_cursor_pointer color_fg4 overflow_hidden revive_children_on_hover {{
+                  class="border box_sizing_border_box w_34px_highlighted_w_150px flex_row padding hover_cursor_pointer color_fg4 overflow_hidden {{
                     system_action.color
                   }}"
                   [ngClass]="{
@@ -211,11 +230,6 @@ import { InteractiveTool } from "../models/interactive_tool";
                         : ''
                     }}"
                   ></span>
-                  <div
-                    class="position_absolute border border_color_bg_s bg_h padding from_right top_0 rounded_r z_index_5"
-                  >
-                    aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaah
-                  </div>
                 </div>
               </div>
             }
@@ -226,7 +240,7 @@ import { InteractiveTool } from "../models/interactive_tool";
                 class="flex margin_r  hover_cursor_pointer user_select_none position_relative revive_children_on_hover"
               >
                 <div
-                  class="position_absolute border from_bottom right_0 bg_h collapse_but_allow_revival flex_col"
+                  class="position_absolute padding_small from_bottom right_0 bg_h collapse_but_allow_revival flex_col"
                 >
                   @for (tool of interactive_tools; track tool) {
                     <span
@@ -242,11 +256,18 @@ import { InteractiveTool } from "../models/interactive_tool";
                   }
                 </div>
                 <div
+                  class="position_absolute border_t border_b border_l from_right rounded_r top_0 bg_h collapse_but_allow_revival flex_col padding z_index_2"
+                  (click)="closeFile(openedFile)"
+                >
+                  <div class="icon iconoir-xmark"></div>
+                </div>
+                <div
                   class="border padding hover_highlight_border hover_bg_s"
                   [ngClass]="{
                     color_fg4: openedFile !== activeFileName,
                     hover_bg_s: openedFile === activeFileName,
                   }"
+                  (click)="editFile(openedFile)"
                 >
                   {{ openedFile }}
                 </div>
@@ -266,7 +287,7 @@ import { InteractiveTool } from "../models/interactive_tool";
                 rounded_br: !(editMode && readMode),
               }"
               [(ngModel)]="this.activeFile"
-              (ngModelChange)="saveActiveArchive()"
+              (ngModelChange)="saveFile(activeFileName)"
               (keydown)="textInputOnKeyDown($event)"
             ></textarea>
           }
@@ -291,7 +312,7 @@ import { InteractiveTool } from "../models/interactive_tool";
             <div
               class="border overflow_hidden text_overflow_fade padding rounded_t margin_r hover_highlight_border color_fg4 bg hover_cursor_pointer user_select_none"
             >
-              Unknown Text
+              Unknown Text Type
             </div>
             <div
               class="flex border padding rounded_t hover_highlight_border hover_cursor_pointer color_fg4 hover_color_fg"
@@ -370,7 +391,7 @@ import { InteractiveTool } from "../models/interactive_tool";
                 >
                   <span
                     class="icon iconoir-reload-window hover_cursor_pointer"
-                    (click)="onClickReloadDynamicContexts()"
+                    (click)="computeContexts()"
                   ></span>
                 </div>
                 <div
@@ -482,6 +503,7 @@ export class AppComponent {
       visibleRegex: new RegExp(""),
       name: "Open File",
       advice: "Enter filename",
+      description: (s) => (s ? `Open "${s}"` : "Open a file by its filename"),
       icon: "iconoir-page",
       command: "o",
       color: "blue",
@@ -499,6 +521,8 @@ export class AppComponent {
       visibleRegex: new RegExp(".*"),
       name: "New File",
       advice: "Enter new filename",
+      description: (s: string) =>
+        s ? `Create "${s}", a new file` : "Create a new file from its name",
       icon: "iconoir-page-plus",
       command: "n",
       color: "green",
@@ -516,6 +540,8 @@ export class AppComponent {
       visibleRegex: new RegExp(".*"),
       name: "Edit File",
       advice: "Enter filename",
+      description: (s: string) =>
+        s ? `Edit "${s}"` : "Open a file for editing by its filename",
       icon: "iconoir-page-edit",
       command: "e",
       color: "yellow",
@@ -534,10 +560,14 @@ export class AppComponent {
       name: "Add to prompt",
       advice:
         "Adds information from the named file to the right sidebar, for the AI to read",
+      description: (s: string) =>
+        s
+          ? `Adds "${s}" content to the prompt`
+          : "Adds the selected file's content to the prompt",
       icon: "iconoir-bonfire",
       command: "x",
       color: "fire",
-      action: (self: SystemAction, system_input: HTMLInputElement) => {
+      action: (system_action: SystemAction, system_input: HTMLInputElement) => {
         this.filesService
           .getFileFromArchive(this.activeArchiveName, system_input.value)
           .then((file) => this.addInformation(file));
@@ -545,9 +575,13 @@ export class AppComponent {
       paramRequired: false,
     },
     {
-      visibleRegex: new RegExp(""),
+      visibleRegex: new RegExp(".*"),
       name: "Remove File",
       advice: "Enter undesired filename",
+      description: (s: string) =>
+        s
+          ? `Remove "${s}" from the library`
+          : "Remove a file from the library by its filename",
       icon: "iconoir-bin-half",
       command: "r",
       color: "red",
@@ -555,8 +589,9 @@ export class AppComponent {
         if (system_input.value == "") {
           this.highlightSystemAction(this.system_actions, self);
           system_input.select();
+        } else {
+          this.removeFile(system_input.value);
         }
-        this.removeFile(system_input.value);
       },
       paramRequired: true,
     },
@@ -610,16 +645,8 @@ export class AppComponent {
     this.highlightedSystemActionIndex.set(index);
   }
 
-  /**
-   * Triggered whenever the right sidebar emits a string token
-   * @param token the token emitted. '' marks the end of a sequence
-   */
   onToken(token: string) {
-    if (token === "") {
-      this.saveActiveArchive();
-    } else {
-      this.activeFile += token;
-    }
+    this.activeFile += token;
   }
 
   systemActionOnClick(
@@ -700,7 +727,6 @@ export class AppComponent {
   }
 
   public iterateHighlightedFiles(steps: number) {
-    console.log("before: " + this.highlightedFile);
     const files = this.activeArchiveFiles;
     if (files !== null) {
       const foo = this.highlightedFile + steps;
@@ -712,7 +738,6 @@ export class AppComponent {
       // If files are null, set it to none
       this.highlightedFile = -1;
     }
-    console.log("after: " + this.highlightedFile);
   }
 
   async saveActiveArchive() {
@@ -734,6 +759,17 @@ export class AppComponent {
   openFile(fileName: string) {
     // @TODO Add save check for current file
     this.openedFileNames.push(fileName);
+  }
+
+  closeFile(fileName: string) {
+    const openedFileIndex = this.openedFileNames.findIndex(
+      (f) => f === fileName,
+    );
+    this.openedFileNames.splice(openedFileIndex, 1);
+    if (fileName === this.activeFileName) {
+      this.activeFileName = "";
+      this.activeFile = "";
+    }
   }
 
   editFile(fileName: string) {
@@ -865,13 +901,6 @@ export class AppComponent {
 
   protected computeContexts() {
     for (const context of this.context_prompts) {
-      switch (context.type) {
-        case "dynamic":
-          //this.computeDynamicContext(context);
-          break;
-        case "static":
-          break;
-      }
     }
   }
 
@@ -917,12 +946,11 @@ export class AppComponent {
         const asTyped = streamFragment as unknown as OllamaChatResponse[];
         for (const fragment of asTyped) {
           this.onToken(fragment.choices[0].delta.content);
-          if (fragment.done) {
+          if (fragment.choices[0].finish_reason !== null) {
             sub?.unsubscribe();
-            this.computeContexts();
-            this.saveActiveArchive();
+            this.saveFile(this.activeFileName);
             if (this.advancedSettings) {
-              this.onClickReloadDynamicContexts();
+              this.computeContexts();
             }
           }
         }
@@ -930,13 +958,5 @@ export class AppComponent {
     });
 
     return { ...this.llm, body: body };
-  }
-
-  protected onClickReloadDynamicContexts() {
-    for (const context of this.context_prompts) {
-      if (context.type === "dynamic") {
-        //this.computeDynamicContext(context);
-      }
-    }
   }
 }

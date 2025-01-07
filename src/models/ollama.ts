@@ -113,6 +113,7 @@ export interface OllamaChatResponse {
       content: string;
       images: string[] | null;
     };
+    finish_reason: string | null;
   }[];
   done: boolean;
   total_duration?: number;
