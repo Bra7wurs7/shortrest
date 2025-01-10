@@ -1,4 +1,12 @@
-import { Component, effect, inject, input, output } from "@angular/core";
+import {
+  Component,
+  EventEmitter,
+  OnInit,
+  effect,
+  inject,
+  input,
+  output,
+} from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Context } from "../models/context.model";
 import { FormsModule } from "@angular/forms";
@@ -32,7 +40,7 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
           'iconoir-cube': prompt().type === 'static',
           'iconoir-cube-hole': prompt().type === 'dynamic',
         }"
-        (click)="onClickType(); $event.stopPropagation()"
+        (click)="onClickType(); this.save.emit(); $event.stopPropagation()"
       ></span>
       <span
         class="grow overflow_hidden bg_s text_overflow_fade margin_l"
@@ -47,11 +55,15 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
           'iconoir-circle': !prompt().visible,
           'iconoir-check-circle': prompt().visible,
         }"
-        (click)="prompt().visible = !prompt().visible; $event.stopPropagation()"
+        (click)="
+          prompt().visible = !prompt().visible;
+          this.save.emit();
+          $event.stopPropagation()
+        "
       ></span>
       <span
         class="icon iconoir-xmark-square hover_cursor_pointer color_fg4 hover_color_fg"
-        (click)="remove.emit(); $event.stopPropagation()"
+        (click)="remove.emit(); this.save.emit(); $event.stopPropagation()"
       ></span>
     </div>
     @if (!prompt().collapsed) {
@@ -67,17 +79,16 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
             </div>
             <div
               class="border flex_col centered_content padding hover_highlight_border bg_s color_fg4 hover_color_fg hover_cursor_pointer"
-              title="Automatically trigger a generation request for the current dynamic contexts when the text changes"
+              title="Automatically trigger a generation request for this dynamic context when the text changes"
               [ngClass]="{
                 color_fg: prompt().automatic_dynamic,
               }"
+              (click)="
+                prompt().automatic_dynamic = !prompt().automatic_dynamic;
+                this.save.emit()
+              "
             >
-              <span
-                class="icon iconoir-fire-flame"
-                (click)="
-                  prompt().automatic_dynamic = !prompt().automatic_dynamic
-                "
-              ></span>
+              <span class="icon iconoir-bonfire"></span>
             </div>
             <div
               class="flex_row pseudo_input position_relative revive_children_on_hover"
@@ -91,6 +102,7 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
                 type="number"
                 style="appearance: textfield; -moz-appearance: textfield; width: 10vw;"
                 [(ngModel)]="readTokens"
+                (change)="this.save.emit()"
                 placeholder="Read"
               />
             </div>
@@ -106,6 +118,7 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
                 type="number"
                 style="appearance: textfield; -moz-appearance: textfield; width: 10vw;"
                 [(ngModel)]="writeTokens"
+                (change)="this.save.emit()"
                 placeholder="Think"
               />
             </div>
@@ -138,10 +151,12 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
     }
   `,
 })
-export class PromptComponent {
+export class PromptComponent implements OnInit {
   prompt = input.required<Context>();
   file = input.required<string | Blob>();
   llm = input.required<SimpleHttpRequest>();
+  generateDynamicContext = input.required<EventEmitter<void>>();
+  fileChange = input.required<EventEmitter<void>>();
   index = input<number>();
   save = output<void>();
   remove = output<void>();
@@ -150,8 +165,21 @@ export class PromptComponent {
 
   constructor() {}
 
-  writeTokens: number = 256;
-  readTokens: number = 512;
+  ngOnInit(): void {
+    this.generateDynamicContext().subscribe(() => {
+      if (this.prompt().type === "dynamic") {
+        this.computeDynamicContext(this.prompt());
+      }
+    });
+    this.fileChange().subscribe(() => {
+      if (this.prompt().automatic_dynamic && this.prompt().type === 'dynamic') {
+        this.computeDynamicContext(this.prompt());
+      }
+    });
+  }
+
+  writeTokens: number = 384;
+  readTokens: number = 384;
   temperature: number = 1;
   seed: number = 0;
   top_k: number = 1;
@@ -200,8 +228,9 @@ export class PromptComponent {
         const asTyped = streamFragment as unknown as OllamaChatResponse[];
         for (const fragment of asTyped) {
           context.dynamic_content += fragment.choices[0].delta.content;
-          if (fragment.done) {
+          if (fragment.choices[0].finish_reason !== null) {
             sub?.unsubscribe();
+            this.save.emit();
           }
         }
       });

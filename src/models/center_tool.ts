@@ -1,4 +1,4 @@
-export interface InteractiveTool {
+export interface CenterTool {
   icon: string;
   active: boolean;
 }

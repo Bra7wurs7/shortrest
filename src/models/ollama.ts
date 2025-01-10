@@ -115,7 +115,7 @@ export interface OllamaChatResponse {
     };
     finish_reason: string | null;
   }[];
-  done: boolean;
+  //done: boolean;
   total_duration?: number;
   load_duration?: number;
   prompt_eval_count?: number;
