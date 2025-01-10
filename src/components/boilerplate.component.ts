@@ -5,7 +5,7 @@ import { CommonModule } from "@angular/common";
   selector: "app-template",
   standalone: true,
   imports: [CommonModule],
-  template: ` <p>template component works!</p> `,
+  template: ` <p>boilerplate component works!</p> `,
 })
 export class TemplateComponent {
   input = input.required<any>();
