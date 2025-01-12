@@ -37,7 +37,6 @@ import { RightTool } from "../models/right_tool";
   ],
 })
 
-// #region SCRIPT
 export class AppComponent {
   @ViewChild("controlBar") control_bar!: ElementRef<HTMLInputElement>;
 
@@ -208,6 +207,19 @@ export class AppComponent {
   constructor() {
     this.updateActiveArchiveFiles();
     this.loadRightTools();
+  }
+
+  onAddRightToolClick() {
+    this.right_tools.push({
+      name: "New Tool",
+      context_prompts: [],
+      readTokens: "384",
+      writeTokens: "384",
+      seed: 1,
+      temperature: 0.5,
+      top_k: 1,
+      advancedSettings: false,
+    });
   }
 
   updateActiveArchiveFiles() {
