@@ -165,7 +165,7 @@
                 highlight_border: $index === highlightedSystemActionIndex(),
                 color_fg: $index === highlightedSystemActionIndex(),
               }"
-            (click)="systemActionOnClick(system_action, controlBar)"
+            (click)="systemActionOnClick(system_action, controlBar, activeArchiveFiles[this.highlightedFile])"
           >
             <span
               class="bg_h text_overflow_fade overflow_hidden grow max_w_0_highlighted_max_w_200px opacity_0_highlighted_opacity_1"
@@ -284,7 +284,7 @@
     <div
       class="flex_col width_sibedar_width bg grow space_between overflow_hidden margin_b rounded_tr"
     >
-      <div class="flex_col overflow_scroll">
+      <div class="flex_col overflow_scroll height_1">
         @for (prompt of right_tools[active_right_tool_index].context_prompts;
         track prompt) {
         <app-prompt

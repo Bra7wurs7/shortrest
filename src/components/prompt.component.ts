@@ -71,15 +71,21 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
         @if (prompt().type === "dynamic") {
           <div class="flex_col bg_s">
             <div
-              class="border flex_col centered_content padding hover_highlight_border bg_s color_fg4 hover_color_fg hover_cursor_pointer"
-              title="Automatically trigger a generation request for the current dynamic contexts when the text changes"
+              class="position_relative flex_row color_fg4 hover_color_fg hover_cursor_pointer revive_children_on_hover"
               (click)="computeDynamicContext(this.prompt())"
             >
-              <span class="icon iconoir-refresh-circle"></span>
+              <span
+                class="icon iconoir-refresh-circle border padding hover_highlight_border"
+              ></span>
+              <span
+                class="top_0 padding border bg_h position_absolute from_right collapse_but_allow_revival font_size_small z_index_2"
+                style="width: 10vw"
+                >Manually trigger a generation request for this dynamic
+                context</span
+              >
             </div>
             <div
-              class="border flex_col centered_content padding hover_highlight_border bg_s color_fg4 hover_color_fg hover_cursor_pointer"
-              title="Automatically trigger a generation request for this dynamic context when the text changes"
+              class="position_relative color_fg4 hover_color_fg hover_cursor_pointer revive_children_on_hover"
               [ngClass]="{
                 color_fg: prompt().automatic_dynamic,
               }"
@@ -88,17 +94,25 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
                 this.save.emit()
               "
             >
-              <span class="icon iconoir-bonfire"></span>
+              <span
+                class="icon iconoir-bonfire border padding hover_highlight_border"
+              ></span>
+              <span
+                class="top_0 padding border bg_h position_absolute from_right collapse_but_allow_revival font_size_small z_index_2"
+                style="width: 10vw"
+                >Automatically trigger a generation request for this dynamic
+                context when the text changes</span
+              >
             </div>
             <div
-              class="flex_row pseudo_input position_relative revive_children_on_hover"
+              class="flex_row pseudo_input position_relative revive_children_on_hover color_fg4 hover_color_fg"
               title="How many tokens of the text dynamic contexts get to read"
             >
               <span
-                class="icon iconoir-eye-solid border padding hover_highlight_border hover_cursor_pointer color_fg4"
+                class="icon iconoir-eye-solid border padding hover_highlight_border hover_cursor_pointer"
               ></span>
               <input
-                class="width_10vw position_absolute from_right padding border top_0 collapse_but_allow_revival bg_h"
+                class="position_absolute from_right padding border top_0 collapse_but_allow_revival bg_h"
                 type="number"
                 style="appearance: textfield; -moz-appearance: textfield; width: 10vw;"
                 [(ngModel)]="readTokens"
@@ -107,11 +121,11 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
               />
             </div>
             <div
-              class="flex_row pseudo_input  position_relative revive_children_on_hover"
+              class="flex_row pseudo_input  position_relative revive_children_on_hover color_fg4 hover_color_fg"
               title="How large dynamic contexts may become in tokens"
             >
               <span
-                class="icon iconoir-brain border padding hover_highlight_border hover_cursor_pointer color_fg4"
+                class="icon iconoir-brain border padding hover_highlight_border hover_cursor_pointer"
               ></span>
               <input
                 class="top_0 padding border bg_h position_absolute from_right collapse_but_allow_revival"
@@ -172,7 +186,7 @@ export class PromptComponent implements OnInit {
       }
     });
     this.fileChange().subscribe(() => {
-      if (this.prompt().automatic_dynamic && this.prompt().type === 'dynamic') {
+      if (this.prompt().automatic_dynamic && this.prompt().type === "dynamic") {
         this.computeDynamicContext(this.prompt());
       }
     });

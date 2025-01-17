@@ -36,7 +36,6 @@ import { RightTool } from "../models/right_tool";
     ParseNamePipe,
   ],
 })
-
 export class AppComponent {
   @ViewChild("controlBar") control_bar!: ElementRef<HTMLInputElement>;
 
@@ -70,12 +69,16 @@ export class AppComponent {
       icon: "iconoir-page",
       command: "o",
       color: "blue",
-      action: (self: SystemAction, system_input: HTMLInputElement) => {
-        if (system_input.value == "") {
+      action: (
+        self: SystemAction,
+        system_input: HTMLInputElement,
+        selection: string | undefined,
+      ) => {
+        if (system_input.value == "" && !selection) {
           this.highlightSystemAction(this.system_actions, self);
           system_input.select();
         } else {
-          this.openFile(system_input.value);
+          this.openFile(selection ? selection : system_input.value);
         }
       },
       paramRequired: true,
@@ -89,12 +92,17 @@ export class AppComponent {
       icon: "iconoir-page-plus",
       command: "n",
       color: "green",
-      action: (self: SystemAction, system_input: HTMLInputElement) => {
-        if (system_input.value == "") {
+      action: (
+        self: SystemAction,
+        system_input: HTMLInputElement,
+        selection: string | undefined,
+      ) => {
+        if (system_input.value == "" && !selection) {
           this.highlightSystemAction(this.system_actions, self);
           system_input.select();
         } else {
-          this.newFile(system_input.value);
+          this.newFile(selection ? selection : system_input.value);
+          this.highlightedFile = -1;
         }
       },
       paramRequired: false,
@@ -108,12 +116,17 @@ export class AppComponent {
       icon: "iconoir-page-edit",
       command: "e",
       color: "yellow",
-      action: (self: SystemAction, system_input: HTMLInputElement) => {
-        if (system_input.value == "") {
+      action: (
+        self: SystemAction,
+        system_input: HTMLInputElement,
+        selection: string | undefined,
+      ) => {
+        if (system_input.value == "" && !selection) {
           this.highlightSystemAction(this.system_actions, self);
           system_input.select();
         } else {
-          this.editFile(system_input.value);
+          this.editFile(selection ? selection : system_input.value);
+          this.highlightedFile = -1;
         }
       },
       paramRequired: false,
@@ -130,10 +143,22 @@ export class AppComponent {
       icon: "iconoir-fire-flame",
       command: "x",
       color: "fire",
-      action: (system_action: SystemAction, system_input: HTMLInputElement) => {
+      action: (
+        self: SystemAction,
+        system_input: HTMLInputElement,
+        selection: string | undefined,
+      ) => {
+        if (system_input.value === "" && !selection) {
+          this.highlightSystemAction(this.system_actions, self);
+          system_input.select();
+        }
         this.filesService
-          .getFileFromArchive(this.activeArchiveName, system_input.value)
+          .getFileFromArchive(
+            this.activeArchiveName,
+            selection ? selection : system_input.value,
+          )
           .then((file) => this.addInformation(file));
+        this.highlightedFile = -1;
       },
       paramRequired: false,
     },
@@ -148,12 +173,17 @@ export class AppComponent {
       icon: "iconoir-bin-half",
       command: "r",
       color: "red",
-      action: (self: SystemAction, system_input: HTMLInputElement) => {
-        if (system_input.value == "") {
+      action: (
+        self: SystemAction,
+        system_input: HTMLInputElement,
+        selection: string | undefined,
+      ) => {
+        if (system_input.value === "" && !selection) {
           this.highlightSystemAction(this.system_actions, self);
           system_input.select();
         } else {
-          this.removeFile(system_input.value);
+          this.removeFile(selection ? selection : system_input.value);
+          this.highlightedFile = -1;
         }
       },
       paramRequired: true,
@@ -243,8 +273,9 @@ export class AppComponent {
   systemActionOnClick(
     system_action: SystemAction,
     control_bar: HTMLInputElement,
+    selection: string,
   ) {
-    system_action.action(system_action, control_bar);
+    system_action.action(system_action, control_bar, selection);
   }
 
   systemBarOnKeyDown(e: KeyboardEvent) {
@@ -263,8 +294,11 @@ export class AppComponent {
           this.buildPrompt();
         } else if (this.highlightedSystemAction()) {
           const action = this.highlightedSystemAction()!;
-          action.action(action, this.control_bar.nativeElement);
-          //this.control_bar.nativeElement.value = "";
+          action.action(
+            action,
+            this.control_bar.nativeElement,
+            this.activeArchiveFiles[this.highlightedFile],
+          );
         }
         break;
       case "Backspace":
@@ -348,8 +382,9 @@ export class AppComponent {
   }
 
   openFile(fileName: string) {
-    // @TODO Add save check for current file
-    this.openedFileNames.push(fileName);
+    if (this.activeArchiveFiles.includes(fileName)) {
+      this.openedFileNames.push(fileName);
+    }
   }
 
   closeFile(fileName: string) {

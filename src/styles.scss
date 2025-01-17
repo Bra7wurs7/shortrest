@@ -549,7 +549,7 @@ img {
 .collapse_but_allow_revival {
   transition: visibility 0.15s;
   opacity: 0;
-  visibility: collapse;
+  visibility: hidden;
   overflow: hidden;
 }
 
@@ -636,6 +636,10 @@ img {
 
 width_10vw {
   width: 10vw;
+}
+
+width_15vw {
+  width: 15vw;
 }
 
 .w_34px_highlighted_w_150px {

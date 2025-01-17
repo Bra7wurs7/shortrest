@@ -8,6 +8,10 @@ export interface SystemAction {
   icon: string;
   command: string;
   color: string;
-  action: (self: SystemAction, param: HTMLInputElement) => void;
+  action: (
+    self: SystemAction,
+    param: HTMLInputElement,
+    selection: string,
+  ) => void;
   paramRequired: boolean;
 }
