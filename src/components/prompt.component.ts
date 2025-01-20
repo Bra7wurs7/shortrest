@@ -35,13 +35,25 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
       (click)="prompt().collapsed = !prompt().collapsed; this.save.emit()"
     >
       <span
-        class="icon hover_cursor_pointer color_fg4 hover_color_fg"
+        class="icon hover_cursor_pointer color_fg4 hover_color_fg position_relative revive_children_on_hover"
         [ngClass]="{
           'iconoir-cube': prompt().type === 'static',
           'iconoir-cube-hole': prompt().type === 'dynamic',
         }"
         (click)="onClickType(); this.save.emit(); $event.stopPropagation()"
-      ></span>
+      >
+        <span
+          class="top_0 rounded border bg_h position_absolute from_right collapse_but_allow_revival font_size_small z_index_2"
+          style="width: 10vw"
+        >
+          @if (prompt().type === "static") {
+            Static context
+          }
+          @if (prompt().type === "dynamic") {
+            Dynamic context
+          }
+        </span></span
+      >
       <span
         class="grow overflow_hidden bg_s text_overflow_fade margin_l"
         [ngClass]="{
@@ -50,7 +62,7 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
         >{{ prompt().content }}</span
       >
       <span
-        class="icon hover_cursor_pointer color_fg4 hover_color_fg"
+        class="icon hover_cursor_pointer color_fg4 hover_color_fg position_relative revive_children_on_hover"
         [ngClass]="{
           'iconoir-circle': !prompt().visible,
           'iconoir-check-circle': prompt().visible,
@@ -60,11 +72,28 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
           this.save.emit();
           $event.stopPropagation()
         "
-      ></span>
+      >
+        <span
+          class="left_0 rounded border bg_h position_absolute from_bottom writing_mode_v_lr white_space_nowrap collapse_but_allow_revival font_size_small z_index_2"
+        >
+          @if (prompt().visible) {
+            Context visible
+          }
+          @if (!prompt().visible) {
+            Context hidden
+          }
+        </span>
+      </span>
       <span
-        class="icon iconoir-xmark-square hover_cursor_pointer color_fg4 hover_color_fg"
+        class="icon iconoir-xmark-square hover_cursor_pointer color_fg4 hover_color_fg position_relative revive_children_on_hover"
         (click)="remove.emit(); this.save.emit(); $event.stopPropagation()"
-      ></span>
+      >
+        <span
+          class="left_0 rounded border bg_h position_absolute from_bottom writing_mode_v_lr white_space_nowrap collapse_but_allow_revival font_size_small z_index_2"
+        >
+          Remove context
+        </span>
+      </span>
     </div>
     @if (!prompt().collapsed) {
       <div class="flex_row">
@@ -78,17 +107,13 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
                 class="icon iconoir-refresh-circle border padding hover_highlight_border"
               ></span>
               <span
-                class="top_0 padding border bg_h position_absolute from_right collapse_but_allow_revival font_size_small z_index_2"
+                class="top_0 padding rounded_br border bg_h position_absolute from_right collapse_but_allow_revival font_size_small z_index_2"
                 style="width: 10vw"
-                >Manually trigger a generation request for this dynamic
-                context</span
+                >Click to generate dynamic context</span
               >
             </div>
             <div
               class="position_relative color_fg4 hover_color_fg hover_cursor_pointer revive_children_on_hover"
-              [ngClass]="{
-                color_fg: prompt().automatic_dynamic,
-              }"
               (click)="
                 prompt().automatic_dynamic = !prompt().automatic_dynamic;
                 this.save.emit()
@@ -96,12 +121,15 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
             >
               <span
                 class="icon iconoir-bonfire border padding hover_highlight_border"
+                [ngClass]="{
+                  fire: prompt().automatic_dynamic,
+                }"
               ></span>
               <span
-                class="top_0 padding border bg_h position_absolute from_right collapse_but_allow_revival font_size_small z_index_2"
+                class="top_0 padding rounded_r border bg_h position_absolute from_right collapse_but_allow_revival font_size_small z_index_2"
                 style="width: 10vw"
-                >Automatically trigger a generation request for this dynamic
-                context when the text changes</span
+                >Automatically update dynamic context when the text
+                changes</span
               >
             </div>
             <div
@@ -112,7 +140,7 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
                 class="icon iconoir-eye-solid border padding hover_highlight_border hover_cursor_pointer"
               ></span>
               <input
-                class="position_absolute from_right padding border top_0 collapse_but_allow_revival bg_h"
+                class="position_absolute rounded_r from_right padding border border_bottom_color_fg4 top_0 collapse_but_allow_revival bg_h hover_highlight_border"
                 type="number"
                 style="appearance: textfield; -moz-appearance: textfield; width: 10vw;"
                 [(ngModel)]="readTokens"
@@ -121,14 +149,14 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
               />
             </div>
             <div
-              class="flex_row pseudo_input  position_relative revive_children_on_hover color_fg4 hover_color_fg"
+              class="flex_row pseudo_input position_relative revive_children_on_hover color_fg4 hover_color_fg"
               title="How large dynamic contexts may become in tokens"
             >
               <span
                 class="icon iconoir-brain border padding hover_highlight_border hover_cursor_pointer"
               ></span>
               <input
-                class="top_0 padding border bg_h position_absolute from_right collapse_but_allow_revival"
+                class="top_0 padding border rounded_tr border_bottom_color_fg4 bg_h position_absolute from_right collapse_but_allow_revival hover_highlight_border"
                 type="number"
                 style="appearance: textfield; -moz-appearance: textfield; width: 10vw;"
                 [(ngModel)]="writeTokens"

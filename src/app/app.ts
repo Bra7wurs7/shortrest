@@ -57,6 +57,8 @@ export class AppComponent {
 
   highlightedFile: number = -1;
 
+  runningPrompts: Set<number> = new Set();
+
   protected readonly generateDynamicContextEmitter = new EventEmitter();
   protected readonly fileChangeEmitter = new EventEmitter();
 
@@ -551,6 +553,11 @@ export class AppComponent {
     };
 
     this.http.streamPrompt({ ...this.llm, body: body }).then((o) => {
+      let promptId = 0;
+      while (this.runningPrompts.has(promptId)) {
+        promptId += 1;
+      }
+      this.runningPrompts.add(promptId);
       const sub = o?.subscribe((streamFragment) => {
         const asTyped = streamFragment as unknown as OllamaChatResponse[];
         for (const fragment of asTyped) {
@@ -559,6 +566,7 @@ export class AppComponent {
             sub?.unsubscribe();
             this.saveFile(this.activeFileName);
             this.fileChangeEmitter.emit();
+            this.runningPrompts.delete(promptId);
           }
         }
       });

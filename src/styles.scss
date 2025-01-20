@@ -267,7 +267,7 @@ img {
 
 .hover_highlight_border {
   &:hover {
-    border-color: $bg3;
+    @extend .highlight_border;
   }
 }
 
@@ -361,6 +361,10 @@ img {
 
 .border_bottom_color_fg4 {
   border-bottom-color: $fg4;
+}
+
+.border_bottom_color_fg4 {
+  border-bottom-color: $bg3;
 }
 
 .font_size_small {
@@ -817,4 +821,12 @@ opacity_0_highlighted_opacity_1 {
   50% {
     box-shadow: 0px -1px 6px 1px rgba($aqua, 0.4); // Original size of shadow, but taller for the flame effect
   }
+}
+
+.writing_mode_v_lr {
+  writing-mode: vertical-lr;
+}
+
+.white_space_nowrap {
+  white-space: nowrap;
 }

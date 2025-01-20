@@ -307,7 +307,7 @@
         >
           <span
             class="overflow_hidden grow text_overflow_fade bg user_select_none"
-            >Provide information</span
+            >Provide context</span
           >
           <span class="icon iconoir-plus"></span>
         </div>
@@ -316,55 +316,79 @@
       <div class="flex_col">
         <div class="flex_row">
           <div class="flex_row">
-            <div
-              class="flex_row border padding pseudo_input hover_highlight_border bg_h grow"
-              title="The amount of new text tokens the LLM may produce before being terminated"
-            >
-              <input
-                class="flex"
-                placeholder="Write Tokens"
-                [(ngModel)]="right_tools[active_right_tool_index].writeTokens"
-              />
+            <div class="bg_h grow revive_children_on_hover position_relative">
               <span
-                class="icon iconoir-data-transfer-down hover_cursor_pointer color_fg4"
-              ></span>
+                class="left_0 padding rounded_tr border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
+                style="width: 10vw"
+                >The amount of new text tokens the LLM may produce before being
+                terminated</span
+              >
+              <span
+                class="flex_row border padding pseudo_input hover_highlight_border"
+              >
+                <input
+                  class="flex"
+                  placeholder="Write Tokens"
+                  [(ngModel)]="right_tools[active_right_tool_index].writeTokens"
+                />
+                <span
+                  class="icon iconoir-data-transfer-down hover_cursor_pointer color_fg4"
+                ></span>
+              </span>
             </div>
-            <div
-              class="flex_row border padding pseudo_input hover_highlight_border bg_h grow"
-              title="How many text tokens into the past the LLM gets to read before starting to produce a continuation."
-            >
-              <input
-                class="flex"
-                placeholder="Read Tokens"
-                [(ngModel)]="right_tools[active_right_tool_index].readTokens"
-              />
+            <div class="bg_h grow position_relative revive_children_on_hover">
               <span
-                class="icon iconoir-data-transfer-up hover_cursor_pointer color_fg4"
-              ></span>
+                class="right_0 padding rounded_t border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
+                style="width: 10vw"
+                >How many text tokens into the past the LLM gets to read before
+                starting to produce a continuation</span
+              >
+              <span
+                class="flex_row border padding pseudo_input hover_highlight_border"
+              >
+                <input
+                  class="flex"
+                  placeholder="Read Tokens"
+                  [(ngModel)]="right_tools[active_right_tool_index].readTokens"
+                />
+                <span
+                  class="icon iconoir-data-transfer-up hover_cursor_pointer color_fg4"
+                ></span>
+              </span>
             </div>
           </div>
           <div class="flex_row">
-            <div
-              class="border flex_col centered_content padding color_fg4 hover_highlight_border bg_s"
-              title="Trigger generation requests for the current dynamic contexts"
+            <span
+              class="flex_col bg_s position_relative revive_children_on_hover"
             >
               <span
-                class="icon iconoir-reload-window hover_cursor_pointer"
+                class="border icon padding color_fg4 hover_highlight_border iconoir-reload-window hover_cursor_pointer"
                 (click)="generateDynamicContextEmitter.emit()"
               ></span>
-            </div>
-            <div
-              class="border border_color_bg_s flex_col centered_content padding hover_highlight_border"
-              title="Show/hide advanced prompt configuration options"
-              [ngClass]="{
-                color_fg1: right_tools[active_right_tool_index].advancedSettings,
-                color_fg4: !right_tools[active_right_tool_index].advancedSettings,
-                bg_s: right_tools[active_right_tool_index].advancedSettings,
-              }"
+              <span
+                class="right_0 padding rounded_t border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
+                style="width: 10vw"
+                >Trigger generation requests for all dynamic contexts</span
+              >
+            </span>
+            <span
+              class="flex_col revive_children_on_hover position_relative"
               (click)="right_tools[active_right_tool_index].advancedSettings = !right_tools[active_right_tool_index].advancedSettings"
             >
-              <span class="icon iconoir-settings hover_cursor_pointer"></span>
-            </div>
+              <span
+                class="border border_color_bg_s padding icon iconoir-settings hover_cursor_pointer hover_highlight_border"
+                [ngClass]="{
+                  color_fg1: right_tools[active_right_tool_index].advancedSettings,
+                  color_fg4: !right_tools[active_right_tool_index].advancedSettings,
+                  bg_s: right_tools[active_right_tool_index].advancedSettings,
+                }"
+              ></span>
+              <span
+                class="right_0 padding rounded_tl border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
+                style="width: 10vw"
+                >Toggle advanced LLM configuration options</span
+              >
+            </span>
           </div>
         </div>
         @if (right_tools[active_right_tool_index].advancedSettings) {
@@ -417,14 +441,20 @@
 
     <div class="flex_col width_sibedar_width">
       <div class="flex_row">
-        <div
-          class="border rounded_bl padding flex_row grow hover_cursor_pointer hover_highlight_border bg_s color_fg4 hover_color_fg overflow_hidden"
-          (click)="buildPrompt()"
-        >
-          <span class="overflow_hidden grow text_overflow_fade bg_s"
-            >Generate Text</span
+        <div class="flex_row grow hover_cursor_pointer" (click)="buildPrompt()">
+          <span
+            class="border rounded_bl padding grow hover_highlight_border bg_s hover_color_fg overflow_hidden"
+            [ngClass]="{
+              color_fg4: this.runningPrompts.size === 0,
+              fire: this.runningPrompts.size,
+              highlight_border: this.runningPrompts.size
+            }"
           >
-          <span class="icon iconoir-fire-flame margin_r"></span>
+            <span class="overflow_hidden grow text_overflow_fade bg_s"
+              >Generate Text</span
+            >
+            <span class="icon iconoir-fire-flame margin_r"></span>
+          </span>
         </div>
       </div>
     </div>
