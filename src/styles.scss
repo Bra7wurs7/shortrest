@@ -359,6 +359,14 @@ img {
   border-right-color: $bg_s;
 }
 
+.border_left_color_bg_s {
+  border-left-color: $bg_s;
+}
+
+.border_top_color_bg_s {
+  border-top-color: $bg_s;
+}
+
 .border_bottom_color_fg4 {
   border-bottom-color: $fg4;
 }
@@ -638,11 +646,15 @@ img {
   width: 50%;
 }
 
-width_10vw {
+.width_10vw {
   width: 10vw;
 }
 
-width_15vw {
+.width_15vw {
+  width: 15vw;
+}
+
+.width_30vw {
   width: 15vw;
 }
 
@@ -719,17 +731,14 @@ opacity_0_highlighted_opacity_1 {
 }
 
 .hover_bg_s:hover {
-  transition: background-color 0.1s ease-out;
   background-color: $bg_s;
 }
 
 .hover_bg:hover {
-  transition: background-color 0.1s ease-out;
   background-color: $bg;
 }
 
 .hover_bg_h:hover {
-  transition: background-color 0.1s ease-out;
   background-color: $bg_h;
 }
 

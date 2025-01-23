@@ -44,7 +44,9 @@ export class AppComponent {
 
   title = "shortrest";
 
-  activeArchiveName: string = "Unnamed Library";
+  allArchiveNames: string[] = [];
+
+  activeArchiveName: string = "Unnamed Archive";
   activeArchiveFiles: string[] = [];
 
   activeFileName: string = "";
@@ -57,6 +59,7 @@ export class AppComponent {
 
   highlightedFile: number = -1;
 
+  preparingPrompts: Set<number> = new Set();
   runningPrompts: Set<number> = new Set();
 
   protected readonly generateDynamicContextEmitter = new EventEmitter();
@@ -80,7 +83,8 @@ export class AppComponent {
           this.highlightSystemAction(this.system_actions, self);
           system_input.select();
         } else {
-          this.openFile(selection ? selection : system_input.value);
+          this.editFile(selection ? selection : system_input.value);
+          this.highlightedFile = -1;
         }
       },
       paramRequired: true,
@@ -104,30 +108,6 @@ export class AppComponent {
           system_input.select();
         } else {
           this.newFile(selection ? selection : system_input.value);
-          this.highlightedFile = -1;
-        }
-      },
-      paramRequired: false,
-    },
-    {
-      visibleRegex: new RegExp(".*"),
-      name: "Edit File",
-      advice: "Enter filename",
-      description: (s: string) =>
-        s ? `Edit "${s}"` : "Open a file for editing by its filename",
-      icon: "iconoir-page-edit",
-      command: "e",
-      color: "yellow",
-      action: (
-        self: SystemAction,
-        system_input: HTMLInputElement,
-        selection: string | undefined,
-      ) => {
-        if (system_input.value == "" && !selection) {
-          this.highlightSystemAction(this.system_actions, self);
-          system_input.select();
-        } else {
-          this.editFile(selection ? selection : system_input.value);
           this.highlightedFile = -1;
         }
       },
@@ -227,6 +207,7 @@ export class AppComponent {
   );
 
   highlightedSystemActionIndex = signal(-1);
+  openFileSystemActionIndex = -1;
 
   llm: SimpleHttpRequest = {
     url: new URL("http://127.0.0.1:11434/v1/chat/completions"),
@@ -237,8 +218,10 @@ export class AppComponent {
   };
 
   constructor() {
+    this.openFileSystemActionIndex = this.system_actions.findIndex((sa) => sa.command === 'o')
     this.updateActiveArchiveFiles();
     this.loadRightTools();
+    this.filesService.listArchives().then((a) => this.allArchiveNames = a);
   }
 
   onAddRightToolClick() {
@@ -261,6 +244,15 @@ export class AppComponent {
       .catch(() => {
         this.filesService.createArchive(this.activeArchiveName);
       });
+  }
+
+  setActiveArchive(archiveName: string) {
+    this.activeArchiveName = archiveName
+    this.updateActiveArchiveFiles()
+    this.openedFileNames = [];
+    this.highlightedFile = -1;
+    this.activeFileName = "";
+    this.activeFile = "";
   }
 
   highlightSystemAction(systemActions: SystemAction[], action: SystemAction) {
@@ -305,10 +297,9 @@ export class AppComponent {
         break;
       case "Backspace":
         if (
-          this.control_bar.nativeElement.value === "" &&
-          this.highlightedSystemAction()
+          this.control_bar.nativeElement.value === ""
         ) {
-          this.highlightedSystemActionIndex.set(-1);
+          this.clearSystemBar();
         }
         break;
       case "Tab":
@@ -383,12 +374,6 @@ export class AppComponent {
     this.updateActiveArchiveFiles();
   }
 
-  openFile(fileName: string) {
-    if (this.activeArchiveFiles.includes(fileName)) {
-      this.openedFileNames.push(fileName);
-    }
-  }
-
   closeFile(fileName: string) {
     const openedFileIndex = this.openedFileNames.findIndex(
       (f) => f === fileName,
@@ -421,6 +406,12 @@ export class AppComponent {
       );
       this.updateActiveArchiveFiles();
     }
+  }
+
+  clearSystemBar() {
+    this.control_bar.nativeElement.value = '';
+    this.highlightedFile = -1;
+    this.highlightedSystemActionIndex.set(-1)
   }
 
   deepCopy<A>(obj: A): A {
@@ -558,7 +549,7 @@ export class AppComponent {
         promptId += 1;
       }
       this.runningPrompts.add(promptId);
-      const sub = o?.subscribe((streamFragment) => {
+      const sub = o?.stream.subscribe((streamFragment) => {
         const asTyped = streamFragment as unknown as OllamaChatResponse[];
         for (const fragment of asTyped) {
           this.onToken(fragment.choices[0].delta.content);

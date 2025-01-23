@@ -10,14 +10,9 @@
       }"
     >
       <div
-        class="flex_col border_t border_l border_color_bg3 position_absolute bg_h padding_small from_right from_bottom rounded_r rounded_bl z_index_2 collapse_but_allow_revival max_width_sidebar_width"
+        class="flex_col border_t border_l border_color_bg3 position_absolute bg_h padding_small from_right from_bottom rounded_r rounded_bl z_index_2 collapse_but_allow_revival width_15vw"
       >
-        <div
-          class="border rounded_r rounded_bl border_color_bg_s padding flex margin_b font_size_small"
-        >
-          Type a filename into the control bar to filter files and actions.
-        </div>
-        <div class="border bg_s rounded padding_small flex margin_b flex_col">
+        <div class="border bg_s rounded_tr padding_small flex margin_b flex_col">
           <div class="flex_row space_between grow">
             <span
               >⭥ <span class="color_fg4 font_size_small">(Down/Up)</span>
@@ -26,12 +21,12 @@
           </div>
         </div>
         <div
-          class="border bg_s rounded padding_small flex space_between margin_b"
+          class="border bg_s padding_small flex space_between margin_b"
         >
           <span>⭾ <span class="color_fg4 font_size_small">(Tab)</span></span
           >Select Action
         </div>
-        <div class="border bg_s rounded padding_small flex space_between">
+        <div class="border bg_s rounded_b padding_small flex space_between">
           <span>⮐ <span class="color_fg4 font_size_small">(Return)</span></span
           >Perform action on file
         </div>
@@ -66,9 +61,7 @@
       <span
         class="icon rounded iconoir-xmark color_fg4 hover_cursor_pointer hover_color_fg"
         (click)="
-            controlBar.value = '';
-            highlightedFile = -1;
-            highlightedSystemActionIndex.set(-1)
+            clearSystemBar();
           "
       ></span>
       }
@@ -85,27 +78,29 @@
           <div
             class="hover_cursor_pointer transition_border_width user_select_none border_color_fg4 bg_h margin_b"
             [ngClass]="{
-                border_l_thick: activeFileName === file,
+                border_l_thick: file === controlBar.value || $index === highlightedFile,
               }"
           >
             <div
-              class="flex_row border padding space_between align_items hover_highlight_border w-full"
+              class="flex_row border padding space_between align_items hover_highlight_border w-full {{file === controlBar.value || $index === highlightedFile ? this.highlightedSystemAction()?.color : '' }}"
               [ngClass]="{
-                  bg: activeFileName === file,
-                  bg_h: activeFileName !== file,
+                  bg: file === controlBar.value || $index === highlightedFile,
                   highlight_border:
                     file === controlBar.value || $index === highlightedFile,
                 }"
               (click)="
                   highlightedFile !== $index
                     ? (highlightedFile = $index)
-                    : editFile(file)
+                    : editFile(file);
+                    this.highlightedSystemActionIndex.set(openFileSystemActionIndex)
                 "
+              (mouseenter)="(file === controlBar.value || $index === highlightedFile) ? this.highlightedSystemActionIndex.set(openFileSystemActionIndex) : ''"
+              (mouseleave)="(file === controlBar.value || $index === highlightedFile) ? this.highlightedSystemActionIndex.set(-1) : ''"
             >
               <div
                 class="align_items bg_h text_overflow_fade overflow_hidden grow flex"
                 [ngClass]="{
-                    bg: activeFileName === file,
+                    bg: file === controlBar.value || $index === highlightedFile,
                   }"
               >
                 <span>
@@ -127,19 +122,28 @@
         </div>
       </div>
       <div
-        class="rounded_tr rounded_bl hover_bg flex_row space_between position_relative revive_children_on_hover width_sibedar_width overflow_hidden"
+        class="rounded_b hover_bg flex_row space_between position_relative revive_children_on_hover width_sibedar_width"
       >
         <div
-          class="border bg_h border_color_bg_s position_absolute bg_h padding from_top rounded_t rounded_br z_index_2 collapse_but_allow_revival"
+          class="position_absolute bg from_top rounded_t z_index_2 collapse_but_allow_revival flex_col"
         >
-          List of other archives in the indexeddb
+        <input class="border padding border_bottom_color_bg_s width_sibedar_width border_bottom_color_fg4" [placeholder]="'Enter new archive name'"/>
+        @for(archiveName of this.allArchiveNames; track archiveName) {
+          <span class="border padding border_bottom_color_bg_s width_sibedar_width user_select_none hover_cursor_pointer" [ngClass]="{
+            bg_s: archiveName === activeArchiveName
+          }"
+          (click)="setActiveArchive(archiveName)">{{archiveName}}</span>
+        }
         </div>
         <span class="border padding overflow_hidden text_overflow_fade"
           >{{ activeArchiveName }}</span
         >
-        <div>
+        <div class="border flex_row rounded_br padding hover_highlight_border">
           <span
-            class="border flex icon color_fg4 rounded_tl rounded_tr rounded_bl iconoir-archive padding hover_highlight_border hover_color_fg"
+            class=" flex icon color_fg4 iconoir-upload-square hover_color_fg"
+          ></span>
+          <span
+            class="flex icon color_fg4 iconoir-download-square-solid hover_color_fg"
           ></span>
         </div>
       </div>
@@ -233,7 +237,7 @@
     >
       @if (editMode) {
       <textarea
-        class="bg border padding_big rounded_tl vertical_align_bottom hover_highlight_border"
+        class="bg border padding_big rounded_tl vertical_align_bottom hover_highlight_border border_on_focus"
         [ngClass]="{
             w_50: editMode && readMode,
             rounded_br: !(editMode && readMode),
@@ -263,14 +267,23 @@
       <div class="flex flex_row margin_b overflow_hidden">
         @for(tool of right_tools; track tool) {
         <div
-          class="border overflow_hidden text_overflow_fade padding rounded_t margin_r hover_highlight_border color_fg4 bg hover_cursor_pointer user_select_none"
+          class="border overflow_hidden text_overflow_fade padding rounded_t margin_r hover_highlight_border color_fg4 bg hover_cursor_pointer user_select_none position_relative revive_children_on_hover mono"
+          [ngClass]="{
+            bg_s: active_right_tool_index === $index
+          }"
+          (click)="active_right_tool_index = $index"
         >
-          {{tool.name}}
+          {{$index+1}}
+          <span
+                class="top_0 padding rounded_r border bg_h position_absolute from_left collapse_but_allow_revival font_size_small z_index_2"
+                >foo
+          </span>
         </div>
         }
 
         <div
           class="flex border padding rounded_t hover_highlight_border hover_cursor_pointer color_fg4 hover_color_fg"
+          (click)="this.right_tools.push(deepCopy(this.right_tools[active_right_tool_index]))"
         >
           <span class="icon iconoir-plus"></span>
         </div>

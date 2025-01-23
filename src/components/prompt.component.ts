@@ -1,12 +1,4 @@
-import {
-  Component,
-  EventEmitter,
-  OnInit,
-  effect,
-  inject,
-  input,
-  output,
-} from "@angular/core";
+import { Component, OnInit, input, EventEmitter, output, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Context } from "../models/context.model";
 import { FormsModule } from "@angular/forms";
@@ -39,12 +31,15 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
         [ngClass]="{
           'iconoir-cube': prompt().type === 'static',
           'iconoir-cube-hole': prompt().type === 'dynamic',
+          'rounded_l': prompt().type === 'dynamic',
+          'hover_bg_h': prompt().type === 'dynamic',
         }"
         (click)="onClickType(); this.save.emit(); $event.stopPropagation()"
       >
         <span
-          class="top_0 rounded border bg_h position_absolute from_right collapse_but_allow_revival font_size_small z_index_2"
-          style="width: 10vw"
+          class="top_0 rounded_r border bg_h position_absolute white_space_nowrap from_right collapse_but_allow_revival font_size_small z_index_2" [ngClass]="{
+            rounded_l: prompt().type === 'static',
+          }"
         >
           @if (prompt().type === "static") {
             Static context
@@ -123,6 +118,7 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
                 class="icon iconoir-bonfire border padding hover_highlight_border"
                 [ngClass]="{
                   fire: prompt().automatic_dynamic,
+                  'hover_bg_h': prompt().automatic_dynamic,
                 }"
               ></span>
               <span
@@ -140,9 +136,11 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
                 class="icon iconoir-eye-solid border padding hover_highlight_border hover_cursor_pointer"
               ></span>
               <input
+                #readTokensInput
                 class="position_absolute rounded_r from_right padding border border_bottom_color_fg4 top_0 collapse_but_allow_revival bg_h hover_highlight_border"
                 type="number"
-                style="appearance: textfield; -moz-appearance: textfield; width: 10vw;"
+                step="128"
+                style="width: 5vw;"
                 [(ngModel)]="readTokens"
                 (change)="this.save.emit()"
                 placeholder="Read"
@@ -156,9 +154,11 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
                 class="icon iconoir-brain border padding hover_highlight_border hover_cursor_pointer"
               ></span>
               <input
+                #writeTokensInput
                 class="top_0 padding border rounded_tr border_bottom_color_fg4 bg_h position_absolute from_right collapse_but_allow_revival hover_highlight_border"
                 type="number"
-                style="appearance: textfield; -moz-appearance: textfield; width: 10vw;"
+                step="128"
+                style="width: 5vw;"
                 [(ngModel)]="writeTokens"
                 (change)="this.save.emit()"
                 placeholder="Think"
@@ -266,7 +266,7 @@ export class PromptComponent implements OnInit {
     };
 
     this.http.streamPrompt({ ...this.llm(), body: body }).then((o) => {
-      const sub = o?.subscribe((streamFragment) => {
+      const sub = o?.stream.subscribe((streamFragment) => {
         const asTyped = streamFragment as unknown as OllamaChatResponse[];
         for (const fragment of asTyped) {
           context.dynamic_content += fragment.choices[0].delta.content;

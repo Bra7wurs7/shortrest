@@ -11,7 +11,7 @@ export class HttpFetchWrapperService {
 
   public async streamPrompt(
     request: SimpleHttpRequest,
-  ): Promise<Observable<Record<string, any>[]> | undefined> {
+  ): Promise<{stream: Observable<Record<string, any>[]>, stopStream: () => void} | undefined> {
     const response = await fetch(
       request.url + this.httpParamsToStringSuffix(request.params),
       {
@@ -26,9 +26,13 @@ export class HttpFetchWrapperService {
       .getReader();
 
     if (reader) {
-      return this.readableStreamToObservable(reader).pipe(
-        map((a) => this.tolerantJsonParse(a)),
-      );
+      
+      return {
+        stream: this.readableStreamToObservable(reader).pipe(
+          map((a) => this.tolerantJsonParse(a)),
+        ),
+        stopStream: response.body!.cancel,
+      };
     } else {
       return;
     }
