@@ -44,7 +44,7 @@ export class AppComponent {
 
   title = "shortrest";
 
-  allArchiveNames: string[] = [];
+  allArchiveNames: WritableSignal<string[]> = signal([]);
 
   activeArchiveName: string = "Unnamed Archive";
   activeArchiveFiles: string[] = [];
@@ -249,7 +249,7 @@ export class AppComponent {
   }
 
   updateArchiveNames() {
-    this.filesService.listArchives().then((a) => (this.allArchiveNames = a));
+    this.filesService.listArchives().then((a) => (this.allArchiveNames.set(a)));
   }
 
   setActiveArchive(archiveName: string) {
@@ -570,12 +570,17 @@ export class AppComponent {
     return { ...this.llm, body: body };
   }
 
-  addArchive(archiveName: string, input: HTMLInputElement) {
+  onClickAddArchive(archiveName: string, input: HTMLInputElement) {
     if (archiveName === "") {
       input.select();
     } else {
       this.filesService.createArchive(archiveName).then();
       this.updateArchiveNames();
     }
+  }
+
+  onClickRemoveArchive(archiveName: string) {
+    this.filesService.deleteArchive(archiveName);
+    this.updateArchiveNames();
   }
 }

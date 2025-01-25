@@ -137,18 +137,26 @@
             />
             <span
               class="padding flex icon color_fg4 iconoir-plus hover_color_fg rounded_tr hover_cursor_pointer"
-              (click)="addArchive(addArchiveNameInput.value, addArchiveNameInput)"
+              (click)="onClickAddArchive(addArchiveNameInput.value, addArchiveNameInput)"
             ></span>
           </span>
-          @for(archiveName of this.allArchiveNames; track archiveName) {
-          <span
-            class="border padding border_bottom_color_bg_s width_sibedar_width user_select_none hover_cursor_pointer"
-            [ngClass]="{
-            bg_s: archiveName === activeArchiveName
-          }"
-            (click)="setActiveArchive(archiveName)"
-            >{{archiveName}}</span
-          >
+          @for(archiveName of this.allArchiveNames(); track this.allArchiveNames().keys()) {
+            <span class="border flex_row width_sibedar_width border_bottom_color_bg_s" [ngClass]="{
+              bg_s: archiveName === activeArchiveName
+            }">
+              <span
+              class="padding user_select_none hover_cursor_pointer overflow_hidden text_overflow_fade bg grow"
+              [ngClass]="{
+              bg_s: archiveName === activeArchiveName
+            }"
+              (click)="setActiveArchive(archiveName)"
+              >{{archiveName}}</span 
+            >
+            <span
+            class="flex icon color_fg4 iconoir-xmark hover_color_fg padding hover_cursor_pointer"
+            (click)="onClickRemoveArchive(archiveName)"
+          ></span>
+            </span>
           }
         </div>
         <span class="border padding overflow_hidden text_overflow_fade"
