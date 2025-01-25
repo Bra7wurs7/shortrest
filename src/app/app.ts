@@ -25,16 +25,16 @@ import { CenterTool } from "../models/center_tool";
 import { RightTool } from "../models/right_tool";
 
 @Component({
-    selector: "app-root",
-    templateUrl: "app.html",
-    imports: [
-        CommonModule,
-        FormsModule,
-        ParseMarkdownPipe,
-        FilterFilesPipe,
-        PromptComponent,
-        ParseNamePipe,
-    ]
+  selector: "app-root",
+  templateUrl: "app.html",
+  imports: [
+    CommonModule,
+    FormsModule,
+    ParseMarkdownPipe,
+    FilterFilesPipe,
+    PromptComponent,
+    ParseNamePipe,
+  ],
 })
 export class AppComponent {
   @ViewChild("controlBar") control_bar!: ElementRef<HTMLInputElement>;
@@ -44,7 +44,7 @@ export class AppComponent {
 
   title = "shortrest";
 
-  allArchiveNames: WritableSignal<string[]> = signal([]);
+  allArchiveNames: string[] = [];
 
   activeArchiveName: string = "Unnamed Archive";
   activeArchiveFiles: string[] = [];
@@ -249,7 +249,7 @@ export class AppComponent {
   }
 
   updateArchiveNames() {
-    this.filesService.listArchives().then((a) => this.allArchiveNames.set(a));
+    this.filesService.listArchives().then((a) => (this.allArchiveNames = a));
   }
 
   setActiveArchive(archiveName: string) {
@@ -574,7 +574,7 @@ export class AppComponent {
     if (archiveName === "") {
       input.select();
     } else {
-      this.filesService.createArchive(archiveName);
+      this.filesService.createArchive(archiveName).then();
       this.updateArchiveNames();
     }
   }

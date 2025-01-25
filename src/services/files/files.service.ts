@@ -22,7 +22,7 @@ export class FilesService {
     if (await store.getKey(name)) {
       throw new Error(`Archive named ${name} already exists`);
     }
-    tx.abort(); // Abort the previous transaction to start a new one with readwrite access
+    await tx.done;
     const writeTx = db.transaction("archives", "readwrite");
     const writeStore = writeTx.objectStore("archives");
     await writeStore.put({ files: {} }, name);
