@@ -36,7 +36,7 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
         (click)="onClickType(); this.save.emit(); $event.stopPropagation()"
       >
         <span
-          class="top_0 rounded_r border bg_h position_absolute white_space_nowrap from_right collapse_but_allow_revival font_size_small z_index_2" [ngClass]="{
+          class="left_0 rounded border bg_h position_absolute from_bottom writing_mode_v_lr white_space_nowrap collapse_but_allow_revival font_size_small z_index_2" [ngClass]="{
             rounded_l: prompt().type === 'static',
           }"
         >

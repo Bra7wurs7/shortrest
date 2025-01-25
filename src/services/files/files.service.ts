@@ -1,5 +1,8 @@
 import { Injectable } from "@angular/core";
 import { openDB } from "idb";
+import { saveAs } from "file-saver";
+import JSZip from "jszip";
+import { formatDate } from "@angular/common";
 
 @Injectable({
   providedIn: "root",
@@ -115,5 +118,22 @@ export class FilesService {
       );
     }
     return archive.files[fileName];
+  }
+
+  async downloadArchive(archiveName: string): Promise<void> {
+    const fileNames = await this.listFilesInArchive(archiveName);
+    const zip = new JSZip();
+
+    for (const fileName of fileNames) {
+      const fileContent = await this.getFileFromArchive(archiveName, fileName);
+      zip.file(fileName, fileContent);
+    }
+
+    const content = await zip.generateAsync({ type: "blob" });
+    const now = new Date();
+    saveAs(
+      content,
+      `${archiveName} - ${formatDate(now, "short", navigator.language)}.zip`,
+    );
   }
 }

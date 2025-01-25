@@ -249,7 +249,7 @@ export class AppComponent {
   }
 
   updateArchiveNames() {
-    this.filesService.listArchives().then((a) => (this.allArchiveNames.set(a)));
+    this.filesService.listArchives().then((a) => this.allArchiveNames.set(a));
   }
 
   setActiveArchive(archiveName: string) {
@@ -446,25 +446,25 @@ export class AppComponent {
     return n;
   }
 
-  scrollIndexIncrementDecrement(
+  scrollThroughArchives(
     invert: boolean,
     e: WheelEvent,
-    activeArchiveFiles: string[],
+    allArchiveNames: string[],
   ): void {
-    if (activeArchiveFiles.length === 0) return;
+    if (allArchiveNames.length === 0) return;
 
-    let index = activeArchiveFiles.indexOf(this.activeFileName);
+    let index = allArchiveNames.indexOf(this.activeArchiveName);
     if (index === -1) {
-      // If current file is not in the list, set it to the first/last file
-      index = invert ? activeArchiveFiles.length : -1;
+      // If current archive is not in the list, set it to the first/last archive
+      index = invert ? allArchiveNames.length : -1;
     }
 
     if (invert ? e.deltaY > 0 : e.deltaY < 0) {
-      index = index + 1 === activeArchiveFiles.length ? 0 : index + 1; // Wrap around to the beginning if we're at the end
+      index = index + 1 === allArchiveNames.length ? 0 : index + 1; // Wrap around to the beginning if we're at the end
     } else {
-      index = index - 1 < 0 ? activeArchiveFiles.length - 1 : index - 1; // Wrap around to the end if we're at the beginning
+      index = index - 1 < 0 ? allArchiveNames.length - 1 : index - 1; // Wrap around to the end if we're at the beginning
     }
-    this.editFile(activeArchiveFiles[index]);
+    this.setActiveArchive(allArchiveNames[index]);
   }
 
   public addInformation(information: string | Blob) {
@@ -582,5 +582,9 @@ export class AppComponent {
   onClickRemoveArchive(archiveName: string) {
     this.filesService.deleteArchive(archiveName);
     this.updateArchiveNames();
+  }
+
+  onClickDownloadArchive(archiveName: string) {
+    this.filesService.downloadArchive(archiveName);
   }
 }

@@ -10,7 +10,7 @@
       }"
     >
       <div
-        class="flex_col border_t border_l border_color_bg3 position_absolute bg_h padding_small from_right from_bottom rounded_r rounded_bl z_index_2 collapse_but_allow_revival width_15vw"
+        class="flex_col border_t border_l margin border_color_bg3 position_absolute bg_h padding_small from_right from_bottom rounded_r rounded_bl z_index_2 collapse_but_allow_revival width_15vw"
       >
         <div
           class="border bg_s rounded_tr padding_small flex margin_b flex_col"
@@ -68,25 +68,22 @@
     </div>
     <div class="flex_col width_sibedar_width space_between grow">
       <div
-        (wheel)="
-          scrollIndexIncrementDecrement(true, $event, activeArchiveFiles)
-        "
       >
         <div class="overflow_y_scroll flex_col grow">
           @for ( file of activeArchiveFiles | filterFiles: controlBar.value;
           track file ) {
           <div
-            class="hover_cursor_pointer transition_border_width user_select_none border_color_fg4 bg_h margin_b"
+            class="hover_cursor_pointer transition_border_width user_select_none border_color_fg4 bg_h margin_b rounded_l"
             [ngClass]="{
                 border_l_thick: file === controlBar.value || $index === highlightedFile,
               }"
           >
             <div
-              class="flex_row border padding space_between align_items hover_highlight_border w-full {{file === controlBar.value || $index === highlightedFile ? this.highlightedSystemAction()?.color : '' }}"
+              class="flex_row border padding space_between align_items hover_highlight_border w-full rounded_r {{file === controlBar.value || $index === highlightedFile ? this.highlightedSystemAction()?.color : '' }}"
               [ngClass]="{
                   bg: file === controlBar.value || $index === highlightedFile,
                   highlight_border:
-                    file === controlBar.value || $index === highlightedFile,
+                    (file === controlBar.value || $index === highlightedFile) && this.highlightedSystemAction(),
                 }"
               (click)="
                   highlightedFile !== $index
@@ -123,6 +120,9 @@
       </div>
       <div
         class="rounded_b hover_bg flex_row space_between position_relative revive_children_on_hover width_sibedar_width"
+        (wheel)="
+          scrollThroughArchives(true, $event, this.allArchiveNames())
+        "
       >
         <div
           class="position_absolute bg from_top rounded_t z_index_2 collapse_but_allow_revival flex_col"
@@ -168,6 +168,7 @@
           ></span>
           <span
             class="flex icon color_fg4 iconoir-download-square-solid hover_color_fg"
+            (click)="onClickDownloadArchive(activeArchiveName)"
           ></span>
         </div>
       </div>
@@ -185,7 +186,7 @@
           (mouseleave)="highlightedSystemActionIndex.set(-1)"
         >
           <div
-            class="border box_sizing_border_box w_34px_highlighted_w_150px flex_row padding hover_cursor_pointer color_fg4 overflow_hidden {{
+            class="border box_sizing_border_box w_34px_highlighted_w_150px flex_row padding hover_cursor_pointer color_fg4 overflow_hidden rounded {{
                 system_action.color
               }}"
             [ngClass]="{
@@ -353,29 +354,9 @@
       <div class="flex_col">
         <div class="flex_row">
           <div class="flex_row">
-            <div class="bg_h grow revive_children_on_hover position_relative">
-              <span
-                class="left_0 padding rounded_tr border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
-                style="width: 10vw"
-                >The amount of new text tokens the LLM may produce before being
-                terminated</span
-              >
-              <span
-                class="flex_row border padding pseudo_input hover_highlight_border"
-              >
-                <input
-                  class="flex"
-                  placeholder="Write Tokens"
-                  [(ngModel)]="right_tools[active_right_tool_index].writeTokens"
-                />
-                <span
-                  class="icon iconoir-data-transfer-down hover_cursor_pointer color_fg4"
-                ></span>
-              </span>
-            </div>
             <div class="bg_h grow position_relative revive_children_on_hover">
               <span
-                class="right_0 padding rounded_t border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
+                class="left_0 padding rounded_t border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
                 style="width: 10vw"
                 >How many text tokens into the past the LLM gets to read before
                 starting to produce a continuation</span
@@ -390,6 +371,26 @@
                 />
                 <span
                   class="icon iconoir-data-transfer-up hover_cursor_pointer color_fg4"
+                ></span>
+              </span>
+            </div>
+            <div class="bg_h grow revive_children_on_hover position_relative">
+              <span
+                class="right_0 padding rounded_tr border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
+                style="width: 10vw"
+                >The amount of new text tokens the LLM may produce before being
+                terminated</span
+              >
+              <span
+                class="flex_row border padding pseudo_input hover_highlight_border"
+              >
+                <input
+                  class="flex"
+                  placeholder="Write Tokens"
+                  [(ngModel)]="right_tools[active_right_tool_index].writeTokens"
+                />
+                <span
+                  class="icon iconoir-data-transfer-down hover_cursor_pointer color_fg4"
                 ></span>
               </span>
             </div>
