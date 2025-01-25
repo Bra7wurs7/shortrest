@@ -12,10 +12,9 @@ import { SimpleHttpRequest } from "../models/simple-http-request.model";
 import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
 
 @Component({
-  selector: "app-prompt",
-  standalone: true,
-  imports: [FormsModule, ParseMarkdownPipe, CommonModule],
-  template: `
+    selector: "app-prompt",
+    imports: [FormsModule, ParseMarkdownPipe, CommonModule],
+    template: `
     <div
       class="padding rounded_tr border_t border_l border_r bg_s flex_row hover_highlight_border user_select_none hover_cursor_pointer"
       [ngClass]="{
@@ -191,7 +190,7 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
         ></div>
       }
     }
-  `,
+  `
 })
 export class PromptComponent implements OnInit {
   prompt = input.required<Context>();

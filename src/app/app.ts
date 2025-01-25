@@ -25,17 +25,16 @@ import { CenterTool } from "../models/center_tool";
 import { RightTool } from "../models/right_tool";
 
 @Component({
-  selector: "app-root",
-  standalone: true,
-  templateUrl: "app.html",
-  imports: [
-    CommonModule,
-    FormsModule,
-    ParseMarkdownPipe,
-    FilterFilesPipe,
-    PromptComponent,
-    ParseNamePipe,
-  ],
+    selector: "app-root",
+    templateUrl: "app.html",
+    imports: [
+        CommonModule,
+        FormsModule,
+        ParseMarkdownPipe,
+        FilterFilesPipe,
+        PromptComponent,
+        ParseNamePipe,
+    ]
 })
 export class AppComponent {
   @ViewChild("controlBar") control_bar!: ElementRef<HTMLInputElement>;
