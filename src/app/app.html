@@ -12,7 +12,9 @@
       <div
         class="flex_col border_t border_l border_color_bg3 position_absolute bg_h padding_small from_right from_bottom rounded_r rounded_bl z_index_2 collapse_but_allow_revival width_15vw"
       >
-        <div class="border bg_s rounded_tr padding_small flex margin_b flex_col">
+        <div
+          class="border bg_s rounded_tr padding_small flex margin_b flex_col"
+        >
           <div class="flex_row space_between grow">
             <span
               >⭥ <span class="color_fg4 font_size_small">(Down/Up)</span>
@@ -20,9 +22,7 @@
             <span>Select File</span>
           </div>
         </div>
-        <div
-          class="border bg_s padding_small flex space_between margin_b"
-        >
+        <div class="border bg_s padding_small flex space_between margin_b">
           <span>⭾ <span class="color_fg4 font_size_small">(Tab)</span></span
           >Select Action
         </div>
@@ -127,20 +127,36 @@
         <div
           class="position_absolute bg from_top rounded_t z_index_2 collapse_but_allow_revival flex_col"
         >
-        <input class="border padding border_bottom_color_bg_s width_sibedar_width border_bottom_color_fg4" [placeholder]="'Enter new archive name'"/>
-        @for(archiveName of this.allArchiveNames; track archiveName) {
-          <span class="border padding border_bottom_color_bg_s width_sibedar_width user_select_none hover_cursor_pointer" [ngClass]="{
+          <span
+            class="border flex_row width_sibedar_width border_bottom_color_fg4 hover_highlight_border rounded_t pseudo_input"
+          >
+            <input
+              #addArchiveNameInput
+              class="padding rounded_tl"
+              [placeholder]="'Enter new archive name'"
+            />
+            <span
+              class="padding flex icon color_fg4 iconoir-plus hover_color_fg rounded_tr hover_cursor_pointer"
+              (click)="addArchive(addArchiveNameInput.value, addArchiveNameInput)"
+            ></span>
+          </span>
+          @for(archiveName of this.allArchiveNames(); track archiveName) {
+          <span
+            class="border padding border_bottom_color_bg_s width_sibedar_width user_select_none hover_cursor_pointer"
+            [ngClass]="{
             bg_s: archiveName === activeArchiveName
           }"
-          (click)="setActiveArchive(archiveName)">{{archiveName}}</span>
-        }
+            (click)="setActiveArchive(archiveName)"
+            >{{archiveName}}</span
+          >
+          }
         </div>
         <span class="border padding overflow_hidden text_overflow_fade"
           >{{ activeArchiveName }}</span
         >
         <div class="border flex_row rounded_br padding hover_highlight_border">
           <span
-            class=" flex icon color_fg4 iconoir-upload-square hover_color_fg"
+            class="flex icon color_fg4 iconoir-upload-square hover_color_fg"
           ></span>
           <span
             class="flex icon color_fg4 iconoir-download-square-solid hover_color_fg"
@@ -275,8 +291,8 @@
         >
           {{$index+1}}
           <span
-                class="top_0 padding rounded_r border bg_h position_absolute from_left collapse_but_allow_revival font_size_small z_index_2"
-                >foo
+            class="top_0 padding rounded_r border bg_h position_absolute from_left collapse_but_allow_revival font_size_small z_index_2"
+            >foo
           </span>
         </div>
         }

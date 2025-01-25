@@ -17,10 +17,16 @@ export class FilesService {
 
   async createArchive(name: string): Promise<void> {
     const db = await this.dbPromise;
-    const tx = db.transaction("archives", "readwrite");
+    const tx = db.transaction("archives", "readonly");
     const store = tx.objectStore("archives");
-    await store.put({ files: {} }, name);
-    await tx.done;
+    if (await store.getKey(name)) {
+      throw new Error(`Archive named ${name} already exists`);
+    }
+    tx.abort(); // Abort the previous transaction to start a new one with readwrite access
+    const writeTx = db.transaction("archives", "readwrite");
+    const writeStore = writeTx.objectStore("archives");
+    await writeStore.put({ files: {} }, name);
+    await writeTx.done;
   }
 
   async listArchives(): Promise<string[]> {

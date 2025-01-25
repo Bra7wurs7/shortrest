@@ -8,6 +8,7 @@ import {
   Signal,
   signal,
   ViewChild,
+  WritableSignal,
 } from "@angular/core";
 import { SimpleHttpRequest } from "../models/simple-http-request.model";
 import { FormsModule } from "@angular/forms";
@@ -44,7 +45,7 @@ export class AppComponent {
 
   title = "shortrest";
 
-  allArchiveNames: string[] = [];
+  allArchiveNames: WritableSignal<string[]> = signal([]);
 
   activeArchiveName: string = "Unnamed Archive";
   activeArchiveFiles: string[] = [];
@@ -218,10 +219,12 @@ export class AppComponent {
   };
 
   constructor() {
-    this.openFileSystemActionIndex = this.system_actions.findIndex((sa) => sa.command === 'o')
+    this.openFileSystemActionIndex = this.system_actions.findIndex(
+      (sa) => sa.command === "o",
+    );
     this.updateActiveArchiveFiles();
     this.loadRightTools();
-    this.filesService.listArchives().then((a) => this.allArchiveNames = a);
+    this.updateArchiveNames();
   }
 
   onAddRightToolClick() {
@@ -246,9 +249,13 @@ export class AppComponent {
       });
   }
 
+  updateArchiveNames() {
+    this.filesService.listArchives().then((a) => this.allArchiveNames.set(a));
+  }
+
   setActiveArchive(archiveName: string) {
-    this.activeArchiveName = archiveName
-    this.updateActiveArchiveFiles()
+    this.activeArchiveName = archiveName;
+    this.updateActiveArchiveFiles();
     this.openedFileNames = [];
     this.highlightedFile = -1;
     this.activeFileName = "";
@@ -296,9 +303,7 @@ export class AppComponent {
         }
         break;
       case "Backspace":
-        if (
-          this.control_bar.nativeElement.value === ""
-        ) {
+        if (this.control_bar.nativeElement.value === "") {
           this.clearSystemBar();
         }
         break;
@@ -409,9 +414,9 @@ export class AppComponent {
   }
 
   clearSystemBar() {
-    this.control_bar.nativeElement.value = '';
+    this.control_bar.nativeElement.value = "";
     this.highlightedFile = -1;
-    this.highlightedSystemActionIndex.set(-1)
+    this.highlightedSystemActionIndex.set(-1);
   }
 
   deepCopy<A>(obj: A): A {
@@ -564,5 +569,14 @@ export class AppComponent {
     });
 
     return { ...this.llm, body: body };
+  }
+
+  addArchive(archiveName: string, input: HTMLInputElement) {
+    if (archiveName === "") {
+      input.select();
+    } else {
+      this.filesService.createArchive(archiveName);
+      this.updateArchiveNames();
+    }
   }
 }
