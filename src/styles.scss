@@ -1,4 +1,19 @@
-// Color Scheme: GruvBox Dark
+@font-face {
+  font-family: "geist";
+  src: url(assets/fonts/Geist.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: "geist-mono";
+  src: url(assets/fonts/GeistMono.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: "bitter";
+  src: url(assets/fonts/Bitter.ttf) format("truetype");
+}
+
+// Dark Color Scheme: GruvBox Dark
 $bg_h: #1d2021;
 $bg: #282828;
 $bg_s: #32302f;
@@ -15,7 +30,7 @@ $fg2: #d5c4a1;
 $fg3: #bdae93;
 $fg4: #a89984;
 
-// Green highlights CREATE actions (create new file, copy stuff)
+// Green highlights CREATE actions (create new file, create copy etc)
 $green: #b8bb26;
 $green-dim: #98971a;
 
@@ -33,538 +48,821 @@ $red-dim: #cc2412;
 
 $purple: #d3869b;
 $purple-dim: #b16286;
+
 $aqua: #8ec07c;
 $aqua-dim: #689d6a;
+
 $orange: #fe8019;
 $orange-dim: #d65d0e;
+
 $gray: #928374;
 $gray-dim: #a89984;
 
-// Using local font for somewhat uniform look between browsers and operating systems
-@font-face {
-    font-family: "geist";
-    src: url(assets/fonts/Geist.ttf) format("truetype");
-}
-
-@font-face {
-    font-family: "geist-mono";
-    src: url(assets/fonts/GeistMono.ttf) format("truetype");
-}
-
-@font-face {
-    font-family: "bitter";
-    src: url(assets/fonts/Bitter.ttf) format("truetype");
-}
+$half-sidebar-width: 9vw;
+$sidebar-width: 18vw;
+$expanded-sidebar-width: 42vw;
 
 // Style Variables
 
 // Style -> Spacing
-$border-radius: 13px;
+$border-radius: 7px;
 $padding: 5px;
 $smallpadding: 3px;
-$thickpadding: 6px;
+$bigpadding: 5px;
 $margin: 3px;
 $smallmargin: 1px;
-$border-width: 1px;
-$thicker-border-width: 3px;
+$bigmarging: 7px;
+$border-width: 2px;
+$thicker-border-width: 4px;
 
 // Style -> Colors
 $border-color: $bg3;
-$border-color-highlighted: $bg3;
 $background-color: $bg_h;
-$foreground-color: $fg;
 
 // Style -> Fonts
 $sans: geist, sans;
 $mono: geist-mono, mono;
 $serif: bitter, serif;
 
+// Style -> Icons
+$icon: 20px;
+
+// Base HTML Element Styles
 html {
-    height: 100%;
+  height: 100%;
 }
 
 body {
-    box-sizing: border-box;
-    height: 100%;
-    margin: 0;
-    padding: $smallpadding;
+  box-sizing: border-box;
+  height: 100%;
+  margin: 0;
+  padding: $smallpadding;
 }
 
-:root {
-    height: 100%;
-    background-color: $background-color;
-    color: $foreground-color;
-    font-family: $sans;
-}
-
-.user_select_none {
-    user-select: none;
-}
-
-.box {
-    border: $border-width solid transparent;
-}
-
-.box_tbl {
-    border: $border-width solid transparent;
-    border-right: none;
-}
-
-.border_t {
-    border-top: $border-width solid transparent;
-}
-
-.border_r {
-    border-right: $border-width solid transparent;
-}
-
-.border_b {
-    border-bottom: $border-width solid transparent;
-}
-
-.border_l {
-    border-left: $border-width solid transparent;
-}
-
-.thick_border_l {
-    border-left: $thicker-border-width solid transparent;
-}
-
-.border_bg {
-    border-color: $bg;
-}
-
-.border_bg_s {
-    border-color: $bg_s;
-}
-
-.border_bg_h {
-    border-color: $bg_h;
-}
-
-.border_fg4 {
-    border-color: $fg4;
-}
-
-.small_font {
-    font-size: small;
-}
-
-.text_upright {
-    writing-mode: vertical-rl;
-    display: flex;
-    align-items: center;
-}
-
-.box_tbl {
-    border: $border-width solid $border-color;
-    border-right: none;
-}
-
-.box_trl {
-    border: $border-width solid $border-color;
-    border-bottom: none;
-}
-
-.max_height {
-    max-height: 30vh;
-}
-
-.min_height {
-    max-height: 10vh;
-}
-
-.rounded {
-    border-radius: $border-radius;
-}
-
-.rounded_tl {
-    border-top-left-radius: $border-radius;
-}
-
-.rounded_tr {
-    border-top-right-radius: $border-radius;
-}
-
-.rounded_bl {
-    border-bottom-left-radius: $border-radius;
-}
-
-.rounded_br {
-    border-bottom-right-radius: $border-radius;
-}
-
-.rounded_t {
-    border-top-left-radius: $border-radius;
-    border-top-right-radius: $border-radius;
-}
-
-.rounded_r {
-    border-top-right-radius: $border-radius;
-    border-bottom-right-radius: $border-radius;
-}
-
-.rounded_b {
-    border-bottom-left-radius: $border-radius;
-    border-bottom-right-radius: $border-radius;
-}
-
-.rounded_l {
-    border-top-left-radius: $border-radius;
-    border-bottom-left-radius: $border-radius;
-}
-
-.padding {
-    padding: $padding;
-}
-
-.padding_flat {
-    padding: $smallpadding $padding $smallpadding $padding;
-}
-
-.padding_thicc {
-    padding: $thickpadding;
-}
-
-.smallpadding_left {
-    padding-left: $smallpadding;
-}
-
-.margin {
-    margin: $margin;
-}
-
-.margin_t {
-    margin-top: $margin;
-}
-
-.margin_r {
-    margin-right: $margin;
-}
-
-.margin_l {
-    margin-left: $margin;
-}
-
-.margin_b {
-    margin-bottom: $margin;
-}
-
-.pseudo_element {
-    padding-bottom: $smallpadding;
-    padding-right: $smallpadding;
-}
-
-.pseudo_border {
-    padding-bottom: $border-width;
-    padding-right: $border-width;
-}
-
-.flex_row {
-    display: flex;
-    flex-direction: row;
-}
-
-.flex_col {
-    display: flex;
-    flex-direction: column;
-}
-
-.align_end {
-    align-items: end;
-}
-
-.align_stretch {
-    align-items: stretch;
-}
-
-.justify_end {
-    justify-content: end;
-}
-
-.justify_center {
-    justify-content: center;
-}
-
-.justify_between {
-    justify-content: space-between;
-}
-
-.justify_strech {
-    justify-content: stretch;
-}
-
-.centered_content {
-    align-items: center;
-    justify-content: center;
-}
-
-.grow {
-    display: flex;
-    flex-grow: 1;
-}
-
-.min_width_max_content {
-    min-width: max-content;
-}
-
-.min_height_max_content {
-    min-height: max-content;
-}
-
-.shrink {
-    display: flex;
-    flex-shrink: 1;
-}
-
-.h_100 {
-    height: 100%;
-}
-
-.h_auto {
-    height: auto;
-}
-
-.h_max_content {
-    height: max-content;
-}
-
-.w_100 {
-    width: 100%;
-}
-
-.w_15vw {
-    box-sizing: border-box;
-    width: 15vw;
-}
-
-.bg_h {
-    background-color: $bg_h;
-    &.text_overflow_fade {
-        &:before {
-            background: linear-gradient(to right, transparent 90%, $bg_h);
-        }
-    }
-}
-
-.bg {
-    background-color: $bg;
-    &.text_overflow_fade {
-        &:before {
-            background: linear-gradient(to right, transparent 90%, $bg);
-        }
-    }
-}
-
-.bg_s {
-    background-color: $bg_s;
-    &.text_overflow_fade {
-        &:before {
-            background: linear-gradient(to right, transparent 90%, $bg_s);
-        }
-    }
-}
-
-.bg_b {
-    background-color: $border-color;
-    &.text_overflow_fade {
-        &:before {
-            background: linear-gradient(
-                to right,
-                transparent 90%,
-                $border-color
-            );
-        }
-    }
-}
-
-.fg1 {
-    color: $fg1;
-}
-
-.fg2 {
-    color: $fg2;
-}
-
-.fg3 {
-    color: $fg3;
-}
-
-.fg4 {
-    color: $fg4;
-}
-
-.small_font {
-    font-size: small;
-}
-
-.color_bg3 {
-    color: $bg3;
-}
-
-%text_overflow_fade_base {
-}
-
-.text_overflow_fade {
-    position: relative;
-    white-space: nowrap;
-
-    &:before {
-        pointer-events: none;
-        content: "";
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        left: 0;
-        top: 0;
-        &.bg {
-            background: linear-gradient(to right, transparent 90%, $bg);
-        }
-        &.bg_s {
-            background: linear-gradient(to right, transparent 90%, $bg_s);
-        }
-        &.bg_h {
-            background: linear-gradient(to right, transparent 90%, $bg_h);
-        }
-    }
-}
-
-.hover_fg:hover {
-    color: $fg;
-}
-
-.icon {
-    font-size: 20px;
-}
-
-.pseudo_input:has(> input:focus) {
-    border-color: $border-color-highlighted;
-}
-
-.hover_highlight_border {
-    &:hover {
-        border-color: $border-color-highlighted;
-        &.edit {
-            border-color: $yellow;
-        }
-
-        &.read {
-            border-color: $blue;
-        }
-
-        &.create {
-            border-color: $green;
-        }
-
-        &.delete {
-            border-color: $red;
-        }
-    }
-}
-
-.highlight_border {
-    border-color: $border-color-highlighted;
-}
-
-.highlight_border_left {
-    border-left-color: $border-color-highlighted;
-}
-
-.hover_bg_s {
-    &:hover {
-        background-color: $bg_s;
-    }
-}
-
-.hover_cursor_pointer {
-    cursor: pointer;
-}
-
-.overflow_scroll {
-    overflow: scroll;
-}
-
-.overflow_y_scroll {
-    overflow-y: scroll;
-}
-
-.overflow_hidden {
-    overflow: hidden;
-}
-
-.grid {
-    display: grid;
-}
-
-// Base HTML Element Styles
 input {
-    /* Remove background color and borders */
-    background-color: transparent;
-    border: none;
-    box-shadow: none;
-    box-sizing: border-box;
-    width: 100%;
+  /* Remove background color and borders */
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  box-sizing: border-box;
+  width: 100%;
 
-    /* Remove padding and margins */
-    padding: 0;
-    margin: 0;
+  /* Remove padding and margins */
+  padding: 0;
+  margin: 0;
 
-    /* Set font to inherit from parent element */
-    font-size: inherit;
-    font-family: inherit;
+  /* Set font to inherit from parent element */
+  font-size: inherit;
+  font-family: inherit;
 
-    /* Reset text color, appearance and cursor */
-    color: inherit;
-    appearance: none;
-    -webkit-appearance: none;
+  /* Reset text color, appearance and cursor */
+  color: inherit;
+  appearance: none;
+  -webkit-appearance: none;
 
-    &:focus {
-        outline: none;
-    }
+  &:focus {
+    outline: none;
+  }
 }
 
 textarea {
-    /* Remove background color and borders */
-    background-color: transparent;
-    border: none;
-    box-shadow: none;
-    box-sizing: border-box;
-    width: 100%;
-    resize: none;
+  /* Remove background color and borders */
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+  box-sizing: border-box;
+  width: 100%;
+  resize: none;
 
-    /* Remove padding and margins */
-    padding: 0;
-    margin: 0;
+  /* Remove padding and margins */
+  padding: 0;
+  margin: 0;
 
-    /* Set font to inherit from parent element */
-    font-size: inherit;
-    font-family: inherit;
+  /* Set font to inherit from parent element */
+  font-size: inherit;
+  font-family: inherit;
 
-    /* Reset text color, appearance and cursor */
-    color: inherit;
-    appearance: none;
-    -webkit-appearance: none;
+  /* Reset text color, appearance and cursor */
+  color: inherit;
+  appearance: none;
+  -webkit-appearance: none;
 
-    &:focus {
-        outline: none;
-    }
+  &:focus {
+    outline: none;
+  }
 }
 
 a {
-    color: $blue-dim;
-    :visited {
-        color: $purple-dim;
-    }
+  color: $blue-dim;
+  :visited {
+    color: $purple-dim;
+  }
 }
 
-.ProseMirror {
-    height: auto;
-    width: auto;
-    :first-child {
-        margin-top: 0;
-    }
+table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: $smallpadding;
+    vertical-align: top; // Align text to the top of the cell
+    font-size: small; // Make font size smaller by one level
+    border: $border-width solid $bg_s;
+  }
+
+  th {
+    color: $fg2;
+  }
+
+  tr:nth-child(even) {
+    background-color: $bg;
+  }
+
+  td:hover {
+    background-color: $bg_h;
+  }
 }
 
-.ProseMirror-focused {
-    outline: none;
+code {
+  padding: $padding;
+  background-color: $bg_h;
+  border-radius: $border-radius;
+  display: flex;
+  flex-grow: 1;
+  overflow-x: scroll;
+}
+
+img {
+  border-radius: $border-radius;
+  border: 1px solid $border-color;
+  float: right;
+  margin-left: 10px; // Adjust this value as needed for spacing between image and text.
+  max-width: 100%;
+  margin-bottom: $margin;
+  margin-left: $margin;
+}
+
+.box_sizing_border_box {
+  box-sizing: border-box;
+}
+
+:root {
+  height: 100%;
+  background-color: $background-color;
+  color: $fg;
+  font-family: $sans;
+}
+
+// Font
+
+.mono {
+  font-family: $mono;
+}
+
+.yellow {
+  color: $yellow;
+}
+
+.blue {
+  color: $blue;
+}
+
+.green {
+  color: $green;
+}
+
+.red {
+  color: $red;
+}
+
+.purple {
+  color: $purple;
+}
+
+.fire {
+  color: $orange;
+}
+
+.vertical_align_bottom {
+  vertical-align: bottom;
+}
+
+.user_select_none {
+  user-select: none;
+}
+
+.border {
+  border: $border-width solid transparent;
+}
+
+.pseudo_input:has(> input:focus) {
+  border-color: $bg3;
+}
+
+.border_on_focus:focus {
+  border-color: $bg3;
+}
+
+.hover_highlight_border {
+  &:hover {
+    @extend .highlight_border;
+  }
+}
+
+.highlight_border {
+  border-color: $bg3;
+  &.yellow {
+    border-color: $yellow;
+  }
+
+  &.blue {
+    border-color: $blue;
+  }
+
+  &.green {
+    border-color: $green;
+  }
+
+  &.red {
+    border-color: $red;
+  }
+
+  &.purple {
+    border-color: $purple;
+  }
+
+  &.fire {
+    border-color: $orange;
+    animation: shadowPulse 3s infinite ease-in-out;
+  }
+}
+
+.border_l_highlighted {
+  border-left-color: $bg3;
+}
+
+.border_t {
+  border-top: $border-width solid transparent;
+}
+
+.border_r {
+  border-right: $border-width solid transparent;
+}
+
+.border_b {
+  border-bottom: $border-width solid transparent;
+}
+
+.border_l {
+  border-left: $border-width solid transparent;
+}
+
+.border_l_thick {
+  border-left: $thicker-border-width solid transparent;
+}
+
+.border_color_bg {
+  border-color: $bg;
+}
+
+.border_color_bg_s {
+  border-color: $bg_s;
+}
+
+.border_color_bg_h {
+  border-color: $bg_h;
+}
+
+.border_color_fg4 {
+  border-color: $fg4;
+}
+
+.border_color_bg3 {
+  border-color: $bg3;
+}
+
+.border_top_color_bg3 {
+  border-top-color: $bg3;
+}
+
+.border_bottom_color_bg {
+  border-bottom-color: $bg;
+}
+
+.border_bottom_color_bg_s {
+  border-bottom-color: $bg_s;
+}
+
+.border_right_color_bg_s {
+  border-right-color: $bg_s;
+}
+
+.border_left_color_bg_s {
+  border-left-color: $bg_s;
+}
+
+.border_top_color_bg_s {
+  border-top-color: $bg_s;
+}
+
+.border_bottom_color_fg4 {
+  border-bottom-color: $fg4;
+}
+
+.border_bottom_color_fg4 {
+  border-bottom-color: $bg3;
+}
+
+.font_size_small {
+  font-size: small;
+}
+
+.text_upright {
+  writing-mode: vertical-rl;
+  display: flex;
+  align-items: center;
+}
+
+.border_trl {
+  border: $border-width solid $border-color;
+  border-bottom: none;
+}
+
+.max_height {
+  max-height: 30vh;
+}
+
+.min_height {
+  max-height: 10vh;
+}
+
+.height_37px {
+  height: 37px;
+}
+
+.rounded {
+  border-radius: $border-radius;
+}
+
+.rounded_tl {
+  border-top-left-radius: $border-radius;
+}
+
+.rounded_tr {
+  border-top-right-radius: $border-radius;
+}
+
+.rounded_bl {
+  border-bottom-left-radius: $border-radius;
+}
+
+.rounded_br {
+  border-bottom-right-radius: $border-radius;
+}
+
+.rounded_t {
+  border-top-left-radius: $border-radius;
+  border-top-right-radius: $border-radius;
+}
+
+.rounded_r {
+  border-top-right-radius: $border-radius;
+  border-bottom-right-radius: $border-radius;
+}
+
+.rounded_b {
+  border-bottom-left-radius: $border-radius;
+  border-bottom-right-radius: $border-radius;
+}
+
+.rounded_l {
+  border-top-left-radius: $border-radius;
+  border-bottom-left-radius: $border-radius;
+}
+
+.padding {
+  padding: $padding;
+}
+
+.padding_small {
+  padding: $smallpadding;
+}
+
+.padding_flat {
+  padding: $smallpadding $padding $smallpadding $padding;
+}
+
+.padding_big {
+  padding: $bigpadding;
+}
+
+.padding_small_left {
+  padding-left: $smallpadding;
+}
+
+.padding_b {
+  padding-bottom: $padding;
+}
+
+.padding_l {
+  padding-left: $padding;
+}
+
+.padding_r {
+  padding-right: $padding;
+}
+
+.padding_t {
+  padding-top: $padding;
+}
+
+.margin {
+  margin: $margin;
+}
+
+.margin_small {
+  margin: $smallmargin;
+}
+
+.margin_b {
+  margin-bottom: $margin;
+}
+
+.margin_t {
+  margin-top: $margin;
+}
+
+.margin_r {
+  margin-right: $margin;
+}
+
+.margin_l {
+  margin-left: $margin;
+}
+
+.margin_b {
+  margin-bottom: $margin;
+}
+
+// Position
+.position_absolute {
+  position: absolute;
+}
+
+.position_relative {
+  position: relative;
+}
+
+.from_right {
+  left: 100%;
+}
+
+.from_left {
+  right: 100%;
+}
+
+.from_bottom {
+  top: 100%;
+}
+
+.from_top {
+  bottom: 100%;
+}
+
+.top_0 {
+  top: 0;
+}
+
+.left_0 {
+  left: 0;
+}
+
+.right_0 {
+  right: 0;
+}
+
+.max_width_sidebar_width {
+  max-width: $sidebar-width;
+  min-width: $sidebar-width;
+}
+
+.z_index_2 {
+  z-index: 2;
+}
+
+.z_index_5 {
+  z-index: 5;
+}
+
+/*
+.collapse_hide_until_parent_hover > * {
+    pointer-events: none;
+}
+*/
+
+.collapse_but_allow_revival {
+  transition: visibility 0.15s;
+  opacity: 0;
+  visibility: hidden;
+  overflow: hidden;
+}
+
+.revive_children_on_hover:hover {
+  .collapse_but_allow_revival,
+  .collapse_but_allow_revival * {
+    transition: visibility 0.15s;
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+.flex_row {
+  display: flex;
+  flex-direction: row;
+}
+
+.flex_col {
+  display: flex;
+  flex-direction: column;
+}
+
+.align_end {
+  align-items: end;
+}
+
+.align_stretch {
+  align-items: stretch;
+}
+
+.justify_end {
+  justify-content: end;
+}
+
+.justify_center {
+  justify-content: center;
+}
+
+.space_between {
+  justify-content: space-between;
+}
+
+.justify_strech {
+  justify-content: stretch;
+}
+
+.centered_content {
+  align-items: center;
+  justify-content: center;
+}
+
+.flex {
+  display: flex;
+}
+
+.grow {
+  display: flex;
+  flex-grow: 1;
+}
+
+.height_1 {
+  height: 100%;
+}
+
+.height_inherit {
+  height: inherit;
+}
+
+.h_auto {
+  height: auto;
+}
+
+.h_max_content {
+  height: max-content;
+}
+
+.w_100 {
+  width: 100%;
+}
+
+.w_50 {
+  width: 50%;
+}
+
+.width_10vw {
+  width: 10vw;
+}
+
+.width_15vw {
+  width: 15vw;
+}
+
+.width_30vw {
+  width: 15vw;
+}
+
+.w_34px_highlighted_w_150px {
+  width: 34px;
+  transition: width 0.1s;
+
+  &.highlighted {
+    width: 150px;
+  }
+}
+
+.max_w_0_highlighted_max_w_200px {
+  max-width: 0;
+  transition: max-width 0.1s;
+
+  &.highlighted {
+    max-width: 200px;
+  }
+}
+
+opacity_0_highlighted_opacity_1 {
+  opacity: 0;
+  transition: opacity 0.1s;
+
+  &.highlighted {
+    opacity: 1;
+  }
+}
+
+.width_sibedar_width {
+  box-sizing: border-box;
+  width: $sidebar-width;
+}
+
+.width_inherit {
+  width: inherit;
+}
+
+.bg_h {
+  background-color: $bg_h;
+  &.text_overflow_fade {
+    &:before {
+      background: linear-gradient(to right, transparent 90%, $bg_h);
+    }
+  }
+}
+
+.bg {
+  background-color: $bg;
+  &.text_overflow_fade {
+    &:before {
+      background: linear-gradient(to right, transparent 90%, $bg);
+    }
+  }
+}
+
+.bg_s {
+  background-color: $bg_s;
+  &.text_overflow_fade {
+    &:before {
+      background: linear-gradient(to right, transparent 90%, $bg_s);
+    }
+  }
+}
+
+.bg_b {
+  background-color: $border-color;
+  &.text_overflow_fade {
+    &:before {
+      background: linear-gradient(to right, transparent 90%, $border-color);
+    }
+  }
+}
+
+.hover_bg_s:hover {
+  background-color: $bg_s;
+}
+
+.hover_bg:hover {
+  background-color: $bg;
+}
+
+.hover_bg_h:hover {
+  background-color: $bg_h;
+}
+
+.color_fg {
+  color: $fg !important;
+}
+
+.color_fg1 {
+  color: $fg1;
+}
+
+.color_fg2 {
+  color: $fg2;
+}
+
+.color_fg3 {
+  color: $fg3;
+}
+
+.color_fg4 {
+  color: $fg4;
+}
+
+.color_border_color {
+  color: $border-color;
+}
+
+.color_bg_s {
+  color: $bg_s;
+}
+
+.color_bg {
+  color: $bg;
+}
+
+.text_overflow_fade {
+  position: relative;
+  white-space: nowrap;
+
+  &:before {
+    pointer-events: none;
+    content: "";
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+    &.bg {
+      background: linear-gradient(to right, transparent 90%, $bg);
+    }
+    &.bg_s {
+      background: linear-gradient(to right, transparent 90%, $bg_s);
+    }
+    &.bg_h {
+      background: linear-gradient(to right, transparent 90%, $bg_h);
+    }
+  }
+}
+
+.hover_color_fg:hover {
+  color: $fg;
+}
+
+.hover_bg_fg:hover {
+  background-color: $fg;
+}
+
+.icon {
+  font-size: $icon;
+}
+
+.hover_cursor_pointer {
+  cursor: pointer;
+}
+
+.overflow_scroll {
+  overflow: scroll;
+}
+
+.overflow_y_scroll {
+  overflow-y: scroll;
+}
+
+.overflow_hidden {
+  overflow: hidden;
+}
+
+.transition_border_width {
+  transition: border-width 50ms;
+}
+
+@keyframes shadowPulse {
+  0%,
+  100% {
+    box-shadow: 0px -3px 9px 2px rgba($aqua, 0.4); // Taller and slightly enlarged shadow to look like a flame
+  }
+  50% {
+    box-shadow: 0px -1px 6px 1px rgba($aqua, 0.4); // Original size of shadow, but taller for the flame effect
+  }
+}
+
+.h_6px {
+  height: 6px;
+}
+
+.h_2px {
+  height: 2px;
+}
+
+.w_24px {
+  width: 28px;
+}
+
+.w_1 {
+  width: 100%;
+}
+
+.writing_mode_v_lr {
+  writing-mode: vertical-lr;
+}
+
+.white_space_nowrap {
+  white-space: nowrap;
 }

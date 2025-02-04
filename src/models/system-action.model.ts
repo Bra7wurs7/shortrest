@@ -1,8 +1,17 @@
+import { WritableSignal } from "@angular/core";
+
 export interface SystemAction {
+  visibleRegex: RegExp;
   name: string;
-  description: string;
+  advice: string;
+  description: (s: string) => string;
   icon: string;
   command: string;
-  type: string;
-  action: (param: HTMLTextAreaElement) => void;
+  color: string;
+  action: (
+    self: SystemAction,
+    param: HTMLInputElement,
+    selection: string,
+  ) => void;
+  paramRequired: boolean;
 }

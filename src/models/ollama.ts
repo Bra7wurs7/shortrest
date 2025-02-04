@@ -25,6 +25,8 @@ export interface OllamaChatBody {
 
   /** controls how long the model will stay loaded into memory following the request (default: 5m) */
   keep_alive?: string;
+
+  max_tokens?: number;
 }
 
 /** The body interface that POST /api/generate accepts. */
@@ -111,8 +113,9 @@ export interface OllamaChatResponse {
       content: string;
       images: string[] | null;
     };
+    finish_reason: string | null;
   }[];
-  done: boolean;
+  //done: boolean;
   total_duration?: number;
   load_duration?: number;
   prompt_eval_count?: number;
