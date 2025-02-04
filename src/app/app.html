@@ -67,8 +67,7 @@
       }
     </div>
     <div class="flex_col width_sibedar_width space_between grow">
-      <div
-      >
+      <div>
         <div class="overflow_y_scroll flex_col grow">
           @for ( file of activeArchiveFiles | filterFiles: controlBar.value;
           track file ) {
@@ -140,23 +139,27 @@
               (click)="onClickAddArchive(addArchiveNameInput.value, addArchiveNameInput)"
             ></span>
           </span>
-          @for(archiveName of this.allArchiveNames(); track this.allArchiveNames().keys()) {
-            <span class="border flex_row width_sibedar_width border_bottom_color_bg_s" [ngClass]="{
+          @for(archiveName of this.allArchiveNames(); track
+          this.allArchiveNames().keys()) {
+          <span
+            class="border flex_row width_sibedar_width border_bottom_color_bg_s"
+            [ngClass]="{
               bg_s: archiveName === activeArchiveName
-            }">
-              <span
+            }"
+          >
+            <span
               class="padding user_select_none hover_cursor_pointer overflow_hidden text_overflow_fade bg grow"
               [ngClass]="{
               bg_s: archiveName === activeArchiveName
             }"
               (click)="setActiveArchive(archiveName)"
-              >{{archiveName}}</span 
+              >{{archiveName}}</span
             >
             <span
-            class="flex icon color_fg4 iconoir-xmark hover_color_fg padding hover_cursor_pointer"
-            (click)="onClickRemoveArchive(archiveName)"
-          ></span>
-            </span>
+              class="flex icon color_fg4 iconoir-xmark hover_color_fg padding hover_cursor_pointer"
+              (click)="onClickRemoveArchive(archiveName)"
+            ></span>
+          </span>
           }
         </div>
         <span class="border padding overflow_hidden text_overflow_fade"
@@ -165,6 +168,7 @@
         <div class="border flex_row rounded_br padding hover_highlight_border">
           <span
             class="flex icon color_fg4 iconoir-upload-square hover_color_fg"
+            (click)="fileInput.click()"
           ></span>
           <span
             class="flex icon color_fg4 iconoir-download-square-solid hover_color_fg"
@@ -260,67 +264,85 @@
     <div
       class="grow bg flex_row rounded_br rounded_tl overflow_hidden justify_end"
     >
-      @if (editMode) {
+      @if (center_tools[0].active) {
       <textarea
-        class="bg border padding_big rounded_tl vertical_align_bottom hover_highlight_border border_on_focus"
+        class="bg border padding_big rounded_tl vertical_align_bottom hover_highlight_border border_on_focus mono grow"
         [ngClass]="{
-            w_50: editMode && readMode,
-            rounded_br: !(editMode && readMode),
+            rounded_br: !(center_tools[1].active && center_tools[2].active),
           }"
         [(ngModel)]="this.activeFile"
         (ngModelChange)="saveFile(activeFileName)"
         (keydown)="textInputOnKeyDown($event)"
         (change)="this.fileChangeEmitter.emit()"
       ></textarea>
-      } @if (readMode) {
-      <div
-        class="w_50 bg_s rounded_br rounded_tl padding_big overflow_y_scroll"
+      } @if (center_tools[1].active) {
+      <textarea
+        class="bg border padding_big rounded_tl vertical_align_bottom hover_highlight_border border_on_focus grow"
         [ngClass]="{
-            w_50: editMode && readMode,
+            rounded_br: !(center_tools[1].active && center_tools[2].active),
           }"
-        [innerHtml]="this.activeFile | parseMarkdown | async"
-      ></div>
+        [(ngModel)]="this.activeFile"
+        (ngModelChange)="saveFile(activeFileName)"
+        (keydown)="textInputOnKeyDown($event)"
+        (change)="this.fileChangeEmitter.emit()"
+      ></textarea>
+      } @if (center_tools[2].active) {
+      <span class="grow">
+        <div
+          class="w_50 bg_s rounded_br rounded_tl padding_big overflow_y_scroll w_1"
+          [innerHtml]="this.activeFile | parseMarkdown | async"
+        ></div>
+      </span>
       }
     </div>
   </div>
 
   <!-- RIGHT SIDEBAR -->
   <div class="margin_l flex_col space_between">
-    <div
-      class="flex flex_row space_between overflow_hidden width_sibedar_width"
-    >
-      <div class="flex flex_row margin_b overflow_hidden">
-        @for(tool of right_tools; track tool) {
+    <div class="flex flex_row space_between width_sibedar_width">
+      <div class="flex flex_row margin_b grow">
+        @for(tool of right_tools; track tool; let toolindex = $index) {
         <div
-          class="border overflow_hidden text_overflow_fade padding rounded_t margin_r hover_highlight_border color_fg4 bg hover_cursor_pointer user_select_none position_relative revive_children_on_hover mono"
-          [ngClass]="{
-            bg_s: active_right_tool_index === $index
-          }"
+          class="flex_col justify_end h_100 text_overflow_fade border_r border_l border_t border_color_bg_h margin_r hover_highlight_border color_fg4 hover_cursor_pointer user_select_none position_relative revive_children_on_hover hover_bg"
           (click)="active_right_tool_index = $index"
         >
-          {{$index+1}}
+          @for(context of tool.context_prompts; track context) {
           <span
-            class="top_0 padding rounded_r border bg_h position_absolute from_left collapse_but_allow_revival font_size_small z_index_2"
-            >foo
+            class="h_6px w_24px rounded_b rounded_tr margin_t bg"
+            [ngClass]="{
+              'bg_s': active_right_tool_index === toolindex && (right_tools[active_right_tool_index].context_prompts.length > 0),
+              'rounded_tl': $index > 0,
+            }"
+          >
           </span>
+          } @if(tool.context_prompts.length === 0) {
+          <span class="w_24px"></span>
+          } @if(tool.context_prompts.length > 0) {
+          <span
+            class="border left_0 flex_col rounded_t bg_h position_absolute from_bottom collapse_but_allow_revival font_size_small z_index_2"
+          >
+            <span
+              class="icon iconoir-cloud-download border margin_t hover_color_fg"
+              (click)="onClickDownloadRightTool(toolindex)"
+            ></span>
+            <span
+              class="icon iconoir-xmark border margin_t hover_color_fg"
+              (click)="onClickRemoveRightTool(toolindex)"
+            ></span>
+          </span>
+          }
         </div>
         }
-
-        <div
-          class="flex border padding rounded_t hover_highlight_border hover_cursor_pointer color_fg4 hover_color_fg"
-          (click)="this.right_tools.push(deepCopy(this.right_tools[active_right_tool_index]))"
-        >
-          <span class="icon iconoir-plus"></span>
-        </div>
       </div>
       <div
         class="flex border padding margin_b hover_highlight_border hover_cursor_pointer color_fg4 hover_color_fg"
+        (click)="rightToolsInput.click()"
       >
-        <span class="icon iconoir-tools"></span>
+        <span class="icon iconoir-cloud-upload"></span>
       </div>
     </div>
     <div
-      class="flex_col width_sibedar_width bg grow space_between overflow_hidden margin_b rounded_tr"
+      class="flex_col width_sibedar_width bg grow space_between margin_b rounded_tr overflow_hidden"
     >
       <div class="flex_col overflow_scroll height_1">
         @for (prompt of right_tools[active_right_tool_index].context_prompts;
@@ -473,6 +495,19 @@
             </div>
           </div>
         </div>
+        <div
+          class="flex_row border padding pseudo_input hover_highlight_border bg_h"
+          title="Variety (top_k): the portion of next token options to consider at all"
+        >
+          <input
+            class="flex"
+            placeholder="Model"
+            [(ngModel)]="right_tools[active_right_tool_index].top_k"
+          />
+          <span
+            class="icon iconoir-palette hover_cursor_pointer color_fg4"
+          ></span>
+        </div>
         }
       </div>
     </div>
@@ -481,7 +516,7 @@
       <div class="flex_row">
         <div class="flex_row grow hover_cursor_pointer" (click)="buildPrompt()">
           <span
-            class="border rounded_bl padding grow hover_highlight_border bg_s hover_color_fg overflow_hidden"
+            class="border rounded_bl padding grow hover_highlight_border bg_s hover_color_fg overflow_hidden width_sibedar_width"
             [ngClass]="{
               color_fg4: this.runningPrompts.size === 0,
               fire: this.runningPrompts.size,
@@ -498,3 +533,17 @@
     </div>
   </div>
 </div>
+
+<input
+  #fileInput
+  type="file"
+  style="display: none"
+  (change)="onFileInputChange($event)"
+/>
+
+<input
+  #rightToolsInput
+  type="file"
+  style="display: none"
+  (change)="onRightToolFileInputChange($event)"
+/>

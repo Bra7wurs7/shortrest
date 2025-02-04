@@ -136,4 +136,32 @@ export class FilesService {
       `${archiveName} - ${formatDate(now, "short", navigator.language)}.zip`,
     );
   }
+
+  async uploadArchive(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files[0]) {
+      const file = input.files[0];
+      const archiveName = file.name.replace(".zip", "");
+      await this.createArchive(archiveName);
+
+      // Check if the uploaded file is a text file
+      if (!file.type.match("text.*")) {
+        throw new Error(`The file ${file.name} is not a text file`);
+      }
+
+      const zip = new JSZip();
+      const zipContent = await zip.loadAsync(file);
+
+      for (const fileName in zipContent.files) {
+        if (!zipContent.files[fileName].dir) {
+          const fileContent = await zipContent.files[fileName].async("blob");
+          await this.saveFileToArchive(
+            archiveName,
+            fileName,
+            await new Response(fileContent).text(),
+          );
+        }
+      }
+    }
+  }
 }

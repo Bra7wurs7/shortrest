@@ -1,3 +1,18 @@
+@font-face {
+  font-family: "geist";
+  src: url(assets/fonts/Geist.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: "geist-mono";
+  src: url(assets/fonts/GeistMono.ttf) format("truetype");
+}
+
+@font-face {
+  font-family: "bitter";
+  src: url(assets/fonts/Bitter.ttf) format("truetype");
+}
+
 // Dark Color Scheme: GruvBox Dark
 $bg_h: #1d2021;
 $bg: #282828;
@@ -46,22 +61,6 @@ $gray-dim: #a89984;
 $half-sidebar-width: 9vw;
 $sidebar-width: 18vw;
 $expanded-sidebar-width: 42vw;
-
-// Using local font for somewhat uniform look between browsers and operating systems
-@font-face {
-  font-family: "geist";
-  src: url(assets/fonts/Geist.ttf) format("truetype");
-}
-
-@font-face {
-  font-family: "geist-mono";
-  src: url(assets/fonts/GeistMono.ttf) format("truetype");
-}
-
-@font-face {
-  font-family: "bitter";
-  src: url(assets/fonts/Bitter.ttf) format("truetype");
-}
 
 // Style Variables
 
@@ -396,6 +395,10 @@ img {
 
 .min_height {
   max-height: 10vh;
+}
+
+.height_37px {
+  height: 37px;
 }
 
 .rounded {
@@ -770,6 +773,10 @@ opacity_0_highlighted_opacity_1 {
   color: $bg_s;
 }
 
+.color_bg {
+  color: $bg;
+}
+
 .text_overflow_fade {
   position: relative;
   white-space: nowrap;
@@ -796,6 +803,10 @@ opacity_0_highlighted_opacity_1 {
 
 .hover_color_fg:hover {
   color: $fg;
+}
+
+.hover_bg_fg:hover {
+  background-color: $fg;
 }
 
 .icon {
@@ -830,6 +841,22 @@ opacity_0_highlighted_opacity_1 {
   50% {
     box-shadow: 0px -1px 6px 1px rgba($aqua, 0.4); // Original size of shadow, but taller for the flame effect
   }
+}
+
+.h_6px {
+  height: 6px;
+}
+
+.h_2px {
+  height: 2px;
+}
+
+.w_24px {
+  width: 28px;
+}
+
+.w_1 {
+  width: 100%;
 }
 
 .writing_mode_v_lr {

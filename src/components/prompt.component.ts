@@ -1,4 +1,11 @@
-import { Component, OnInit, input, EventEmitter, output, inject } from "@angular/core";
+import {
+  Component,
+  OnInit,
+  input,
+  EventEmitter,
+  output,
+  inject,
+} from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { Context } from "../models/context.model";
 import { FormsModule } from "@angular/forms";
@@ -12,9 +19,9 @@ import { SimpleHttpRequest } from "../models/simple-http-request.model";
 import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
 
 @Component({
-    selector: "app-prompt",
-    imports: [FormsModule, ParseMarkdownPipe, CommonModule],
-    template: `
+  selector: "app-prompt",
+  imports: [FormsModule, ParseMarkdownPipe, CommonModule],
+  template: `
     <div
       class="padding rounded_tr border_t border_l border_r bg_s flex_row hover_highlight_border user_select_none hover_cursor_pointer"
       [ngClass]="{
@@ -30,13 +37,14 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
         [ngClass]="{
           'iconoir-cube': prompt().type === 'static',
           'iconoir-cube-hole': prompt().type === 'dynamic',
-          'rounded_l': prompt().type === 'dynamic',
-          'hover_bg_h': prompt().type === 'dynamic',
+          rounded_l: prompt().type === 'dynamic',
+          hover_bg_h: prompt().type === 'dynamic',
         }"
         (click)="onClickType(); this.save.emit(); $event.stopPropagation()"
       >
         <span
-          class="left_0 rounded border bg_h position_absolute from_bottom writing_mode_v_lr white_space_nowrap collapse_but_allow_revival font_size_small z_index_2" [ngClass]="{
+          class="left_0 rounded border bg_h position_absolute from_bottom writing_mode_v_lr white_space_nowrap collapse_but_allow_revival font_size_small z_index_2"
+          [ngClass]="{
             rounded_l: prompt().type === 'static',
           }"
         >
@@ -117,7 +125,7 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
                 class="icon iconoir-bonfire border padding hover_highlight_border"
                 [ngClass]="{
                   fire: prompt().automatic_dynamic,
-                  'hover_bg_h': prompt().automatic_dynamic,
+                  hover_bg_h: prompt().automatic_dynamic,
                 }"
               ></span>
               <span
@@ -129,7 +137,7 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
             </div>
             <div
               class="flex_row pseudo_input position_relative revive_children_on_hover color_fg4 hover_color_fg"
-              title="How many tokens of the text dynamic contexts get to read"
+              title="How many tokens of the text dynamic contexts gets to read"
             >
               <span
                 class="icon iconoir-eye-solid border padding hover_highlight_border hover_cursor_pointer"
@@ -140,7 +148,7 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
                 type="number"
                 step="128"
                 style="width: 5vw;"
-                [(ngModel)]="readTokens"
+                [(ngModel)]="prompt().readTokens"
                 (change)="this.save.emit()"
                 placeholder="Read"
               />
@@ -158,7 +166,7 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
                 type="number"
                 step="128"
                 style="width: 5vw;"
-                [(ngModel)]="writeTokens"
+                [(ngModel)]="prompt().writeTokens"
                 (change)="this.save.emit()"
                 placeholder="Think"
               />
@@ -190,7 +198,7 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
         ></div>
       }
     }
-  `
+  `,
 })
 export class PromptComponent implements OnInit {
   prompt = input.required<Context>();
@@ -201,6 +209,8 @@ export class PromptComponent implements OnInit {
   index = input<number>();
   save = output<void>();
   remove = output<void>();
+
+  llmQueue?: Promise<void>;
 
   protected http = inject(HttpFetchWrapperService);
 
@@ -219,14 +229,6 @@ export class PromptComponent implements OnInit {
     });
   }
 
-  writeTokens: number = 384;
-  readTokens: number = 384;
-  temperature: number = 1;
-  seed: number = 0;
-  top_k: number = 1;
-
-  llmQueue?: Promise<void>;
-
   protected onClickType() {
     switch (this.prompt().type) {
       case "dynamic":
@@ -243,14 +245,15 @@ export class PromptComponent implements OnInit {
     context.dynamic_content = "";
     const sysRole: OllamaMessageRole = "system";
     const body: OllamaChatBody = {
-      model: "dolphin-mistral", //dolphin-mistral
+      //model: "deepseek-r1:14b",
+      model: "dolphin-mistral",
       format: "json",
       stream: true,
-      max_tokens: +this.writeTokens,
+      max_tokens: +context.writeTokens,
       messages: [
         {
           role: "system",
-          content: `${this.file().slice(-this.readTokens * 8) as string}`,
+          content: `${this.file().slice(-context.readTokens * 8) as string}`,
         },
         {
           role: "user",
@@ -258,11 +261,13 @@ export class PromptComponent implements OnInit {
         },
       ],
       options: {
-        temperature: this.temperature,
-        seed: this.seed,
-        top_k: this.top_k,
+        temperature: context.temperature,
+        seed: context.seed,
+        top_k: context.top_k,
       },
     };
+
+    console.log(body);
 
     this.http.streamPrompt({ ...this.llm(), body: body }).then((o) => {
       const sub = o?.stream.subscribe((streamFragment) => {

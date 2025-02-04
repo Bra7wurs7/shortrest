@@ -18,11 +18,12 @@ import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
 import { FilterFilesPipe } from "../pipes/filter-files.pipe";
 import { HttpFetchWrapperService } from "../services/http-client-wrapper/http-fetch-wrapper.service";
 import { OllamaChatBody, OllamaChatResponse } from "../models/ollama";
-import { Context } from "../models/context.model";
+import { Context, defaultContext } from "../models/context.model";
 import { PromptComponent } from "../components/prompt.component";
 import { ParseNamePipe } from "../pipes/parse-name.pipe";
 import { CenterTool } from "../models/center_tool";
 import { RightTool } from "../models/right_tool";
+import { saveAs } from "file-saver";
 
 @Component({
   selector: "app-root",
@@ -53,9 +54,6 @@ export class AppComponent {
   activeFile: string | Blob = "";
 
   openedFileNames: string[] = [];
-
-  editMode: boolean = true;
-  readMode: boolean = false;
 
   highlightedFile: number = -1;
 
@@ -175,11 +173,11 @@ export class AppComponent {
   center_tools: CenterTool[] = [
     {
       icon: "iconoir-code",
-      active: false,
+      active: true,
     },
     {
       icon: "iconoir-edit-pencil",
-      active: true,
+      active: false,
     },
     {
       icon: "iconoir-open-book",
@@ -366,8 +364,12 @@ export class AppComponent {
     return;
   }
 
-  newFile(fileName: string = "nameless file") {
-    // @TODO Add save check for current file
+  async newFile(fileName: string = "nameless file") {
+    const fileExists = this.activeArchiveFiles.includes(fileName);
+    if (fileExists) {
+      console.error(`A file named ${fileName} already exists.`);
+      return;
+    }
     this.activeFileName = fileName;
     this.activeFile = "";
     this.saveFile(fileName);
@@ -409,6 +411,53 @@ export class AppComponent {
         this.activeFile,
       );
       this.updateActiveArchiveFiles();
+    }
+  }
+
+  async renameFile(oldFileName: string, newFileName: string) {
+    try {
+      // Check if the old file exists in the archive.
+      const oldFileExists = this.activeArchiveFiles.includes(oldFileName);
+      if (!oldFileExists) {
+        console.error(`A file named ${oldFileName} does not exist.`);
+        return;
+      }
+
+      // Check if a file with the new name already exists in the archive.
+      const newFileExists = this.activeArchiveFiles.includes(newFileName);
+      if (newFileExists) {
+        console.error(`A file named ${newFileName} already exists.`);
+        return;
+      }
+
+      // If the old file is currently active, update its name in activeFileName.
+      if (this.activeFileName === oldFileName) {
+        this.activeFileName = newFileName;
+      }
+
+      // Get the content of the old file from the archive.
+      const fileContent = await this.filesService.getFileFromArchive(
+        this.activeArchiveName,
+        oldFileName,
+      );
+
+      // Save the file with the new name to the archive.
+      await this.filesService.saveFileToArchive(
+        this.activeArchiveName,
+        newFileName,
+        fileContent,
+      );
+
+      // Remove the old file from the archive.
+      await this.filesService.removeFileFromArchive(
+        this.activeArchiveName,
+        oldFileName,
+      );
+
+      // Update the list of files in the active archive.
+      this.updateActiveArchiveFiles();
+    } catch (error) {
+      console.error("Error renaming file:", error);
     }
   }
 
@@ -467,34 +516,50 @@ export class AppComponent {
     this.setActiveArchive(allArchiveNames[index]);
   }
 
+  public updateRightTools() {
+    this.right_tools = this.right_tools.filter(
+      (tool, index, array) =>
+        tool.context_prompts.length > 0 || index === array.length - 1,
+    );
+    // Ensure that at least one right tool always exists and is not deleted even if it has no context prompts.
+    if (
+      this.right_tools.length === 0 ||
+      this.right_tools[this.right_tools.length - 1].context_prompts.length > 0
+    ) {
+      this.right_tools.push({
+        name: "New Tool",
+        context_prompts: [],
+        readTokens: "384",
+        writeTokens: "384",
+        seed: 1,
+        temperature: 0.5,
+        top_k: 1,
+        advancedSettings: false,
+      });
+    }
+    this.saveRightTools();
+  }
+
   public addInformation(information: string | Blob) {
     if (information instanceof Blob) {
       throw Error("Not Implemented");
     }
     this.right_tools[this.active_right_tool_index].context_prompts.push({
-      collapsed: false,
-      visible: false,
-      type: "static",
+      ...defaultContext,
       content: information,
-      dynamic_content: "",
-      automatic_dynamic: false,
     });
   }
 
   protected onAddContextClick() {
     this.right_tools[this.active_right_tool_index].context_prompts.push({
-      collapsed: false,
-      type: "static",
-      content: "",
-      dynamic_content: "",
-      visible: true,
-      automatic_dynamic: false,
+      ...defaultContext,
     });
-    this.saveRightTools();
+    this.updateRightTools();
   }
 
   protected onRemoveContextClick(i: number) {
     this.right_tools[this.active_right_tool_index].context_prompts.splice(i, 1);
+    this.updateRightTools();
   }
 
   protected saveRightTools() {
@@ -506,6 +571,7 @@ export class AppComponent {
     if (tools) {
       this.right_tools = JSON.parse(tools);
     }
+    this.updateRightTools();
   }
 
   public buildPrompt(): SimpleHttpRequest {
@@ -513,6 +579,7 @@ export class AppComponent {
       this.active_right_tool_index
     ].context_prompts.filter((c) => c.visible);
     const body: OllamaChatBody = {
+      //model: "deepseek-r1:14b",
       model: "dolphin-mistral",
       format: "json",
       stream: true,
@@ -525,10 +592,8 @@ export class AppComponent {
               switch (c.type) {
                 case "dynamic":
                   return c.dynamic_content;
-                  break;
                 case "static":
                   return c.content;
-                  break;
               }
             })
             .join("\n"),
@@ -586,5 +651,60 @@ export class AppComponent {
 
   onClickDownloadArchive(archiveName: string) {
     this.filesService.downloadArchive(archiveName);
+  }
+
+  onFileInputChange(event: Event) {
+    this.filesService.uploadArchive(event);
+  }
+
+  onClickRemoveRightTool(index: number) {
+    // Check if index is within the valid range and there are more than one tool available.
+    if (
+      index >= 0 &&
+      index < this.right_tools.length &&
+      this.right_tools.length > 1
+    ) {
+      // Remove the tool at the specified index.
+      this.right_tools.splice(index, 1);
+      // Update the right tools to maintain the array's integrity.
+      this.updateRightTools();
+    } else {
+      console.error("Invalid index or no more tools available for removal.");
+    }
+  }
+
+  onClickDownloadRightTool(index: number) {
+    if (index >= 0 && index < this.right_tools.length) {
+      const toolToDownload = this.right_tools[index];
+      const blob = new Blob([JSON.stringify(toolToDownload, null, 2)], {
+        type: "application/json",
+      });
+      saveAs(blob, `rightTool_${index}.json`);
+    } else {
+      console.error("Invalid index for downloading right tool.");
+    }
+  }
+
+  onRightToolFileInputChange(event: Event) {
+    const target = event.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      for (const file of Array.from(target.files)) {
+        if (file.type === "application/json") {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const jsonData = JSON.parse(e.target?.result as string);
+              this.right_tools.push(jsonData);
+              this.updateRightTools();
+            } catch (error) {
+              console.error("Error parsing JSON file:", error);
+            }
+          };
+          reader.readAsText(file);
+        } else {
+          console.error(`Unsupported file type: ${file.type}`);
+        }
+      }
+    }
   }
 }
