@@ -342,6 +342,10 @@ img {
   border-color: $bg3;
 }
 
+.border_color_transparent {
+  border-color: transparent;
+}
+
 .border_top_color_bg3 {
   border-top-color: $bg3;
 }
@@ -389,8 +393,8 @@ img {
   border-bottom: none;
 }
 
-.max_height {
-  max-height: 30vh;
+.max_height_34px {
+  max-height: 34px;
 }
 
 .min_height {
@@ -457,8 +461,12 @@ img {
   padding: $bigpadding;
 }
 
-.padding_small_left {
+.padding_small_l {
   padding-left: $smallpadding;
+}
+
+.padding_small_r {
+  padding-right: $smallpadding;
 }
 
 .padding_b {
@@ -845,6 +853,10 @@ opacity_0_highlighted_opacity_1 {
 
 .h_6px {
   height: 6px;
+}
+
+.h_5px {
+  height: 5px;
 }
 
 .h_2px {

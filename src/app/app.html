@@ -53,7 +53,6 @@
         "
         (keydown)="systemBarOnKeyDown($event)"
         (keyup)="systemBarOnKeyUp($event)"
-        (blur)="onBlurSystemBar()"
         class="mono"
       />
       @if ( controlBar.value !== "" || highlightedFile !== -1 ||
@@ -225,7 +224,7 @@
           class="flex margin_r hover_cursor_pointer user_select_none position_relative revive_children_on_hover"
         >
           <div
-            class="position_absolute padding_small from_bottom right_0 bg_h collapse_but_allow_revival flex_col"
+            class="position_absolute padding_small from_bottom left_0 bg_h collapse_but_allow_revival flex_col"
           >
             @for (tool of center_tools; track tool) {
             <span
@@ -239,12 +238,10 @@
               (click)="tool.active = !tool.active"
             ></span>
             }
-          </div>
-          <div
-            class="position_absolute border_t border_b border_l from_right rounded_r top_0 bg_h collapse_but_allow_revival flex_col padding z_index_2"
-            (click)="closeFile(openedFile)"
-          >
-            <div class="icon iconoir-xmark"></div>
+            <span
+              class="flex icon iconoir-xmark border padding hover_highlight_border hover_cursor_pointer color_fg4"
+              (click)="closeFile(openedFile)"
+            ></span>
           </div>
           <div
             class="border padding hover_highlight_border hover_bg_s"
@@ -254,7 +251,14 @@
               }"
             (click)="editFile(openedFile)"
           >
-            {{ openedFile }}
+            <span>
+              {{ (openedFile | parseName).name }} @for (tag of (openedFile |
+              parseName).tags; track tag) {
+              <span class="margin_l font_size_small color_border_color"
+                >#{{ tag }}</span
+              >
+              }
+            </span>
           </div>
         </div>
         }
@@ -303,12 +307,12 @@
       <div class="flex flex_row margin_b grow">
         @for(tool of right_tools; track tool; let toolindex = $index) {
         <div
-          class="flex_col justify_end h_100 text_overflow_fade border_r border_l border_t border_color_bg_h margin_r hover_highlight_border color_fg4 hover_cursor_pointer user_select_none position_relative revive_children_on_hover hover_bg"
+          class="flex_col justify_end h_100 max_height_34px text_overflow_fade rounded_t margin_r color_fg4 hover_cursor_pointer user_select_none position_relative revive_children_on_hover hover_bg"
           (click)="active_right_tool_index = $index"
         >
           @for(context of tool.context_prompts; track context) {
           <span
-            class="h_6px w_24px rounded_b rounded_tr margin_t bg"
+            class="h_5px w_24px rounded_b rounded_tr margin_t bg"
             [ngClass]="{
               'bg_s': active_right_tool_index === toolindex && (right_tools[active_right_tool_index].context_prompts.length > 0),
               'rounded_tl': $index > 0,
@@ -319,7 +323,7 @@
           <span class="w_24px"></span>
           } @if(tool.context_prompts.length > 0) {
           <span
-            class="border left_0 flex_col rounded_t bg_h position_absolute from_bottom collapse_but_allow_revival font_size_small z_index_2"
+            class="border left_0 flex_col rounded_b bg_h position_absolute from_bottom collapse_but_allow_revival font_size_small z_index_2"
           >
             <span
               class="icon iconoir-cloud-download border margin_t hover_color_fg"
@@ -392,7 +396,7 @@
                   [(ngModel)]="right_tools[active_right_tool_index].readTokens"
                 />
                 <span
-                  class="icon iconoir-data-transfer-up hover_cursor_pointer color_fg4"
+                  class="icon iconoir-eye hover_cursor_pointer color_fg4"
                 ></span>
               </span>
             </div>
@@ -412,7 +416,7 @@
                   [(ngModel)]="right_tools[active_right_tool_index].writeTokens"
                 />
                 <span
-                  class="icon iconoir-data-transfer-down hover_cursor_pointer color_fg4"
+                  class="icon iconoir-brain hover_cursor_pointer color_fg4"
                 ></span>
               </span>
             </div>

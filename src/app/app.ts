@@ -47,7 +47,7 @@ export class AppComponent {
 
   allArchiveNames: WritableSignal<string[]> = signal([]);
 
-  activeArchiveName: string = "Unnamed Archive";
+  activeArchiveName: string = "";
   activeArchiveFiles: string[] = [];
 
   activeFileName: string = "";
@@ -113,6 +113,46 @@ export class AppComponent {
     },
     {
       visibleRegex: new RegExp(".*"),
+      name: "Rename File",
+      advice: "Enter old & new filename",
+      description: (s: string) =>
+        s
+          ? `Rename "${s}" to something else`
+          : "Create a new file from its name",
+      icon: "iconoir-page-edit",
+      command: "r",
+      color: "yellow",
+      action: (
+        self: SystemAction,
+        system_input: HTMLInputElement,
+        selection: string | undefined,
+      ) => {
+        if (selection) {
+          if (system_input.value === "") {
+            this.highlightSystemAction(this.system_actions, self);
+            system_input.value = `"${selection}" `;
+            system_input.select();
+            system_input.selectionStart = system_input.selectionEnd;
+            this.highlightedFile = -1;
+          } else {
+            this.renameFile(selection, system_input.value);
+          }
+        } else {
+          if (system_input.value === "") {
+            this.highlightSystemAction(this.system_actions, self);
+            system_input.select();
+            system_input.selectionStart = system_input.selectionEnd;
+            this.highlightedFile = -1;
+          } else {
+            const parsedRename = this.parseFileRename(system_input.value);
+            this.renameFile(parsedRename.from, parsedRename.to);
+          }
+        }
+      },
+      paramRequired: false,
+    },
+    {
+      visibleRegex: new RegExp(".*"),
       name: "Add to prompt",
       advice:
         "Adds information from the named file to the right sidebar, for the AI to read",
@@ -144,14 +184,14 @@ export class AppComponent {
     },
     {
       visibleRegex: new RegExp(".*"),
-      name: "Remove File",
+      name: "Delete File",
       advice: "Enter undesired filename",
       description: (s: string) =>
         s
-          ? `Remove "${s}" from the library`
-          : "Remove a file from the library by its filename",
+          ? `Delete "${s}" from the library`
+          : "Delete a file from the library by its filename",
       icon: "iconoir-bin-half",
-      command: "r",
+      command: "d",
       color: "red",
       action: (
         self: SystemAction,
@@ -219,6 +259,7 @@ export class AppComponent {
     this.openFileSystemActionIndex = this.system_actions.findIndex(
       (sa) => sa.command === "o",
     );
+    this.loadLastArchiveName();
     this.updateActiveArchiveFiles();
     this.loadRightTools();
     this.updateArchiveNames();
@@ -237,6 +278,16 @@ export class AppComponent {
     });
   }
 
+  loadLastArchiveName() {
+    this.setActiveArchive(
+      localStorage.getItem("lastArchiveName") ?? "Unnamed Archive",
+    );
+  }
+
+  setLastArchiveName(name: string) {
+    localStorage.setItem("lastArchiveName", name);
+  }
+
   updateActiveArchiveFiles() {
     this.filesService
       .listFilesInArchive(this.activeArchiveName)
@@ -252,6 +303,7 @@ export class AppComponent {
 
   setActiveArchive(archiveName: string) {
     this.activeArchiveName = archiveName;
+    this.setLastArchiveName(archiveName);
     this.updateActiveArchiveFiles();
     this.openedFileNames = [];
     this.highlightedFile = -1;
@@ -414,7 +466,16 @@ export class AppComponent {
     }
   }
 
+  parseFileRename(s: string): { from: string; to: string } {
+    const match = s.match(/"(.*?)" (.*)/);
+    if (!match || match.length !== 3) {
+      throw new Error("Invalid input format");
+    }
+    return { from: match[1], to: match[2] };
+  }
+
   async renameFile(oldFileName: string, newFileName: string) {
+    console.log("AAAAAH!");
     try {
       // Check if the old file exists in the archive.
       const oldFileExists = this.activeArchiveFiles.includes(oldFileName);
@@ -469,10 +530,6 @@ export class AppComponent {
 
   deepCopy<A>(obj: A): A {
     return JSON.parse(JSON.stringify(obj));
-  }
-
-  onBlurSystemBar() {
-    this.highlightedFile = -1;
   }
 
   scrollIncrementDecrement(
@@ -579,6 +636,7 @@ export class AppComponent {
       this.active_right_tool_index
     ].context_prompts.filter((c) => c.visible);
     const body: OllamaChatBody = {
+      //model: "dolphin-mistral",
       //model: "deepseek-r1:14b",
       model: "dolphin-mistral",
       format: "json",

@@ -245,6 +245,7 @@ export class PromptComponent implements OnInit {
     context.dynamic_content = "";
     const sysRole: OllamaMessageRole = "system";
     const body: OllamaChatBody = {
+      //model: "dolphin-mistral",
       //model: "deepseek-r1:14b",
       model: "dolphin-mistral",
       format: "json",
