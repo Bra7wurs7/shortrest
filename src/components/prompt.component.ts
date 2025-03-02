@@ -246,8 +246,7 @@ export class PromptComponent implements OnInit {
     const sysRole: OllamaMessageRole = "system";
     const body: OllamaChatBody = {
       //model: "dolphin-mistral",
-      //model: "deepseek-r1:14b",
-      model: "dolphin-mistral",
+      model: "deepseek-r1:32b",
       format: "json",
       stream: true,
       max_tokens: +context.writeTokens,

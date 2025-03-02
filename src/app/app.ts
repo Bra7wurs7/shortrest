@@ -636,9 +636,8 @@ export class AppComponent {
       this.active_right_tool_index
     ].context_prompts.filter((c) => c.visible);
     const body: OllamaChatBody = {
-      //model: "dolphin-mistral",
-      //model: "deepseek-r1:14b",
       model: "dolphin-mistral",
+      //model: "deepseek-r1:32b",
       format: "json",
       stream: true,
       max_tokens: +this.right_tools[this.active_right_tool_index].writeTokens,
