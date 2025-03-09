@@ -256,7 +256,7 @@ export class PromptComponent implements OnInit {
           content: `${this.file().slice(-context.readTokens * 8) as string}`,
         },
         {
-          role: "user",
+          role: "system",
           content: context.content,
         },
       ],
