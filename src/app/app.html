@@ -345,40 +345,18 @@
         <span class="icon iconoir-cloud-upload"></span>
       </div>
     </div>
+
     <div
       class="flex_col width_sibedar_width bg grow space_between margin_b rounded_tr overflow_hidden"
-    >
-      <div class="flex_col overflow_scroll height_1">
-        @for (prompt of right_tools[active_right_tool_index].context_prompts;
-        track prompt) {
-        <app-prompt
-          [prompt]="prompt"
-          [file]="activeFile"
-          [llm]="llm"
-          [index]="$index"
-          [generateDynamicContext]="generateDynamicContextEmitter"
-          [fileChange]="fileChangeEmitter"
-          (remove)="onRemoveContextClick($index)"
-          (save)="saveRightTools()"
-        ></app-prompt>
-        }
-        <div
-          class="border_b border rounded_br rounded_bl rounded_tr padding flex_row space_between hover_highlight_border bg hover_cursor_pointer color_fg4 hover_color_fg"
-          [ngClass]="{
-            rounded_tl: right_tools[active_right_tool_index].context_prompts.length > 0,
-          }"
-          (click)="onAddContextClick()"
-        >
-          <span
-            class="overflow_hidden grow text_overflow_fade bg user_select_none"
-            >Provide context</span
-          >
-          <span class="icon iconoir-plus"></span>
-        </div>
-      </div>
+    ></div>
 
+    <div
+      class="flex_col width_sibedar_width bg grow space_between margin_b rounded_tr overflow_hidden"
+    ></div>
+
+    <div class="flex_col width_sibedar_width">
       <div class="flex_col">
-        <div class="flex_row">
+        <div class="flex_row margin_b">
           <div class="flex_row">
             <div class="bg_h grow position_relative revive_children_on_hover">
               <span
@@ -388,7 +366,7 @@
                 starting to produce a continuation</span
               >
               <span
-                class="flex_row border padding pseudo_input hover_highlight_border"
+                class="flex_row border bg padding pseudo_input hover_highlight_border"
               >
                 <input
                   class="flex"
@@ -408,7 +386,7 @@
                 terminated</span
               >
               <span
-                class="flex_row border padding pseudo_input hover_highlight_border"
+                class="flex_row border bg padding pseudo_input hover_highlight_border"
               >
                 <input
                   class="flex"
@@ -416,31 +394,18 @@
                   [(ngModel)]="right_tools[active_right_tool_index].writeTokens"
                 />
                 <span
-                  class="icon iconoir-brain hover_cursor_pointer color_fg4"
+                  class="icon iconoir-edit-pencil hover_cursor_pointer color_fg4"
                 ></span>
               </span>
             </div>
           </div>
           <div class="flex_row">
             <span
-              class="flex_col bg_s position_relative revive_children_on_hover"
-            >
-              <span
-                class="border icon padding color_fg4 hover_highlight_border iconoir-reload-window hover_cursor_pointer"
-                (click)="generateDynamicContextEmitter.emit()"
-              ></span>
-              <span
-                class="right_0 padding rounded_t border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
-                style="width: 10vw"
-                >Trigger generation requests for all dynamic contexts</span
-              >
-            </span>
-            <span
               class="flex_col revive_children_on_hover position_relative"
               (click)="right_tools[active_right_tool_index].advancedSettings = !right_tools[active_right_tool_index].advancedSettings"
             >
               <span
-                class="border border_color_bg_s padding icon iconoir-settings hover_cursor_pointer hover_highlight_border"
+                class="border bg padding icon iconoir-settings hover_cursor_pointer hover_highlight_border"
                 [ngClass]="{
                   color_fg1: right_tools[active_right_tool_index].advancedSettings,
                   color_fg4: !right_tools[active_right_tool_index].advancedSettings,
@@ -456,9 +421,9 @@
           </div>
         </div>
         @if (right_tools[active_right_tool_index].advancedSettings) {
-        <div class="flex_row margin_t margin_b">
+        <div class="flex_row margin_b">
           <div
-            class="flex_row border padding pseudo_input hover_highlight_border bg_h margin_r"
+            class="flex_row border padding pseudo_input hover_highlight_border bg_h margin_r bg"
             title="Seed: number that all random number generation is based on"
           >
             <input
@@ -472,7 +437,7 @@
           </div>
           <div>
             <div
-              class="flex_row border padding pseudo_input hover_highlight_border bg_h margin_b"
+              class="flex_row border padding pseudo_input hover_highlight_border bg_h margin_b bg"
               title="Randomness (temperature): higher settings make more probable next token options more likely"
             >
               <input
@@ -485,7 +450,7 @@
               ></span>
             </div>
             <div
-              class="flex_row border padding pseudo_input hover_highlight_border bg_h"
+              class="flex_row border padding pseudo_input hover_highlight_border bg"
               title="Variety (top_k): the portion of next token options to consider at all"
             >
               <input
@@ -499,40 +464,22 @@
             </div>
           </div>
         </div>
-        <div
-          class="flex_row border padding pseudo_input hover_highlight_border bg_h"
-          title="Variety (top_k): the portion of next token options to consider at all"
-        >
-          <input
-            class="flex"
-            placeholder="Model"
-            [(ngModel)]="right_tools[active_right_tool_index].top_k"
-          />
-          <span
-            class="icon iconoir-palette hover_cursor_pointer color_fg4"
-          ></span>
-        </div>
         }
       </div>
-    </div>
-
-    <div class="flex_col width_sibedar_width">
-      <div class="flex_row">
-        <div class="flex_row grow hover_cursor_pointer" (click)="buildPrompt()">
-          <span
-            class="border rounded_bl padding grow hover_highlight_border bg_s hover_color_fg overflow_hidden width_sibedar_width"
-            [ngClass]="{
-              color_fg4: this.runningPrompts.size === 0,
-              fire: this.runningPrompts.size,
-              highlight_border: this.runningPrompts.size
-            }"
+      <div class="flex_row grow hover_cursor_pointer" (click)="buildPrompt()">
+        <span
+          class="border rounded_bl padding grow hover_highlight_border bg_s hover_color_fg overflow_hidden width_sibedar_width"
+          [ngClass]="{
+            color_fg4: this.runningPrompts.size === 0,
+            fire: this.runningPrompts.size,
+            highlight_border: this.runningPrompts.size
+          }"
+        >
+          <span class="overflow_hidden grow text_overflow_fade bg_s"
+            >Generate Text</span
           >
-            <span class="overflow_hidden grow text_overflow_fade bg_s"
-              >Generate Text</span
-            >
-            <span class="icon iconoir-fire-flame margin_r"></span>
-          </span>
-        </div>
+          <span class="icon iconoir-fire-flame"></span>
+        </span>
       </div>
     </div>
   </div>
