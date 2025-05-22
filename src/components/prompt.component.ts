@@ -246,18 +246,14 @@ export class PromptComponent implements OnInit {
     const sysRole: OllamaMessageRole = "system";
     const body: OllamaChatBody = {
       //model: "dolphin-mistral",
-      model: "deepseek-r1:32b",
+      model: "dolphin-mistral",
       format: "json",
       stream: true,
       max_tokens: +context.writeTokens,
       messages: [
         {
-          role: "system",
-          content: `${this.file().slice(-context.readTokens * 8) as string}`,
-        },
-        {
-          role: "system",
-          content: context.content,
+          role: "user",
+          content: `${this.file().slice(-context.readTokens * 8) as string}\n\n${context.content}`,
         },
       ],
       options: {
@@ -266,8 +262,6 @@ export class PromptComponent implements OnInit {
         top_k: context.top_k,
       },
     };
-
-    console.log(body);
 
     this.http.streamPrompt({ ...this.llm(), body: body }).then((o) => {
       const sub = o?.stream.subscribe((streamFragment) => {

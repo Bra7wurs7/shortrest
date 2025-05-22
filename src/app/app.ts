@@ -1,5 +1,6 @@
 import { CommonModule } from "@angular/common";
 import {
+  AfterViewInit,
   Component,
   computed,
   ElementRef,
@@ -263,6 +264,11 @@ export class AppComponent {
     this.updateActiveArchiveFiles();
     this.loadRightTools();
     this.updateArchiveNames();
+  }
+
+  ngAfterViewInit(): void {
+    console.log("aa");
+    console.log(this.control_bar);
   }
 
   onAddRightToolClick() {
@@ -668,6 +674,8 @@ export class AppComponent {
         top_k: this.right_tools[this.active_right_tool_index].top_k,
       },
     };
+
+    console.log(body);
 
     this.http.streamPrompt({ ...this.llm, body: body }).then((o) => {
       let promptId = 0;

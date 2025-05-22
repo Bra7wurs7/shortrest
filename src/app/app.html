@@ -1,17 +1,12 @@
-<div class="flex_row height_1 justify_strech">
-  <!-- LEFT SIDEBAR -->
-  <div
-    class="flex_col space_between margin_r width_sibedar_width position_relative"
-  >
+<div id="APP_CONTAINER">
+  <div id="LEFT_SIDEBAR">
     <div
-      class="border margin_b padding pseudo_input hover_highlight_border flex_row position_relative revive_children_on_hover"
+      id="LEFT_SIDEBAR_INPUT"
       [ngClass]="{
         highlight_border: controlBar.value,
       }"
     >
-      <div
-        class="flex_col border_t border_l margin border_color_bg3 position_absolute bg_h padding_small from_right from_bottom rounded_r rounded_bl z_index_2 collapse_but_allow_revival width_15vw"
-      >
+      <div id="LEFT_SIDEBAR_INPUT_TOOLTIP">
         <div
           class="border bg_s rounded_tr padding_small flex margin_b flex_col"
         >
@@ -33,7 +28,8 @@
       </div>
       @if (highlightedSystemAction()) {
       <span
-        class="margin_r preserve_whitespace mono {{
+        id="LEFT_SIDEBAR_INPUT_PREFIX"
+        class="{{
             highlightedSystemAction()?.color ?? ''
           }}"
         >{{ highlightedSystemAction()?.command + " " }}</span
@@ -42,6 +38,7 @@
       <div class="pseudo"></div>
       <input
         #controlBar
+        id="LEFT_SIDEBAR_INPUT_INPUT"
         [placeholder]="
           highlightedFile > -1
             ? (highlightedSystemAction()?.description(
@@ -53,135 +50,126 @@
         "
         (keydown)="systemBarOnKeyDown($event)"
         (keyup)="systemBarOnKeyUp($event)"
-        class="mono"
       />
       @if ( controlBar.value !== "" || highlightedFile !== -1 ||
       highlightedSystemActionIndex() !== -1 ) {
       <span
-        class="icon rounded iconoir-xmark color_fg4 hover_cursor_pointer hover_color_fg"
+        id="LEFT_SIDEBAR_INPUT_CLEAR_BUTTON"
+        class="icon iconoir-xmark"
         (click)="
             clearSystemBar();
           "
       ></span>
       }
     </div>
-    <div class="flex_col width_sibedar_width space_between grow">
-      <div>
-        <div class="overflow_y_scroll flex_col grow">
-          @for ( file of activeArchiveFiles | filterFiles: controlBar.value;
-          track file ) {
-          <div
-            class="hover_cursor_pointer transition_border_width user_select_none border_color_fg4 bg_h margin_b rounded_l"
-            [ngClass]="{
-                border_l_thick: file === controlBar.value || $index === highlightedFile,
-              }"
-          >
-            <div
-              class="flex_row border padding space_between align_items hover_highlight_border w-full rounded_r {{file === controlBar.value || $index === highlightedFile ? this.highlightedSystemAction()?.color : '' }}"
-              [ngClass]="{
-                  bg: file === controlBar.value || $index === highlightedFile,
-                  highlight_border:
-                    (file === controlBar.value || $index === highlightedFile) && this.highlightedSystemAction(),
-                }"
-              (click)="
-                  highlightedFile !== $index
-                    ? (highlightedFile = $index)
-                    : editFile(file);
-                    this.highlightedSystemActionIndex.set(openFileSystemActionIndex)
-                "
-              (mouseenter)="(file === controlBar.value || $index === highlightedFile) ? this.highlightedSystemActionIndex.set(openFileSystemActionIndex) : ''"
-              (mouseleave)="(file === controlBar.value || $index === highlightedFile) ? this.highlightedSystemActionIndex.set(-1) : ''"
-            >
-              <div
-                class="align_items bg_h text_overflow_fade overflow_hidden grow flex"
-                [ngClass]="{
-                    bg: file === controlBar.value || $index === highlightedFile,
-                  }"
-              >
-                <span>
-                  {{ (file | parseName).name }} @for (tag of (file |
-                  parseName).tags; track tag) {
-                  <span class="margin_l font_size_small color_border_color"
-                    >#{{ tag }}</span
-                  >
-                  }
-                </span>
-              </div>
-              <!-- File Extension -->
-              <div class="text-right align_items">
-                {{ (file | parseName).ext }}
-              </div>
-            </div>
-          </div>
-          }
-        </div>
-      </div>
+    <div id="LEFT_SIDEBAR_FILELIST">
+      @for ( file of activeArchiveFiles | filterFiles: controlBar.value; track
+      file ) {
       <div
-        class="rounded_b hover_bg flex_row space_between position_relative revive_children_on_hover width_sibedar_width"
-        (wheel)="
-          scrollThroughArchives(true, $event, this.allArchiveNames())
-        "
+        class="hover_cursor_pointer transition_border_width user_select_none border_color_fg4 bg_h margin_b rounded_l"
+        [ngClass]="{
+            border_l_thick: file === controlBar.value || $index === highlightedFile,
+          }"
       >
         <div
-          class="position_absolute bg from_top rounded_t z_index_2 collapse_but_allow_revival flex_col"
+          class="flex_row border padding space_between align_items hover_highlight_border w-full rounded_r {{file === controlBar.value || $index === highlightedFile ? this.highlightedSystemAction()?.color : '' }}"
+          [ngClass]="{
+              bg: file === controlBar.value || $index === highlightedFile,
+              highlight_border:
+                (file === controlBar.value || $index === highlightedFile) && this.highlightedSystemAction(),
+            }"
+          (click)="
+              highlightedFile !== $index
+                ? (highlightedFile = $index)
+                : editFile(file);
+                this.highlightedSystemActionIndex.set(openFileSystemActionIndex)
+            "
+          (mouseenter)="(file === controlBar.value || $index === highlightedFile) ? this.highlightedSystemActionIndex.set(openFileSystemActionIndex) : ''"
+          (mouseleave)="(file === controlBar.value || $index === highlightedFile) ? this.highlightedSystemActionIndex.set(-1) : ''"
         >
-          <span
-            class="border flex_row width_sibedar_width border_bottom_color_fg4 hover_highlight_border rounded_t pseudo_input"
-          >
-            <input
-              #addArchiveNameInput
-              class="padding rounded_tl"
-              [placeholder]="'Enter new archive name'"
-            />
-            <span
-              class="padding flex icon color_fg4 iconoir-plus hover_color_fg rounded_tr hover_cursor_pointer"
-              (click)="onClickAddArchive(addArchiveNameInput.value, addArchiveNameInput)"
-            ></span>
-          </span>
-          @for(archiveName of this.allArchiveNames(); track
-          this.allArchiveNames().keys()) {
-          <span
-            class="border flex_row width_sibedar_width border_bottom_color_bg_s"
+          <div
+            class="align_items bg_h text_overflow_fade overflow_hidden grow flex"
             [ngClass]="{
-              bg_s: archiveName === activeArchiveName
-            }"
+                bg: file === controlBar.value || $index === highlightedFile,
+              }"
           >
-            <span
-              class="padding user_select_none hover_cursor_pointer overflow_hidden text_overflow_fade bg grow"
-              [ngClass]="{
-              bg_s: archiveName === activeArchiveName
-            }"
-              (click)="setActiveArchive(archiveName)"
-              >{{archiveName}}</span
-            >
-            <span
-              class="flex icon color_fg4 iconoir-xmark hover_color_fg padding hover_cursor_pointer"
-              (click)="onClickRemoveArchive(archiveName)"
-            ></span>
-          </span>
-          }
+            <span>
+              {{ (file | parseName).name }} @for (tag of (file |
+              parseName).tags; track tag) {
+              <span class="margin_l font_size_small color_border_color"
+                >#{{ tag }}</span
+              >
+              }
+            </span>
+          </div>
+          <!-- File Extension -->
+          <div class="text-right align_items">{{ (file | parseName).ext }}</div>
         </div>
-        <span class="border padding overflow_hidden text_overflow_fade"
-          >{{ activeArchiveName }}</span
+      </div>
+      }
+    </div>
+    <div
+      id="LEFT_SIDEBAR_ARCHIVES"
+      (wheel)="
+        scrollThroughArchives(true, $event, this.allArchiveNames())
+      "
+    >
+      <div id="LEFT_SIDEBAR_ARCHIVES_TOOLTIP">
+        <span
+          class="border flex_row width_sibedar_width border_bottom_color_fg4 hover_highlight_border rounded_t pseudo_input"
         >
-        <div class="border flex_row rounded_br padding hover_highlight_border">
+          <input
+            #addArchiveNameInput
+            class="padding rounded_tl"
+            [placeholder]="'Enter new archive name'"
+          />
           <span
-            class="flex icon color_fg4 iconoir-upload-square hover_color_fg"
-            (click)="fileInput.click()"
+            class="padding flex icon color_fg4 iconoir-plus hover_color_fg rounded_tr hover_cursor_pointer"
+            (click)="onClickAddArchive(addArchiveNameInput.value, addArchiveNameInput)"
           ></span>
+        </span>
+        @for(archiveName of this.allArchiveNames(); track
+        this.allArchiveNames().keys()) {
+        <span
+          class="border flex_row width_sibedar_width border_bottom_color_bg_s"
+          [ngClass]="{
+            bg_s: archiveName === activeArchiveName
+          }"
+        >
           <span
-            class="flex icon color_fg4 iconoir-download-square-solid hover_color_fg"
-            (click)="onClickDownloadArchive(activeArchiveName)"
+            class="padding user_select_none hover_cursor_pointer overflow_hidden text_overflow_fade bg grow"
+            [ngClass]="{
+            bg_s: archiveName === activeArchiveName
+          }"
+            (click)="setActiveArchive(archiveName)"
+            >{{archiveName}}</span
+          >
+          <span
+            class="flex icon color_fg4 iconoir-xmark hover_color_fg padding hover_cursor_pointer"
+            (click)="onClickRemoveArchive(archiveName)"
           ></span>
-        </div>
+        </span>
+        }
+      </div>
+      <span id="LEFT_SIDEBAR_ARCHIVES_ARCHIVENAME"
+        >{{ activeArchiveName }}</span
+      >
+      <div id="LEFT_SIDEBAR_ARCHIVES_ACTIONS">
+        <span
+          class="flex icon color_fg4 iconoir-upload-square hover_color_fg"
+          (click)="fileInput.click()"
+        ></span>
+        <span
+          class="flex icon color_fg4 iconoir-download-square-solid hover_color_fg"
+          (click)="onClickDownloadArchive(activeArchiveName)"
+        ></span>
       </div>
     </div>
   </div>
 
-  <!-- CENTER AREA -->
-  <div class="flex_col grow">
-    <div class="flex_row space_between">
-      <div class="flex_row margin_b">
+  <div id="CENTER_AREA">
+    <div id="CENTER_AREA_HEADER">
+      <div id="CENTER_AREA_HEADER_ACTIONS">
         @for ( system_action of system_actions; track system_action.command ) {
         <div
           class="padding_r"
@@ -218,7 +206,7 @@
         </div>
         }
       </div>
-      <div class="flex_row margin_b">
+      <div id="CENTER_AREA_HEADER_FILELIST">
         @for (openedFile of openedFileNames; track openedFile) {
         <div
           class="flex margin_r hover_cursor_pointer user_select_none position_relative revive_children_on_hover"
@@ -265,9 +253,7 @@
         <div class="flex"></div>
       </div>
     </div>
-    <div
-      class="grow bg flex_row rounded_br rounded_tl overflow_hidden justify_end"
-    >
+    <div id="CENTER_AREA_CONTENT">
       @if (center_tools[0].active) {
       <textarea
         class="bg border padding_big rounded_tl vertical_align_bottom hover_highlight_border border_on_focus mono grow"
@@ -301,9 +287,8 @@
     </div>
   </div>
 
-  <!-- RIGHT SIDEBAR -->
-  <div class="margin_l flex_col space_between">
-    <div class="flex flex_row space_between width_sibedar_width">
+  <div id="RIGHT_SIDEBAR">
+    <div id="RIGHT_SIDEBAR_HEADER">
       <div class="flex flex_row margin_b grow">
         @for(tool of right_tools; track tool; let toolindex = $index) {
         <div
@@ -345,9 +330,7 @@
         <span class="icon iconoir-cloud-upload"></span>
       </div>
     </div>
-    <div
-      class="flex_col width_sibedar_width bg grow space_between margin_b rounded_tr overflow_hidden"
-    >
+    <div id="RIGHT_SIDEBAR_CENTER">
       <div class="flex_col overflow_scroll height_1">
         @for (prompt of right_tools[active_right_tool_index].context_prompts;
         track prompt) {
@@ -515,8 +498,7 @@
         }
       </div>
     </div>
-
-    <div class="flex_col width_sibedar_width">
+    <div id="RIGHT_SIDEBAR_FOOTER">
       <div class="flex_row">
         <div class="flex_row grow hover_cursor_pointer" (click)="buildPrompt()">
           <span

@@ -203,10 +203,7 @@ img {
   margin-left: $margin;
 }
 
-.box_sizing_border_box {
-  box-sizing: border-box;
-}
-
+// Angular specific
 :root {
   height: 100%;
   background-color: $background-color;
@@ -214,10 +211,189 @@ img {
   font-family: $sans;
 }
 
-// Font
+// ID Styles
+#APP_CONTAINER {
+  @extend .flex_row;
+  height: 100%;
+  justify-content: stretch;
+}
+
+#LEFT_SIDEBAR {
+  @extend .flex_col;
+  @extend .max_width_sidebar_width;
+  justify-content: space-between;
+  margin-right: $margin;
+  position: relative;
+
+  #LEFT_SIDEBAR_INPUT {
+    @extend .flex_row;
+    position: relative;
+    border: $border-width solid transparent;
+    margin-right: $margin;
+    margin-bottom: $margin;
+    padding: $padding;
+    &:has(> input:focus) {
+      border-color: $bg3;
+    }
+    &:hover {
+      @extend .highlight_border;
+      #LEFT_SIDEBAR_INPUT_TOOLTIP,
+      #LEFT_SIDEBAR_INPUT_TOOLTIP * {
+        @extend .revive_collapsed_container;
+      }
+    }
+    &.highlight_border {
+      @extend .highlight_border;
+    }
+
+    #LEFT_SIDEBAR_INPUT_TOOLTIP {
+      display: flex;
+      flex-direction: column;
+      border-top: $border-width solid $bg3;
+      border-left: $border-width solid $bg3;
+      margin: $margin;
+      position: absolute;
+      background-color: $bg_h;
+      padding: $smallpadding;
+      left: 100%;
+      top: 100%;
+      border-bottom-right-radius: $border-radius;
+      border-top-right-radius: $border-radius;
+      border-bottom-left-radius: $border-radius;
+      z-index: 2;
+      width: 15vw;
+      @extend .collapse_but_allow_revival;
+    }
+
+    #LEFT_SIDEBAR_INPUT_PREFIX {
+      margin-right: $margin;
+      font-family: $mono;
+    }
+
+    #LEFT_SIDEBAR_INPUT_INPUT {
+      font-family: $mono;
+    }
+
+    #LEFT_SIDEBAR_INPUT_CLEAR_BUTTON {
+      @extend .hover_cursor_pointer;
+      @extend .hover_color_fg;
+      color: $fg4;
+    }
+  }
+
+  #LEFT_SIDEBAR_FILELIST {
+    @extend .flex_col;
+    flex-grow: 1;
+    overflow-y: scroll;
+  }
+
+  #LEFT_SIDEBAR_ARCHIVES {
+    @extend .hover_bg;
+    @extend .flex_row;
+    @extend .rounded_b;
+    justify-content: space-between;
+    position: relative;
+    width: $sidebar-width;
+
+    &:hover {
+      @extend .highlight_border;
+      #LEFT_SIDEBAR_ARCHIVES_TOOLTIP,
+      #LEFT_SIDEBAR_ARCHIVES_TOOLTIP * {
+        @extend .revive_collapsed_container;
+      }
+    }
+
+    #LEFT_SIDEBAR_ARCHIVES_TOOLTIP {
+      @extend .rounded_t;
+      @extend .collapse_but_allow_revival;
+      @extend .flex_col;
+      position: absolute;
+      background-color: $bg;
+      bottom: 100%;
+      z-index: 2;
+    }
+
+    #LEFT_SIDEBAR_ARCHIVES_ARCHIVENAME {
+      @extend .text_overflow_fade;
+      border: $border-width solid transparent;
+      padding: $padding;
+      overflow: hidden;
+    }
+
+    #LEFT_SIDEBAR_ARCHIVES_ACTIONS {
+      @extend .flex_row;
+      @extend .hover_highlight_border;
+      border-bottom-right-radius: $border-radius;
+      border: $border-width solid transparent;
+      padding: $padding;
+    }
+  }
+}
+
+#CENTER_AREA {
+  @extend .flex_col;
+  flex-grow: 1;
+
+  #CENTER_AREA_HEADER {
+    @extend .flex_row;
+    justify-content: space-between;
+  }
+
+  #CENTER_AREA_HEADER_ACTIONS {
+    @extend .flex_row;
+    margin-bottom: $margin;
+  }
+
+  #CENTER_AREA_HEADER_FILELIST {
+    @extend .flex_row;
+    margin-bottom: $margin;
+  }
+
+  #CENTER_AREA_CONTENT {
+    @extend .flex_row;
+    flex-grow: 1;
+    background-color: $bg;
+    border-bottom-right-radius: $border-radius;
+    border-top-left-radius: $border-radius;
+    overflow: hidden;
+    justify-content: end;
+  }
+}
+
+#RIGHT_SIDEBAR {
+  @extend .flex_col;
+  margin-left: $margin;
+  justify-content: space-between;
+
+  #RIGHT_SIDEBAR_HEADER {
+    @extend .flex_row;
+    justify-content: space-between;
+    width: $sidebar-width;
+  }
+
+  #RIGHT_SIDEBAR_CENTER {
+    @extend .flex_col;
+    width: $sidebar-width;
+    background-color: $bg;
+    flex-grow: 1;
+    justify-content: space-between;
+    margin-bottom: $margin;
+    border-top-right-radius: $border-radius;
+    overflow: hidden;
+  }
+
+  #RIGHT_SIDEBAR_FOOTER {
+    @extend .flex_col;
+    width: $sidebar-width;
+  }
+}
 
 .mono {
   font-family: $mono;
+}
+
+.box_sizing_border_box {
+  box-sizing: border-box;
 }
 
 .yellow {
@@ -576,12 +752,16 @@ img {
   overflow: hidden;
 }
 
+.revive_collapsed_container {
+  transition: visibility 0.15s;
+  opacity: 1;
+  visibility: visible;
+}
+
 .revive_children_on_hover:hover {
   .collapse_but_allow_revival,
   .collapse_but_allow_revival * {
-    transition: visibility 0.15s;
-    opacity: 1;
-    visibility: visible;
+    @extend .revive_collapsed_container;
   }
 }
 
