@@ -7,22 +7,27 @@
       }"
     >
       <div id="LEFT_SIDEBAR_INPUT_TOOLTIP">
-        <div
-          class="border bg_s rounded_tr padding_small flex margin_b flex_col"
-        >
-          <div class="flex_row space_between grow">
-            <span
-              >⭥ <span class="color_fg4 font_size_small">(Down/Up)</span>
-            </span>
-            <span>Select File</span>
-          </div>
+        <div class="left_sidebar_input_tooltip_item">
+          <span
+            >⭥
+            <span class="left_sidebar_input_tooltip_item_text">(Down/Up)</span>
+          </span>
+          <span>Select File</span>
         </div>
-        <div class="border bg_s padding_small flex space_between margin_b">
-          <span>⭾ <span class="color_fg4 font_size_small">(Tab)</span></span
+        <div class="left_sidebar_input_tooltip_item">
+          <span
+            >⭾
+            <span class="left_sidebar_input_tooltip_item_text"
+              >(Tab)</span
+            ></span
           >Select Action
         </div>
-        <div class="border bg_s rounded_b padding_small flex space_between">
-          <span>⮐ <span class="color_fg4 font_size_small">(Return)</span></span
+        <div class="left_sidebar_input_tooltip_item">
+          <span
+            >⮐
+            <span class="left_sidebar_input_tooltip_item_text"
+              >(Return)</span
+            ></span
           >Perform action on file
         </div>
       </div>
@@ -66,45 +71,39 @@
       @for ( file of activeArchiveFiles | filterFiles: controlBar.value; track
       file ) {
       <div
-        class="hover_cursor_pointer transition_border_width user_select_none border_color_fg4 bg_h margin_b rounded_l"
+        class="left_sidebar_filelist_file {{file === controlBar.value || $index === highlightedFile ? this.highlightedSystemAction()?.color : '' }}"
         [ngClass]="{
-            border_l_thick: file === controlBar.value || $index === highlightedFile,
+            bg: file === controlBar.value || $index === highlightedFile,
+            highlight_border:
+              (file === controlBar.value || $index === highlightedFile) && this.highlightedSystemAction(),
           }"
+        (click)="
+            highlightedFile !== $index
+              ? (highlightedFile = $index)
+              : editFile(file);
+              this.highlightedSystemActionIndex.set(openFileSystemActionIndex)
+          "
+        (mouseenter)="(file === controlBar.value || $index === highlightedFile) ? this.highlightedSystemActionIndex.set(openFileSystemActionIndex) : ''"
+        (mouseleave)="(file === controlBar.value || $index === highlightedFile) ? this.highlightedSystemActionIndex.set(-1) : ''"
       >
         <div
-          class="flex_row border padding space_between align_items hover_highlight_border w-full rounded_r {{file === controlBar.value || $index === highlightedFile ? this.highlightedSystemAction()?.color : '' }}"
+          class="left_sidebar_filelist_file_name"
           [ngClass]="{
+              bg_h: !(file === controlBar.value || $index === highlightedFile),
               bg: file === controlBar.value || $index === highlightedFile,
-              highlight_border:
-                (file === controlBar.value || $index === highlightedFile) && this.highlightedSystemAction(),
             }"
-          (click)="
-              highlightedFile !== $index
-                ? (highlightedFile = $index)
-                : editFile(file);
-                this.highlightedSystemActionIndex.set(openFileSystemActionIndex)
-            "
-          (mouseenter)="(file === controlBar.value || $index === highlightedFile) ? this.highlightedSystemActionIndex.set(openFileSystemActionIndex) : ''"
-          (mouseleave)="(file === controlBar.value || $index === highlightedFile) ? this.highlightedSystemActionIndex.set(-1) : ''"
         >
-          <div
-            class="align_items bg_h text_overflow_fade overflow_hidden grow flex"
-            [ngClass]="{
-                bg: file === controlBar.value || $index === highlightedFile,
-              }"
-          >
-            <span>
-              {{ (file | parseName).name }} @for (tag of (file |
-              parseName).tags; track tag) {
-              <span class="margin_l font_size_small color_border_color"
-                >#{{ tag }}</span
-              >
-              }
-            </span>
-          </div>
-          <!-- File Extension -->
-          <div class="text-right align_items">{{ (file | parseName).ext }}</div>
+          <span>
+            {{ (file | parseName).name }} @for (tag of (file | parseName).tags;
+            track tag) {
+            <span class="margin_l font_size_small color_border_color"
+              >#{{ tag }}</span
+            >
+            }
+          </span>
         </div>
+        <!-- File Extension -->
+        <div class="text-right align_items">{{ (file | parseName).ext }}</div>
       </div>
       }
     </div>

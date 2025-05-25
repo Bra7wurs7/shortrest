@@ -1,6 +1,5 @@
 import { CommonModule } from "@angular/common";
 import {
-  AfterViewInit,
   Component,
   computed,
   ElementRef,
@@ -374,8 +373,6 @@ export class AppComponent {
   }
 
   systemBarOnKeyUp(e: KeyboardEvent) {
-    const action = this.highlightedSystemAction();
-    const index = this.highlightedSystemActionIndex();
     switch (e.key) {
       case " ":
         if (this.highlightedSystemAction() === undefined) {

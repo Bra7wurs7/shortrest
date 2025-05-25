@@ -247,6 +247,7 @@ img {
     }
 
     #LEFT_SIDEBAR_INPUT_TOOLTIP {
+      @extend .collapse_but_allow_revival;
       display: flex;
       flex-direction: column;
       border-top: $border-width solid $bg3;
@@ -262,7 +263,33 @@ img {
       border-bottom-left-radius: $border-radius;
       z-index: 2;
       width: 15vw;
-      @extend .collapse_but_allow_revival;
+
+      .left_sidebar_input_tooltip_item {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        flex-grow: 1;
+        border: $border-width solid transparent;
+        background: $bg_s;
+        padding: $smallpadding;
+
+        &:first-of-type {
+          border-top-right-radius: $border-radius;
+        }
+
+        &:last-of-type {
+          @extend .rounded_b;
+        }
+
+        &:not(:last-of-type) {
+          margin-bottom: $margin;
+        }
+
+        .left_sidebar_input_tooltip_item_text {
+          color: $fg4;
+          font-size: smaller;
+        }
+      }
     }
 
     #LEFT_SIDEBAR_INPUT_PREFIX {
@@ -285,6 +312,23 @@ img {
     @extend .flex_col;
     flex-grow: 1;
     overflow-y: scroll;
+
+    .left_sidebar_filelist_file {
+      @extend .flex_row;
+      @extend .hover_highlight_border;
+      @extend .rounded_l;
+      border: $border-width solid transparent;
+      padding: $padding;
+      justify-content: space-between;
+
+      .left_sidebar_filelist_file_name {
+        @extend .text_overflow_fade;
+        display: flex;
+        flex-direction: row;
+        flex-grow: 1;
+        overflow: hidden;
+      }
+    }
   }
 
   #LEFT_SIDEBAR_ARCHIVES {
@@ -556,6 +600,10 @@ img {
 
 .font_size_small {
   font-size: small;
+}
+
+.font_size_smaller {
+  font-size: smaller;
 }
 
 .text_upright {
