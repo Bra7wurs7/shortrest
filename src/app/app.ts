@@ -19,7 +19,7 @@ import { FilterFilesPipe } from "../pipes/filter-files.pipe";
 import { HttpFetchWrapperService } from "../services/http-client-wrapper/http-fetch-wrapper.service";
 import { OllamaChatBody, OllamaChatResponse } from "../models/ollama";
 import { Context, defaultContext } from "../models/context.model";
-import { PromptComponent } from "../components/prompt.component";
+import { PromptComponent } from "../components/prompt/prompt";
 import { ParseNamePipe } from "../pipes/parse-name.pipe";
 import { CenterTool } from "../models/center_tool";
 import { RightTool } from "../models/right_tool";
@@ -39,6 +39,8 @@ import { saveAs } from "file-saver";
 })
 export class AppComponent {
   @ViewChild("controlBar") control_bar!: ElementRef<HTMLInputElement>;
+  @ViewChild("contentTextarea")
+  contentTextarea!: ElementRef<HTMLTextAreaElement>;
 
   protected filesService = inject(FilesService);
   protected http = inject(HttpFetchWrapperService);
@@ -52,6 +54,8 @@ export class AppComponent {
 
   activeFileName: string = "";
   activeFile: string | Blob = "";
+  textareaSelectionStart: number = 0;
+  textareaSelectionEnd: number = 0;
 
   openedFileNames: string[] = [];
 
@@ -399,6 +403,12 @@ export class AppComponent {
         break;
     }
     this.saveFile(this.activeFileName);
+  }
+
+  textInputOnKeyUp(e: KeyboardEvent) {
+    this.textareaSelectionStart =
+      this.contentTextarea.nativeElement.selectionStart;
+    this.textareaSelectionEnd = this.contentTextarea.nativeElement.selectionEnd;
   }
 
   public iterateHighlightedFiles(steps: number) {

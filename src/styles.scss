@@ -13,56 +13,52 @@
   src: url(assets/fonts/Bitter.ttf) format("truetype");
 }
 
-// Dark Color Scheme: GruvBox Dark
-$bg_h: #1d2021;
-$bg: #282828;
-$bg_s: #32302f;
+// Color Scheme: GruvBox
+$dark_h: #1d2021;
+$dark: #282828;
+$dark_s: #32302f;
 
-$bg1: #3c3836;
-$bg2: #504945;
-$bg3: #665c54;
-$bg4: #7c6f64;
+$dark1: #3c3836;
+$dark2: #504945;
+$dark3: #665c54;
+$dark4: #7c6f64;
 
-$fg: #fbf1c7;
+$light_h: #fbf1c7;
+$light: #fbf1c7;
+$light_s: #fbf1c7;
 
-$fg1: #ebdbb2;
-$fg2: #d5c4a1;
-$fg3: #bdae93;
-$fg4: #a89984;
+$light1: #ebdbb2;
+$light2: #d5c4a1;
+$light3: #bdae93;
+$light4: #a89984;
 
 // Green highlights CREATE actions (create new file, create copy etc)
 $green: #b8bb26;
-$green-dim: #98971a;
+$green_dim: #98971a;
 
 // Blue highlights READ actions (open file, read text)
 $blue: #83a598;
-$blue-dim: #458588;
+$blue_dim: #458588;
 
 // Yellow highlights UPDATE actions (format text, edit file)
 $yellow: #fabd2f;
-$yellow-dim: #d79921;
+$yellow_dim: #d79921;
 
 // Red highlights DELETE actions (delete file, remove text)
 $red: #fb4934;
-$red-dim: #cc2412;
+$red_dim: #cc2412;
 
 $purple: #d3869b;
-$purple-dim: #b16286;
+$purple_dim: #b16286;
 
 $aqua: #8ec07c;
-$aqua-dim: #689d6a;
+$aqua_dim: #689d6a;
 
 $orange: #fe8019;
-$orange-dim: #d65d0e;
+$orange_dim: #d65d0e;
 
 $gray: #928374;
-$gray-dim: #a89984;
-
-$half-sidebar-width: 9vw;
-$sidebar-width: 18vw;
-$expanded-sidebar-width: 42vw;
-
-// Style Variables
+$gray_dim: #a89984;
 
 // Style -> Spacing
 $border-radius: 7px;
@@ -76,8 +72,8 @@ $border-width: 2px;
 $thicker-border-width: 4px;
 
 // Style -> Colors
-$border-color: $bg3;
-$background-color: $bg_h;
+$border-color: $dark3;
+$background-color: $dark_h;
 
 // Style -> Fonts
 $sans: geist, sans;
@@ -153,9 +149,9 @@ textarea {
 }
 
 a {
-  color: $blue-dim;
+  color: $blue_dim;
   :visited {
-    color: $purple-dim;
+    color: $purple_dim;
   }
 }
 
@@ -168,25 +164,25 @@ table {
     padding: $smallpadding;
     vertical-align: top; // Align text to the top of the cell
     font-size: small; // Make font size smaller by one level
-    border: $border-width solid $bg_s;
+    border: $border-width solid $dark_s;
   }
 
   th {
-    color: $fg2;
+    color: $light2;
   }
 
   tr:nth-child(even) {
-    background-color: $bg;
+    background-color: $dark;
   }
 
   td:hover {
-    background-color: $bg_h;
+    background-color: $dark_h;
   }
 }
 
 code {
   padding: $padding;
-  background-color: $bg_h;
+  background-color: $dark_h;
   border-radius: $border-radius;
   display: flex;
   flex-grow: 1;
@@ -206,107 +202,107 @@ img {
 // Angular specific
 :root {
   height: 100%;
+  max-width: 100vw;
   background-color: $background-color;
-  color: $fg;
+  color: $light;
   font-family: $sans;
 }
 
 // ID Styles
 #APP_CONTAINER {
-  @extend .flex_row;
+  display: grid;
+  grid-gap: 3px;
+  grid-template-rows: 34px repeat(5, 1fr) 34px;
+  grid-template-columns: 272px repeat(5, 1fr) 272px;
   height: 100%;
-  justify-content: stretch;
+}
+
+#LEFT_SIDEBAR_INPUT {
+  @extend .flex_row;
+  grid-area: 1 / 1 / 2 / 2;
+  position: relative;
+  border: $border-width solid transparent;
+  padding: $padding;
+  &:has(> input:focus) {
+    border-color: $dark3;
+  }
+  &:hover {
+    @extend .highlight_border;
+    #LEFT_SIDEBAR_INPUT_TOOLTIP,
+    #LEFT_SIDEBAR_INPUT_TOOLTIP * {
+      @extend .revive_collapsed_container;
+    }
+  }
+  &.highlight_border {
+    @extend .highlight_border;
+  }
+
+  #LEFT_SIDEBAR_INPUT_TOOLTIP {
+    @extend .collapse_but_allow_revival;
+    display: flex;
+    flex-direction: column;
+    border-top: $border-width solid $dark3;
+    border-left: $border-width solid $dark3;
+    margin: $margin;
+    position: absolute;
+    background-color: $dark_h;
+    padding: $smallpadding;
+    left: 100%;
+    top: 100%;
+    border-bottom-right-radius: $border-radius;
+    border-top-right-radius: $border-radius;
+    border-bottom-left-radius: $border-radius;
+    z-index: 2;
+    width: 15vw;
+
+    .left_sidebar_input_tooltip_item {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      flex-grow: 1;
+      border: $border-width solid transparent;
+      background: $dark_s;
+      padding: $smallpadding;
+
+      &:first-of-type {
+        border-top-right-radius: $border-radius;
+      }
+
+      &:last-of-type {
+        @extend .rounded_b;
+      }
+
+      &:not(:last-of-type) {
+        margin-bottom: $margin;
+      }
+
+      .left_sidebar_input_tooltip_item_text {
+        color: $light4;
+        font-size: smaller;
+      }
+    }
+  }
+
+  #LEFT_SIDEBAR_INPUT_PREFIX {
+    margin-right: $margin;
+    font-family: $mono;
+  }
+
+  #LEFT_SIDEBAR_INPUT_INPUT {
+    font-family: $mono;
+  }
+
+  #LEFT_SIDEBAR_INPUT_CLEAR_BUTTON {
+    @extend .hover_cursor_pointer;
+    @extend .hover_color_fg;
+    color: $light4;
+  }
 }
 
 #LEFT_SIDEBAR {
   @extend .flex_col;
-  @extend .max_width_sidebar_width;
+  grid-area: 2 / 1 / 8 / 2;
   justify-content: space-between;
-  margin-right: $margin;
-  position: relative;
-
-  #LEFT_SIDEBAR_INPUT {
-    @extend .flex_row;
-    position: relative;
-    border: $border-width solid transparent;
-    margin-right: $margin;
-    margin-bottom: $margin;
-    padding: $padding;
-    &:has(> input:focus) {
-      border-color: $bg3;
-    }
-    &:hover {
-      @extend .highlight_border;
-      #LEFT_SIDEBAR_INPUT_TOOLTIP,
-      #LEFT_SIDEBAR_INPUT_TOOLTIP * {
-        @extend .revive_collapsed_container;
-      }
-    }
-    &.highlight_border {
-      @extend .highlight_border;
-    }
-
-    #LEFT_SIDEBAR_INPUT_TOOLTIP {
-      @extend .collapse_but_allow_revival;
-      display: flex;
-      flex-direction: column;
-      border-top: $border-width solid $bg3;
-      border-left: $border-width solid $bg3;
-      margin: $margin;
-      position: absolute;
-      background-color: $bg_h;
-      padding: $smallpadding;
-      left: 100%;
-      top: 100%;
-      border-bottom-right-radius: $border-radius;
-      border-top-right-radius: $border-radius;
-      border-bottom-left-radius: $border-radius;
-      z-index: 2;
-      width: 15vw;
-
-      .left_sidebar_input_tooltip_item {
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        flex-grow: 1;
-        border: $border-width solid transparent;
-        background: $bg_s;
-        padding: $smallpadding;
-
-        &:first-of-type {
-          border-top-right-radius: $border-radius;
-        }
-
-        &:last-of-type {
-          @extend .rounded_b;
-        }
-
-        &:not(:last-of-type) {
-          margin-bottom: $margin;
-        }
-
-        .left_sidebar_input_tooltip_item_text {
-          color: $fg4;
-          font-size: smaller;
-        }
-      }
-    }
-
-    #LEFT_SIDEBAR_INPUT_PREFIX {
-      margin-right: $margin;
-      font-family: $mono;
-    }
-
-    #LEFT_SIDEBAR_INPUT_INPUT {
-      font-family: $mono;
-    }
-
-    #LEFT_SIDEBAR_INPUT_CLEAR_BUTTON {
-      @extend .hover_cursor_pointer;
-      @extend .hover_color_fg;
-      color: $fg4;
-    }
-  }
 
   #LEFT_SIDEBAR_FILELIST {
     @extend .flex_col;
@@ -320,6 +316,7 @@ img {
       border: $border-width solid transparent;
       padding: $padding;
       justify-content: space-between;
+      margin-bottom: $margin;
 
       .left_sidebar_filelist_file_name {
         @extend .text_overflow_fade;
@@ -330,52 +327,52 @@ img {
       }
     }
   }
+}
 
-  #LEFT_SIDEBAR_ARCHIVES {
-    @extend .hover_bg;
+#LEFT_SIDEBAR_ARCHIVES {
+  @extend .hover_bg;
+  @extend .flex_row;
+  @extend .rounded_b;
+  justify-content: space-between;
+  position: relative;
+
+  &:hover {
+    @extend .highlight_border;
+    #LEFT_SIDEBAR_ARCHIVES_TOOLTIP,
+    #LEFT_SIDEBAR_ARCHIVES_TOOLTIP * {
+      @extend .revive_collapsed_container;
+    }
+  }
+
+  #LEFT_SIDEBAR_ARCHIVES_TOOLTIP {
+    @extend .rounded_t;
+    @extend .collapse_but_allow_revival;
+    @extend .flex_col;
+    position: absolute;
+    background-color: $dark;
+    bottom: 100%;
+    z-index: 2;
+  }
+
+  #LEFT_SIDEBAR_ARCHIVES_ARCHIVENAME {
+    @extend .text_overflow_fade;
+    border: $border-width solid transparent;
+    padding: $padding;
+    overflow: hidden;
+  }
+
+  #LEFT_SIDEBAR_ARCHIVES_ACTIONS {
     @extend .flex_row;
-    @extend .rounded_b;
-    justify-content: space-between;
-    position: relative;
-    width: $sidebar-width;
-
-    &:hover {
-      @extend .highlight_border;
-      #LEFT_SIDEBAR_ARCHIVES_TOOLTIP,
-      #LEFT_SIDEBAR_ARCHIVES_TOOLTIP * {
-        @extend .revive_collapsed_container;
-      }
-    }
-
-    #LEFT_SIDEBAR_ARCHIVES_TOOLTIP {
-      @extend .rounded_t;
-      @extend .collapse_but_allow_revival;
-      @extend .flex_col;
-      position: absolute;
-      background-color: $bg;
-      bottom: 100%;
-      z-index: 2;
-    }
-
-    #LEFT_SIDEBAR_ARCHIVES_ARCHIVENAME {
-      @extend .text_overflow_fade;
-      border: $border-width solid transparent;
-      padding: $padding;
-      overflow: hidden;
-    }
-
-    #LEFT_SIDEBAR_ARCHIVES_ACTIONS {
-      @extend .flex_row;
-      @extend .hover_highlight_border;
-      border-bottom-right-radius: $border-radius;
-      border: $border-width solid transparent;
-      padding: $padding;
-    }
+    @extend .hover_highlight_border;
+    border-bottom-right-radius: $border-radius;
+    border: $border-width solid transparent;
+    padding: $padding;
   }
 }
 
 #CENTER_AREA {
   @extend .flex_col;
+  grid-area: 1 / 2 / 7 / 7;
   flex-grow: 1;
 
   #CENTER_AREA_HEADER {
@@ -396,7 +393,7 @@ img {
   #CENTER_AREA_CONTENT {
     @extend .flex_row;
     flex-grow: 1;
-    background-color: $bg;
+    background-color: $dark;
     border-bottom-right-radius: $border-radius;
     border-top-left-radius: $border-radius;
     overflow: hidden;
@@ -404,32 +401,34 @@ img {
   }
 }
 
+#CENTER_FOOTER {
+  @extend .flex_row;
+  grid-area: 7 / 2 / 7 / 7;
+}
+
+#RIGHT_SIDEBAR_HEADER {
+  @extend .flex_row;
+  grid-area: 1 / 7 / 2 / 8;
+  justify-content: space-between;
+}
+
 #RIGHT_SIDEBAR {
   @extend .flex_col;
-  margin-left: $margin;
+  grid-area: 2 / 7 / 7 / 8;
   justify-content: space-between;
-
-  #RIGHT_SIDEBAR_HEADER {
-    @extend .flex_row;
-    justify-content: space-between;
-    width: $sidebar-width;
-  }
 
   #RIGHT_SIDEBAR_CENTER {
     @extend .flex_col;
-    width: $sidebar-width;
-    background-color: $bg;
+    background-color: $dark;
     flex-grow: 1;
     justify-content: space-between;
-    margin-bottom: $margin;
     border-top-right-radius: $border-radius;
     overflow: hidden;
   }
+}
 
-  #RIGHT_SIDEBAR_FOOTER {
-    @extend .flex_col;
-    width: $sidebar-width;
-  }
+#RIGHT_SIDEBAR_FOOTER {
+  grid-area: 7 / 7 / 8 / 8;
 }
 
 .mono {
@@ -477,11 +476,11 @@ img {
 }
 
 .pseudo_input:has(> input:focus) {
-  border-color: $bg3;
+  border-color: $dark3;
 }
 
 .border_on_focus:focus {
-  border-color: $bg3;
+  border-color: $dark3;
 }
 
 .hover_highlight_border {
@@ -491,7 +490,7 @@ img {
 }
 
 .highlight_border {
-  border-color: $bg3;
+  border-color: $dark3;
   &.yellow {
     border-color: $yellow;
   }
@@ -519,7 +518,7 @@ img {
 }
 
 .border_l_highlighted {
-  border-left-color: $bg3;
+  border-left-color: $dark3;
 }
 
 .border_t {
@@ -543,23 +542,23 @@ img {
 }
 
 .border_color_bg {
-  border-color: $bg;
+  border-color: $dark;
 }
 
 .border_color_bg_s {
-  border-color: $bg_s;
+  border-color: $dark_s;
 }
 
 .border_color_bg_h {
-  border-color: $bg_h;
+  border-color: $dark_h;
 }
 
 .border_color_fg4 {
-  border-color: $fg4;
+  border-color: $light4;
 }
 
 .border_color_bg3 {
-  border-color: $bg3;
+  border-color: $dark3;
 }
 
 .border_color_transparent {
@@ -567,35 +566,35 @@ img {
 }
 
 .border_top_color_bg3 {
-  border-top-color: $bg3;
+  border-top-color: $dark3;
 }
 
 .border_bottom_color_bg {
-  border-bottom-color: $bg;
+  border-bottom-color: $dark;
 }
 
 .border_bottom_color_bg_s {
-  border-bottom-color: $bg_s;
+  border-bottom-color: $dark_s;
 }
 
 .border_right_color_bg_s {
-  border-right-color: $bg_s;
+  border-right-color: $dark_s;
 }
 
 .border_left_color_bg_s {
-  border-left-color: $bg_s;
+  border-left-color: $dark_s;
 }
 
 .border_top_color_bg_s {
-  border-top-color: $bg_s;
+  border-top-color: $dark_s;
 }
 
 .border_bottom_color_fg4 {
-  border-bottom-color: $fg4;
+  border-bottom-color: $light4;
 }
 
 .border_bottom_color_fg4 {
-  border-bottom-color: $bg3;
+  border-bottom-color: $dark3;
 }
 
 .font_size_small {
@@ -774,11 +773,6 @@ img {
   right: 0;
 }
 
-.max_width_sidebar_width {
-  max-width: $sidebar-width;
-  min-width: $sidebar-width;
-}
-
 .z_index_2 {
   z-index: 2;
 }
@@ -926,7 +920,6 @@ opacity_0_highlighted_opacity_1 {
 
 .width_sibedar_width {
   box-sizing: border-box;
-  width: $sidebar-width;
 }
 
 .width_inherit {
@@ -934,28 +927,28 @@ opacity_0_highlighted_opacity_1 {
 }
 
 .bg_h {
-  background-color: $bg_h;
+  background-color: $dark_h;
   &.text_overflow_fade {
     &:before {
-      background: linear-gradient(to right, transparent 90%, $bg_h);
+      background: linear-gradient(to right, transparent 90%, $dark_h);
     }
   }
 }
 
 .bg {
-  background-color: $bg;
+  background-color: $dark;
   &.text_overflow_fade {
     &:before {
-      background: linear-gradient(to right, transparent 90%, $bg);
+      background: linear-gradient(to right, transparent 90%, $dark);
     }
   }
 }
 
 .bg_s {
-  background-color: $bg_s;
+  background-color: $dark_s;
   &.text_overflow_fade {
     &:before {
-      background: linear-gradient(to right, transparent 90%, $bg_s);
+      background: linear-gradient(to right, transparent 90%, $dark_s);
     }
   }
 }
@@ -970,35 +963,35 @@ opacity_0_highlighted_opacity_1 {
 }
 
 .hover_bg_s:hover {
-  background-color: $bg_s;
+  background-color: $dark_s;
 }
 
 .hover_bg:hover {
-  background-color: $bg;
+  background-color: $dark;
 }
 
 .hover_bg_h:hover {
-  background-color: $bg_h;
+  background-color: $dark_h;
 }
 
 .color_fg {
-  color: $fg !important;
+  color: $light !important;
 }
 
 .color_fg1 {
-  color: $fg1;
+  color: $light1;
 }
 
 .color_fg2 {
-  color: $fg2;
+  color: $light2;
 }
 
 .color_fg3 {
-  color: $fg3;
+  color: $light3;
 }
 
 .color_fg4 {
-  color: $fg4;
+  color: $light4;
 }
 
 .color_border_color {
@@ -1006,11 +999,11 @@ opacity_0_highlighted_opacity_1 {
 }
 
 .color_bg_s {
-  color: $bg_s;
+  color: $dark_s;
 }
 
 .color_bg {
-  color: $bg;
+  color: $dark;
 }
 
 .text_overflow_fade {
@@ -1026,23 +1019,23 @@ opacity_0_highlighted_opacity_1 {
     left: 0;
     top: 0;
     &.bg {
-      background: linear-gradient(to right, transparent 90%, $bg);
+      background: linear-gradient(to right, transparent 90%, $dark);
     }
     &.bg_s {
-      background: linear-gradient(to right, transparent 90%, $bg_s);
+      background: linear-gradient(to right, transparent 90%, $dark_s);
     }
     &.bg_h {
-      background: linear-gradient(to right, transparent 90%, $bg_h);
+      background: linear-gradient(to right, transparent 90%, $dark_h);
     }
   }
 }
 
 .hover_color_fg:hover {
-  color: $fg;
+  color: $light;
 }
 
 .hover_bg_fg:hover {
-  background-color: $fg;
+  background-color: $light;
 }
 
 .icon {
