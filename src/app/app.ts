@@ -238,7 +238,6 @@ export class AppComponent {
       seed: 1,
       temperature: 0.5,
       top_k: 1,
-      advancedSettings: false,
     },
   ];
 
@@ -283,7 +282,6 @@ export class AppComponent {
       seed: 1,
       temperature: 0.5,
       top_k: 1,
-      advancedSettings: false,
     });
   }
 
@@ -604,7 +602,6 @@ export class AppComponent {
         seed: 1,
         temperature: 0.5,
         top_k: 1,
-        advancedSettings: false,
       });
     }
     this.saveRightTools();

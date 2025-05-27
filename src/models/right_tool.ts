@@ -8,5 +8,4 @@ export interface RightTool {
   seed: number;
   temperature: number;
   top_k: number;
-  advancedSettings: boolean;
 }

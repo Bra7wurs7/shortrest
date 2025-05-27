@@ -1,4 +1,34 @@
 <div id="APP_CONTAINER">
+  <div id="LEFTMOST_SIDEBAR">
+    <div class="flex_col">
+      @for ( system_action of system_actions; track system_action.command ) {
+      <div
+        class="padding border flex color_fg4 {{
+            system_action.color
+          }}"
+        [ngClass]="{
+            highlighted: $index === highlightedSystemActionIndex(),
+            highlight_border: $index === highlightedSystemActionIndex(),
+            color_fg: $index === highlightedSystemActionIndex(),
+          }"
+        (mouseenter)="highlightedSystemActionIndex.set($index)"
+        (mouseleave)="highlightedSystemActionIndex.set(-1)"
+        (click)="systemActionOnClick(system_action, controlBar, activeArchiveFiles[this.highlightedFile])"
+      >
+        <span
+          class="icon {{ system_action.icon }} {{
+              $index === highlightedSystemActionIndex()
+                ? system_action.color
+                : ''
+            }}"
+        ></span>
+      </div>
+      }
+    </div>
+    <div class="padding border flex color_fg4">
+      <span class="icon iconoir-archive"></span>
+    </div>
+  </div>
   <div
     id="LEFT_SIDEBAR_INPUT"
     [ngClass]="{
@@ -112,9 +142,7 @@
       "
     >
       <div id="LEFT_SIDEBAR_ARCHIVES_TOOLTIP">
-        <span
-          class="border flex_row border_bottom_color_fg4 hover_highlight_border rounded_t pseudo_input"
-        >
+        <span id="LEFT_SIDEBAR_ARCHIVES_TOOLTIP_NAMEINPUT">
           <input
             #addArchiveNameInput
             class="padding rounded_tl"
@@ -253,10 +281,7 @@
     <div id="CENTER_AREA_CONTENT">
       <textarea
         #contentTextarea
-        class="bg border padding_big rounded_tl vertical_align_bottom hover_highlight_border border_on_focus mono grow"
-        [ngClass]="{
-            rounded_br: !(center_tools[1].active && center_tools[2].active),
-          }"
+        class="bg border padding_big rounded_l vertical_align_bottom hover_highlight_border border_on_focus mono grow"
         [(ngModel)]="this.activeFile"
         (ngModelChange)="saveFile(activeFileName)"
         (keydown)="textInputOnKeyDown($event)"
@@ -267,100 +292,92 @@
   </div>
 
   <div id="CENTER_FOOTER">
-    <div class="bg position_relative revive_children_on_hover">
-      <span
-        class="left_0 padding rounded_t border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
-        style="width: 10vw"
-        >How many text tokens into the past the LLM gets to read before starting
-        to produce a continuation</span
-      >
-      <span class="flex_row border padding pseudo_input hover_highlight_border">
-        <input
-          class="flex"
-          placeholder="Read Tokens"
-          [(ngModel)]="textareaSelectionStart"
-          style="width: 40px"
-        />
+    <div class="flex_row">
+      <div class="margin_r position_relative rounded revive_children_on_hover">
         <span
-          class="icon iconoir-text-arrows-up-down hover_cursor_pointer color_fg4"
-        ></span>
-      </span>
-    </div>
-    <div class="bg position_relative revive_children_on_hover">
-      <span
-        class="left_0 padding rounded_t border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
-        style="width: 10vw"
-        >How many text tokens into the past the LLM gets to read before starting
-        to produce a continuation</span
-      >
-      <span class="flex_row border padding pseudo_input hover_highlight_border">
-        <input
-          class="flex"
-          placeholder="Read Tokens"
-          [(ngModel)]="textareaSelectionEnd"
-          style="width: 40px"
-        />
+          class="left_0 padding rounded_t border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
+          style="width: 10vw"
+          >The position index of the text cursor</span
+        >
         <span
-          class="icon iconoir-text-box hover_cursor_pointer color_fg4"
-        ></span>
-      </span>
+          class="flex_row rounded border padding pseudo_input hover_highlight_border"
+        >
+          <input
+            class="flex"
+            placeholder="Read Tokens"
+            [(ngModel)]="textareaSelectionStart"
+            style="width: 40px"
+          />
+          <span
+            class="icon iconoir-text-arrows-up-down hover_cursor_pointer color_fg4"
+          ></span>
+        </span>
+      </div>
+      <div class="margin_r position_relative rounded revive_children_on_hover">
+        <span
+          class="left_0 padding rounded_t border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
+          style="width: 10vw"
+          >The end index of the selected area</span
+        >
+        <span
+          class="flex_row rounded border padding pseudo_input hover_highlight_border"
+        >
+          <input
+            class="flex"
+            placeholder="Read Tokens"
+            [(ngModel)]="textareaSelectionEnd"
+            style="width: 40px"
+          />
+          <span
+            class="icon iconoir-text-box hover_cursor_pointer color_fg4"
+          ></span>
+        </span>
+      </div>
+      <div class="margin_r position_relative rounded revive_children_on_hover">
+        <span
+          class="left_0 padding rounded_t border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
+          style="width: 10vw"
+          >How many text tokens into the past the LLM gets to read before
+          starting to produce a continuation</span
+        >
+        <span
+          class="flex_row rounded border padding pseudo_input hover_highlight_border"
+        >
+          <input
+            class="flex"
+            placeholder="Read Tokens"
+            [(ngModel)]="right_tools[active_right_tool_index].readTokens"
+            style="width: 40px"
+          />
+          <span class="icon iconoir-eye hover_cursor_pointer color_fg4"></span>
+        </span>
+      </div>
+      <div class="margin_r revive_children_on_hover rounded position_relative">
+        <span
+          class="right_0 padding rounded_tr border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
+          style="width: 10vw"
+          >The amount of new text tokens the LLM may produce before being
+          terminated</span
+        >
+        <span
+          class="flex_row rounded border padding pseudo_input hover_highlight_border"
+        >
+          <input
+            class="flex"
+            placeholder="Write Tokens"
+            [(ngModel)]="right_tools[active_right_tool_index].writeTokens"
+            style="width: 40px"
+          />
+          <span
+            class="icon iconoir-brain hover_cursor_pointer color_fg4"
+          ></span>
+        </span>
+      </div>
     </div>
-    <div class="bg position_relative revive_children_on_hover">
+
+    <span class="flex_col revive_children_on_hover position_relative">
       <span
-        class="left_0 padding rounded_t border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
-        style="width: 10vw"
-        >How many text tokens into the past the LLM gets to read before starting
-        to produce a continuation</span
-      >
-      <span class="flex_row border padding pseudo_input hover_highlight_border">
-        <input
-          class="flex"
-          placeholder="Read Tokens"
-          [(ngModel)]="right_tools[active_right_tool_index].readTokens"
-          style="width: 40px"
-        />
-        <span class="icon iconoir-eye hover_cursor_pointer color_fg4"></span>
-      </span>
-    </div>
-    <div class="bg revive_children_on_hover position_relative">
-      <span
-        class="right_0 padding rounded_tr border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
-        style="width: 10vw"
-        >The amount of new text tokens the LLM may produce before being
-        terminated</span
-      >
-      <span class="flex_row border padding pseudo_input hover_highlight_border">
-        <input
-          class="flex"
-          placeholder="Write Tokens"
-          [(ngModel)]="right_tools[active_right_tool_index].writeTokens"
-          style="width: 40px"
-        />
-        <span class="icon iconoir-brain hover_cursor_pointer color_fg4"></span>
-      </span>
-    </div>
-    <span class="flex_col bg_s position_relative revive_children_on_hover">
-      <span
-        class="border icon padding color_fg4 hover_highlight_border iconoir-reload-window hover_cursor_pointer"
-        (click)="generateDynamicContextEmitter.emit()"
-      ></span>
-      <span
-        class="right_0 padding rounded_t border border bg_s position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
-        style="width: 10vw"
-        >Trigger generation requests for all dynamic contexts</span
-      >
-    </span>
-    <span
-      class="flex_col revive_children_on_hover position_relative"
-      (click)="right_tools[active_right_tool_index].advancedSettings = !right_tools[active_right_tool_index].advancedSettings"
-    >
-      <span
-        class="border border_color_bg_s padding icon iconoir-settings hover_cursor_pointer hover_highlight_border"
-        [ngClass]="{
-          color_fg1: right_tools[active_right_tool_index].advancedSettings,
-          color_fg4: !right_tools[active_right_tool_index].advancedSettings,
-          bg_s: right_tools[active_right_tool_index].advancedSettings,
-        }"
+        class="border rounded_bl border_color_bg_s padding icon color_fg4 iconoir-settings hover_cursor_pointer hover_highlight_border"
       ></span>
       <span
         class="right_0 rounded_tl border bg_s position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
@@ -492,7 +509,7 @@
   <div id="RIGHT_SIDEBAR_FOOTER">
     <div class="flex_row grow hover_cursor_pointer" (click)="buildPrompt()">
       <span
-        class="border rounded_bl padding grow hover_highlight_border bg_s hover_color_fg overflow_hidden"
+        class="border padding grow hover_highlight_border bg_s hover_color_fg overflow_hidden"
         [ngClass]="{
           color_fg4: this.runningPrompts.size === 0,
           fire: this.runningPrompts.size,
@@ -505,6 +522,19 @@
         <span class="icon iconoir-fire-flame margin_r"></span>
       </span>
     </div>
+    <span
+      class="flex_col rounded_br bg_s position_relative revive_children_on_hover"
+    >
+      <span
+        class="border rounded_br icon padding color_fg4 hover_highlight_border iconoir-reload-window hover_cursor_pointer"
+        (click)="generateDynamicContextEmitter.emit()"
+      ></span>
+      <span
+        class="right_0 padding border border bg_s position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
+        style="width: 10vw"
+        >Trigger generation requests for all dynamic contexts</span
+      >
+    </span>
   </div>
 </div>
 
