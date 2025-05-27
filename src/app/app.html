@@ -3,7 +3,7 @@
     <div class="flex_col">
       @for ( system_action of system_actions; track system_action.command ) {
       <div
-        class="padding border flex color_fg4 {{
+        class="padding border flex color_fg4 margin_b {{
             system_action.color
           }}"
         [ngClass]="{
@@ -13,7 +13,7 @@
           }"
         (mouseenter)="highlightedSystemActionIndex.set($index)"
         (mouseleave)="highlightedSystemActionIndex.set(-1)"
-        (click)="systemActionOnClick(system_action, controlBar, activeArchiveFiles[this.highlightedFile])"
+        (click)="systemActionOnClick(system_action, controlBar, activeArchiveFiles[this.highlightedFile()])"
       >
         <span
           class="icon {{ system_action.icon }} {{
@@ -72,18 +72,18 @@
       #controlBar
       id="LEFT_SIDEBAR_INPUT_INPUT"
       [placeholder]="
-        highlightedFile > -1
+        highlightedFile() > -1
           ? (highlightedSystemAction()?.description(
-              activeArchiveFiles[highlightedFile]
+              activeArchiveFiles[highlightedFile()]
             ) ??
-            'Do what with ' + activeArchiveFiles[highlightedFile] + '?')
+            'Do what with ' + activeArchiveFiles[highlightedFile()] + '?')
           : (highlightedSystemAction()?.advice ??
             'Type here to control shortrest')
       "
       (keydown)="systemBarOnKeyDown($event)"
       (keyup)="systemBarOnKeyUp($event)"
     />
-    @if ( controlBar.value !== "" || highlightedFile !== -1 ||
+    @if ( controlBar.value !== "" || highlightedFile() !== -1 ||
     highlightedSystemActionIndex() !== -1 ) {
     <span
       id="LEFT_SIDEBAR_INPUT_CLEAR_BUTTON"
@@ -99,28 +99,21 @@
       @for ( file of activeArchiveFiles | filterFiles: controlBar.value; track
       file ) {
       <div
-        class="left_sidebar_filelist_file {{file === controlBar.value || $index === highlightedFile ? this.highlightedSystemAction()?.color : '' }}"
+        class="left_sidebar_filelist_file {{file === controlBar.value || $index === highlightedFile() ? this.highlightedSystemAction()?.color : '' }}"
         [ngClass]="{
-            bg: file === controlBar.value || $index === highlightedFile,
             highlight_border:
-              (file === controlBar.value || $index === highlightedFile) && this.highlightedSystemAction(),
+              (file === controlBar.value || $index === highlightedFile()),
           }"
         (click)="
-            highlightedFile !== $index
-              ? (highlightedFile = $index)
+            highlightedFile() !== $index
+              ? (highlightedFile.set($index))
               : editFile(file);
               this.highlightedSystemActionIndex.set(openFileSystemActionIndex)
           "
-        (mouseenter)="(file === controlBar.value || $index === highlightedFile) ? this.highlightedSystemActionIndex.set(openFileSystemActionIndex) : ''"
-        (mouseleave)="(file === controlBar.value || $index === highlightedFile) ? this.highlightedSystemActionIndex.set(-1) : ''"
+        (mouseenter)="(file === controlBar.value || $index === highlightedFile()) ? this.highlightedSystemActionIndex.set(openFileSystemActionIndex) : ''"
+        (mouseleave)="(file === controlBar.value || $index === highlightedFile()) ? this.highlightedSystemActionIndex.set(-1) : ''"
       >
-        <div
-          class="left_sidebar_filelist_file_name"
-          [ngClass]="{
-              bg_h: !(file === controlBar.value || $index === highlightedFile),
-              bg: file === controlBar.value || $index === highlightedFile,
-            }"
-        >
+        <div class="left_sidebar_filelist_file_name bg_h">
           <span>
             {{ (file | parseName).name }} @for (tag of (file | parseName).tags;
             track tag) {
@@ -192,110 +185,58 @@
     </div>
   </div>
 
-  <div id="CENTER_AREA">
-    <div id="CENTER_AREA_HEADER">
-      <div id="CENTER_AREA_HEADER_ACTIONS">
-        @for ( system_action of system_actions; track system_action.command ) {
+  <div id="CENTER_AREA_HEADER">
+    <div id="CENTER_AREA_HEADER_FILELIST">
+      @for ( file_name of openedFileNames; track file_name ) {
+      <div
+        class="position_relative flex_row hover_cursor_pointer color_fg4 revive_children_on_hover margin_r"
+        (click)="editFile(file_name)"
+      >
         <div
-          class="padding_r"
-          (mouseenter)="highlightedSystemActionIndex.set($index)"
-          (mouseleave)="highlightedSystemActionIndex.set(-1)"
+          class="flex_row grow border box_sizing_border_box padding w_34px_highlighted_w_150px rounded_t"
+          [ngClass]="{
+              highlighted: file_name === activeFileName,
+              highlight_border: file_name === activeFileName,
+              color_fg: file_name === activeFileName,
+            }"
         >
-          <div
-            class="border box_sizing_border_box w_34px_highlighted_w_150px flex_row padding hover_cursor_pointer color_fg4 overflow_hidden rounded {{
-                system_action.color
-              }}"
+          <span class="icon iconoir-page"></span>
+          <span
+            class="bg_h text_overflow_fade overflow_hidden grow max_w_0_highlighted_max_w_200px opacity_0_highlighted_opacity_1 margin_l"
             [ngClass]="{
-                highlighted: $index === highlightedSystemActionIndex(),
-                highlight_border: $index === highlightedSystemActionIndex(),
-                color_fg: $index === highlightedSystemActionIndex(),
+                highlighted: file_name === activeFileName,
               }"
-            (click)="systemActionOnClick(system_action, controlBar, activeArchiveFiles[this.highlightedFile])"
           >
-            <span
-              class="bg_h text_overflow_fade overflow_hidden grow max_w_0_highlighted_max_w_200px opacity_0_highlighted_opacity_1"
-              [ngClass]="{
-                  highlighted: $index === highlightedSystemActionIndex(),
+            {{ file_name }}
+          </span>
+        </div>
+        <div
+          class="position_absolute from_bottom left_0 bg_h collapse_but_allow_revival flex_col"
+        >
+          @for (tool of center_tools; track tool) {
+          <span
+            class="flex icon {{
+                  tool.icon
+                }} border padding hover_highlight_border hover_cursor_pointer"
+            [ngClass]="{
+                  color_fg4: !tool.active,
+                  bg_s: tool.active,
                 }"
-            >
-              {{ system_action.name }}
-            </span>
-            <span
-              class="icon {{ system_action.icon }} {{
-                  $index === highlightedSystemActionIndex()
-                    ? system_action.color
-                    : ''
-                }}"
-            ></span>
-          </div>
+            (click)="tool.active = !tool.active"
+          ></span>
+          }
+          <span
+            class="flex icon iconoir-xmark border padding hover_highlight_border hover_cursor_pointer color_fg4"
+            (click)="closeFile(file_name)"
+          ></span>
         </div>
-        }
       </div>
-      <div id="CENTER_AREA_HEADER_FILELIST">
-        @for (openedFile of openedFileNames; track openedFile) {
-        <div
-          class="flex margin_r hover_cursor_pointer user_select_none position_relative revive_children_on_hover"
-        >
-          <div
-            class="position_absolute padding_small from_bottom left_0 bg_h collapse_but_allow_revival flex_col"
-          >
-            @for (tool of center_tools; track tool) {
-            <span
-              class="flex icon {{
-                    tool.icon
-                  }} border padding hover_highlight_border hover_cursor_pointer"
-              [ngClass]="{
-                    color_fg4: !tool.active,
-                    bg_s: tool.active,
-                  }"
-              (click)="tool.active = !tool.active"
-            ></span>
-            }
-            <span
-              class="flex icon iconoir-xmark border padding hover_highlight_border hover_cursor_pointer color_fg4"
-              (click)="closeFile(openedFile)"
-            ></span>
-          </div>
-          <div
-            class="border padding hover_highlight_border hover_bg_s"
-            [ngClass]="{
-                color_fg4: openedFile !== activeFileName,
-                hover_bg_s: openedFile === activeFileName,
-              }"
-            (click)="editFile(openedFile)"
-          >
-            <span>
-              {{ (openedFile | parseName).name }} @for (tag of (openedFile |
-              parseName).tags; track tag) {
-              <span class="margin_l font_size_small color_border_color"
-                >#{{ tag }}</span
-              >
-              }
-            </span>
-          </div>
-        </div>
-        }
-        <div class="flex"></div>
-      </div>
+      }
     </div>
-    <div id="CENTER_AREA_CONTENT">
-      <textarea
-        #contentTextarea
-        class="bg border padding_big rounded_l vertical_align_bottom hover_highlight_border border_on_focus mono grow"
-        [(ngModel)]="this.activeFile"
-        (ngModelChange)="saveFile(activeFileName)"
-        (keydown)="textInputOnKeyDown($event)"
-        (keyup)="textInputOnKeyUp($event)"
-        (change)="this.fileChangeEmitter.emit()"
-      ></textarea>
-    </div>
-  </div>
-
-  <div id="CENTER_FOOTER">
-    <div class="flex_row">
+    <div id="CENTER_AREA_HEADER_EDITORPREFERENCES">
       <div class="margin_r position_relative rounded revive_children_on_hover">
         <span
-          class="left_0 padding rounded_t border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
+          class="right_0 padding rounded_b border bg_h position_absolute from_bottom collapse_but_allow_revival font_size_small z_index_2"
           style="width: 10vw"
           >The position index of the text cursor</span
         >
@@ -315,7 +256,7 @@
       </div>
       <div class="margin_r position_relative rounded revive_children_on_hover">
         <span
-          class="left_0 padding rounded_t border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
+          class="right_0 padding rounded_b border bg_h position_absolute from_bottom collapse_but_allow_revival font_size_small z_index_2"
           style="width: 10vw"
           >The end index of the selected area</span
         >
@@ -335,7 +276,7 @@
       </div>
       <div class="margin_r position_relative rounded revive_children_on_hover">
         <span
-          class="left_0 padding rounded_t border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
+          class="right_0 padding rounded_b border bg_h position_absolute from_bottom collapse_but_allow_revival font_size_small z_index_2"
           style="width: 10vw"
           >How many text tokens into the past the LLM gets to read before
           starting to produce a continuation</span
@@ -354,7 +295,7 @@
       </div>
       <div class="margin_r revive_children_on_hover rounded position_relative">
         <span
-          class="right_0 padding rounded_tr border bg_h position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
+          class="right_0 padding rounded_b border bg_h position_absolute from_bottom collapse_but_allow_revival font_size_small z_index_2"
           style="width: 10vw"
           >The amount of new text tokens the LLM may produce before being
           terminated</span
@@ -373,61 +314,75 @@
           ></span>
         </span>
       </div>
-    </div>
 
-    <span class="flex_col revive_children_on_hover position_relative">
-      <span
-        class="border rounded_bl border_color_bg_s padding icon color_fg4 iconoir-settings hover_cursor_pointer hover_highlight_border"
-      ></span>
-      <span
-        class="right_0 rounded_tl border bg_s position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
-        style="width: 20vw"
-      >
-        <div class="flex_row">
-          <div
-            class="flex_row rounded_tl border padding pseudo_input hover_highlight_border bg_h margin_r"
-            title="Seed: number that all random number generation is based on"
-          >
-            <input
-              class="flex"
-              placeholder="Randomness Seed"
-              [(ngModel)]="right_tools[active_right_tool_index].seed"
-            />
-            <span
-              class="icon iconoir-soil-alt hover_cursor_pointer color_fg4"
-            ></span>
-          </div>
-          <div>
+      <span class="flex_col revive_children_on_hover position_relative">
+        <span
+          class="border padding icon color_fg4 iconoir-settings hover_cursor_pointer hover_highlight_border"
+        ></span>
+        <span
+          class="right_0 rounded_b bg_s position_absolute from_bottom collapse_but_allow_revival font_size_small z_index_2"
+          style="width: 20vw"
+        >
+          <div class="flex_row">
             <div
-              class="flex_row border padding pseudo_input hover_highlight_border bg_h margin_b"
-              title="Randomness (temperature): higher settings make more probable next token options more likely"
+              class="flex_row rounded_bl border padding pseudo_input hover_highlight_border bg_h margin_r"
+              title="Seed: number that all random number generation is based on"
             >
               <input
                 class="flex"
-                placeholder="Randomness"
-                [(ngModel)]="right_tools[active_right_tool_index].temperature"
+                placeholder="Randomness Seed"
+                [(ngModel)]="right_tools[active_right_tool_index].seed"
               />
               <span
-                class="icon iconoir-dice-six hover_cursor_pointer color_fg4"
+                class="icon iconoir-soil-alt hover_cursor_pointer color_fg4"
               ></span>
             </div>
-            <div
-              class="flex_row border padding pseudo_input hover_highlight_border bg_h"
-              title="Variety (top_k): the portion of next token options to consider at all"
-            >
-              <input
-                class="flex"
-                placeholder="Variety"
-                [(ngModel)]="right_tools[active_right_tool_index].top_k"
-              />
-              <span
-                class="icon iconoir-palette hover_cursor_pointer color_fg4"
-              ></span>
+            <div>
+              <div
+                class="flex_row border padding pseudo_input hover_highlight_border bg_h margin_b"
+                title="Randomness (temperature): higher settings make more probable next token options more likely"
+              >
+                <input
+                  class="flex"
+                  placeholder="Randomness"
+                  [(ngModel)]="right_tools[active_right_tool_index].temperature"
+                />
+                <span
+                  class="icon iconoir-dice-six hover_cursor_pointer color_fg4"
+                ></span>
+              </div>
+              <div
+                class="flex_row rounded_br border padding pseudo_input hover_highlight_border bg_h"
+                title="Variety (top_k): the portion of next token options to consider at all"
+              >
+                <input
+                  class="flex"
+                  placeholder="Variety"
+                  [(ngModel)]="right_tools[active_right_tool_index].top_k"
+                />
+                <span
+                  class="icon iconoir-palette hover_cursor_pointer color_fg4"
+                ></span>
+              </div>
             </div>
           </div>
-        </div>
+        </span>
       </span>
-    </span>
+    </div>
+  </div>
+
+  <div id="CENTER_AREA">
+    <div id="CENTER_AREA_CONTENT">
+      <textarea
+        #contentTextarea
+        class="bg border padding_big rounded_bl vertical_align_bottom hover_highlight_border border_on_focus mono grow"
+        [(ngModel)]="this.activeFile"
+        (ngModelChange)="saveFile(activeFileName)"
+        (keydown)="textInputOnKeyDown($event)"
+        (keyup)="textInputOnKeyUp($event)"
+        (change)="this.fileChangeEmitter.emit()"
+      ></textarea>
+    </div>
   </div>
 
   <div id="RIGHT_SIDEBAR_HEADER">

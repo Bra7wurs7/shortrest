@@ -52,14 +52,13 @@ export class AppComponent {
   activeArchiveName: string = "";
   activeArchiveFiles: string[] = [];
 
+  openedFileNames: string[] = [];
   activeFileName: string = "";
   activeFile: string | Blob = "";
   textareaSelectionStart: number = 0;
   textareaSelectionEnd: number = 0;
 
-  openedFileNames: string[] = [];
-
-  highlightedFile: number = -1;
+  highlightedFile: WritableSignal<number> = signal(-1);
 
   preparingPrompts: Set<number> = new Set();
   runningPrompts: Set<number> = new Set();
@@ -86,7 +85,7 @@ export class AppComponent {
           system_input.select();
         } else {
           this.editFile(selection ? selection : system_input.value);
-          this.highlightedFile = -1;
+          this.highlightedFile.set(-1);
         }
       },
       paramRequired: true,
@@ -110,7 +109,7 @@ export class AppComponent {
           system_input.select();
         } else {
           this.newFile(selection ? selection : system_input.value);
-          this.highlightedFile = -1;
+          this.highlightedFile.set(-1);
         }
       },
       paramRequired: false,
@@ -137,7 +136,7 @@ export class AppComponent {
             system_input.value = `"${selection}" `;
             system_input.select();
             system_input.selectionStart = system_input.selectionEnd;
-            this.highlightedFile = -1;
+            this.highlightedFile.set(-1);
           } else {
             this.renameFile(selection, system_input.value);
           }
@@ -146,7 +145,7 @@ export class AppComponent {
             this.highlightSystemAction(this.system_actions, self);
             system_input.select();
             system_input.selectionStart = system_input.selectionEnd;
-            this.highlightedFile = -1;
+            this.highlightedFile.set(-1);
           } else {
             const parsedRename = this.parseFileRename(system_input.value);
             this.renameFile(parsedRename.from, parsedRename.to);
@@ -182,7 +181,7 @@ export class AppComponent {
             selection ? selection : system_input.value,
           )
           .then((file) => this.addInformation(file));
-        this.highlightedFile = -1;
+        this.highlightedFile.set(-1);
       },
       paramRequired: false,
     },
@@ -207,7 +206,7 @@ export class AppComponent {
           system_input.select();
         } else {
           this.removeFile(selection ? selection : system_input.value);
-          this.highlightedFile = -1;
+          this.highlightedFile.set(-1);
         }
       },
       paramRequired: true,
@@ -313,7 +312,7 @@ export class AppComponent {
     this.setLastArchiveName(archiveName);
     this.updateActiveArchiveFiles();
     this.openedFileNames = [];
-    this.highlightedFile = -1;
+    this.highlightedFile.set(-1);
     this.activeFileName = "";
     this.activeFile = "";
   }
@@ -354,7 +353,7 @@ export class AppComponent {
           action.action(
             action,
             this.control_bar.nativeElement,
-            this.activeArchiveFiles[this.highlightedFile],
+            this.activeArchiveFiles[this.highlightedFile()],
           );
         }
         break;
@@ -412,14 +411,15 @@ export class AppComponent {
   public iterateHighlightedFiles(steps: number) {
     const files = this.activeArchiveFiles;
     if (files !== null) {
-      const foo = this.highlightedFile + steps;
-      this.highlightedFile =
+      const foo = this.highlightedFile() + steps;
+      this.highlightedFile.set(
         foo < 0 || foo >= files.length
           ? -1
-          : (this.highlightedFile + steps + files.length) % files.length;
+          : (this.highlightedFile() + steps + files.length) % files.length,
+      );
     } else {
       // If files are null, set it to none
-      this.highlightedFile = -1;
+      this.highlightedFile.set(-1);
     }
   }
 
@@ -535,7 +535,7 @@ export class AppComponent {
 
   clearSystemBar() {
     this.control_bar.nativeElement.value = "";
-    this.highlightedFile = -1;
+    this.highlightedFile.set(-1);
     this.highlightedSystemActionIndex.set(-1);
   }
 

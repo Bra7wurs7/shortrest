@@ -317,7 +317,6 @@ img {
     .left_sidebar_filelist_file {
       @extend .flex_row;
       @extend .hover_highlight_border;
-      @extend .rounded_l;
       border: $border-width solid transparent;
       padding: $padding;
       justify-content: space-between;
@@ -384,42 +383,32 @@ img {
   }
 }
 
-#CENTER_AREA {
-  @extend .flex_col;
-  grid-area: 1 / 3 / 7 / 8;
-  flex-grow: 1;
-
-  #CENTER_AREA_HEADER {
-    @extend .flex_row;
-    justify-content: space-between;
-  }
-
-  #CENTER_AREA_HEADER_ACTIONS {
-    @extend .flex_row;
-    margin-bottom: $margin;
-  }
+#CENTER_AREA_HEADER {
+  grid-area: 1 / 3 / 2 / 8;
+  @extend .flex_row;
+  justify-content: space-between;
 
   #CENTER_AREA_HEADER_FILELIST {
     @extend .flex_row;
-    margin-bottom: $margin;
   }
+
+  #CENTER_AREA_HEADER_EDITORPREFERENCES {
+    @extend .flex_row;
+  }
+}
+
+#CENTER_AREA {
+  @extend .flex_col;
+  grid-area: 2 / 3 / 8 / 8;
+  flex-grow: 1;
 
   #CENTER_AREA_CONTENT {
     @extend .flex_row;
-    @extend .rounded_l;
+    @extend .rounded_bl;
     flex-grow: 1;
     background-color: $dark;
     overflow: hidden;
     justify-content: end;
-  }
-}
-
-#CENTER_FOOTER {
-  @extend .flex_row;
-  justify-content: space-between;
-  grid-area: 7 / 3 / 7 / 8;
-
-  .center_footer_input {
   }
 }
 
@@ -644,6 +633,10 @@ img {
 
 .height_37px {
   height: 37px;
+}
+
+.ball {
+  border-radius: 34px;
 }
 
 .rounded {
