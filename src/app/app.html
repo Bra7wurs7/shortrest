@@ -197,12 +197,13 @@
           [ngClass]="{
               highlighted: file_name === activeFileName,
               highlight_border: file_name === activeFileName,
+              bg: file_name === activeFileName,
               color_fg: file_name === activeFileName,
             }"
         >
           <span class="icon iconoir-page"></span>
           <span
-            class="bg_h text_overflow_fade overflow_hidden grow max_w_0_highlighted_max_w_200px opacity_0_highlighted_opacity_1 margin_l"
+            class="bg text_overflow_fade overflow_hidden grow max_w_0_highlighted_max_w_200px opacity_0_highlighted_opacity_1 margin_l"
             [ngClass]="{
                 highlighted: file_name === activeFileName,
               }"
