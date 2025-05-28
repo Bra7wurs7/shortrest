@@ -427,9 +427,31 @@ img {
     @extend .flex_col;
     background-color: $dark;
     flex-grow: 1;
-    justify-content: space-between;
     border-top-right-radius: $border-radius;
-    overflow: hidden;
+    overflow-y: scroll;
+
+    .right_sidebar_item {
+      @extend .flex_col;
+      border: $border-width solid transparent;
+      border-color: $dark1;
+      margin-bottom: $margin;
+
+      .right_sidebar_item_header {
+        background-color: $dark_s;
+        padding: $padding;
+      }
+
+      .right_sidebar_item_content {
+        padding: $padding;
+      }
+
+      &:first-of-type {
+        border-top-right-radius: $border-radius;
+        .right_sidebar_item_header {
+          border-top-right-radius: $border-radius;
+        }
+      }
+    }
   }
 }
 
@@ -1003,6 +1025,10 @@ opacity_0_highlighted_opacity_1 {
 
 .color_fg4 {
   color: $light4;
+}
+
+.color_dark4 {
+  color: $dark4;
 }
 
 .color_border_color {

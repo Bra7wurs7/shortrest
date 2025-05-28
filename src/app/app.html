@@ -193,10 +193,9 @@
         (click)="editFile(file_name)"
       >
         <div
-          class="flex_row grow border box_sizing_border_box padding w_34px_highlighted_w_150px rounded_t"
+          class="flex_row grow border box_sizing_border_box padding w_34px_highlighted_w_150px rounded_t hover_highlight_border"
           [ngClass]="{
               highlighted: file_name === activeFileName,
-              highlight_border: file_name === activeFileName,
               bg: file_name === activeFileName,
               color_fg: file_name === activeFileName,
             }"
@@ -431,32 +430,52 @@
 
   <div id="RIGHT_SIDEBAR">
     <div id="RIGHT_SIDEBAR_CENTER">
-      <div class="flex_col overflow_scroll height_1">
-        @for (prompt of right_tools[active_right_tool_index].context_prompts;
-        track prompt) {
-        <app-prompt
-          [prompt]="prompt"
-          [file]="activeFile"
-          [llm]="llm"
-          [index]="$index"
-          [generateDynamicContext]="generateDynamicContextEmitter"
-          [fileChange]="fileChangeEmitter"
-          (remove)="onRemoveContextClick($index)"
-          (save)="saveRightTools()"
-        ></app-prompt>
-        }
-        <div
-          class="border_b border rounded_br rounded_bl rounded_tr padding flex_row space_between hover_highlight_border bg hover_cursor_pointer color_fg4 hover_color_fg"
-          [ngClass]="{
-            rounded_tl: right_tools[active_right_tool_index].context_prompts.length > 0,
-          }"
-          (click)="onAddContextClick()"
-        >
-          <span
-            class="overflow_hidden grow text_overflow_fade bg user_select_none"
-            >Provide context</span
-          >
-          <span class="icon iconoir-plus"></span>
+      <div class="right_sidebar_item">
+        <div class="right_sidebar_item_header color_fg4">Read File</div>
+        <div class="right_sidebar_item_content">
+          <div class="color_dark4">
+            Extract (the last x) words/paragraphs from a given text file
+          </div>
+          <div>->Filename: string</div>
+          <div>->Type: "paragraphs"/"words"</div>
+          <div>->Amount: number</div>
+          <div><-Text: string</div>
+        </div>
+      </div>
+      <div class="right_sidebar_item">
+        <div class="right_sidebar_item_header color_fg4">Construct Message</div>
+        <div class="right_sidebar_item_content">
+          <div class="color_dark4">
+            Construct a message object that can be used by a Chat API
+          </div>
+          <div>->Content: string | string[]</div>
+          <div>->Content Format: string</div>
+          <div>->Type: "sys"/"us"/"them"</div>
+          <div><-Message: Message</div>
+        </div>
+      </div>
+      <div class="right_sidebar_item">
+        <div class="right_sidebar_item_header color_fg4">
+          Stream LLM Chat API
+        </div>
+        <div class="right_sidebar_item_content">
+          <div class="color_dark4">
+            Send the provided messages to a Chat API and stream the result.
+          </div>
+          <div>->Messages: Message[]</div>
+          <div><-Output: Stream of string</div>
+        </div>
+      </div>
+      <div class="right_sidebar_item">
+        <div class="right_sidebar_item_header color_fg4">
+          Write Stream to File
+        </div>
+        <div class="right_sidebar_item_content">
+          <div class="color_dark4">
+            Adds tokens from a stream of strings to a given text file
+          </div>
+          <div>->Filename: string</div>
+          <div>->Messages: Message[]</div>
         </div>
       </div>
     </div>
@@ -473,7 +492,7 @@
         }"
       >
         <span class="overflow_hidden grow text_overflow_fade bg_s"
-          >Generate Text</span
+          >Run Instructions</span
         >
         <span class="icon iconoir-fire-flame margin_r"></span>
       </span>
