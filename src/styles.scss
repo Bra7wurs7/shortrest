@@ -336,8 +336,7 @@ img {
 #LEFT_SIDEBAR_ARCHIVES {
   @extend .hover_bg;
   @extend .flex_row;
-  @extend .rounded_b;
-  justify-content: space-between;
+  @extend .rounded_l;
   position: relative;
 
   &:hover {
@@ -349,12 +348,13 @@ img {
   }
 
   #LEFT_SIDEBAR_ARCHIVES_TOOLTIP {
-    @extend .rounded_t;
+    @extend .rounded_r;
     @extend .collapse_but_allow_revival;
     @extend .flex_col;
     position: absolute;
     background-color: $dark;
-    bottom: 100%;
+    bottom: 0%;
+    left: 100%;
     z-index: 2;
 
     #LEFT_SIDEBAR_ARCHIVES_TOOLTIP_NAMEINPUT {
@@ -365,21 +365,6 @@ img {
       border: $border-width solid transparent;
       border-bottom-color: $dark1;
     }
-  }
-
-  #LEFT_SIDEBAR_ARCHIVES_ARCHIVENAME {
-    @extend .text_overflow_fade;
-    border: $border-width solid transparent;
-    padding: $padding;
-    overflow: hidden;
-  }
-
-  #LEFT_SIDEBAR_ARCHIVES_ACTIONS {
-    @extend .flex_row;
-    @extend .hover_highlight_border;
-    border-bottom-right-radius: $border-radius;
-    border: $border-width solid transparent;
-    padding: $padding;
   }
 }
 
