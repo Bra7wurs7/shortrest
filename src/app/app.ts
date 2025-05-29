@@ -28,14 +28,7 @@ import { saveAs } from "file-saver";
 @Component({
   selector: "app-root",
   templateUrl: "app.html",
-  imports: [
-    CommonModule,
-    FormsModule,
-    ParseMarkdownPipe,
-    FilterFilesPipe,
-    PromptComponent,
-    ParseNamePipe,
-  ],
+  imports: [CommonModule, FormsModule, FilterFilesPipe, ParseNamePipe],
 })
 export class AppComponent {
   @ViewChild("controlBar") control_bar!: ElementRef<HTMLInputElement>;
