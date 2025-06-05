@@ -34,23 +34,6 @@
     >
       <span class="icon iconoir-archive padding border color_fg4"></span>
       <div id="LEFT_SIDEBAR_ARCHIVES_TOOLTIP">
-        <span id="LEFT_SIDEBAR_ARCHIVES_TOOLTIP_NAMEINPUT">
-          <input
-            #addArchiveNameInput
-            class="padding rounded_tl"
-            [placeholder]="'Enter new archive name'"
-          />
-          <span class="padding flex_row">
-            <span
-              class="flex icon color_fg4 iconoir-plus hover_color_fg rounded_tr hover_cursor_pointer"
-              (click)="onClickAddArchive(addArchiveNameInput.value, addArchiveNameInput)"
-            ></span>
-            <span
-              class="flex icon color_fg4 iconoir-upload hover_color_fg"
-              (click)="fileInput.click()"
-            ></span>
-          </span>
-        </span>
         @for(archiveName of this.allArchiveNames(); track
         this.allArchiveNames().keys()) {
         <span
@@ -79,6 +62,23 @@
           </span>
         </span>
         }
+        <span id="LEFT_SIDEBAR_ARCHIVES_TOOLTIP_NAMEINPUT">
+          <input
+            #addArchiveNameInput
+            class="padding"
+            [placeholder]="'Enter new archive name'"
+          />
+          <span class="padding flex_row">
+            <span
+              class="flex icon color_fg4 iconoir-plus hover_color_fg hover_cursor_pointer"
+              (click)="onClickAddArchive(addArchiveNameInput.value, addArchiveNameInput)"
+            ></span>
+            <span
+              class="flex icon color_fg4 iconoir-upload hover_color_fg rounded_br"
+              (click)="fileInput.click()"
+            ></span>
+          </span>
+        </span>
       </div>
     </div>
   </div>

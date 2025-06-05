@@ -213,7 +213,7 @@ img {
   display: grid;
   grid-gap: 3px;
   grid-template-rows: 34px repeat(5, 1fr) 34px;
-  grid-template-columns: 34px 272px repeat(5, 1fr) 272px;
+  grid-template-columns: 34px 14vw repeat(5, 1fr) 14vw;
   height: 100%;
 }
 #LEFTMOST_SIDEBAR {
@@ -348,6 +348,7 @@ img {
   }
 
   #LEFT_SIDEBAR_ARCHIVES_TOOLTIP {
+    @extend .rounded_t;
     @extend .rounded_r;
     @extend .collapse_but_allow_revival;
     @extend .flex_col;
@@ -360,8 +361,9 @@ img {
     #LEFT_SIDEBAR_ARCHIVES_TOOLTIP_NAMEINPUT {
       @extend .flex_row;
       @extend .hover_highlight_border;
-      @extend .rounded_t;
+      @extend .rounded_br;
       @extend .pseudo_input;
+      width: 14vw;
       border: $border-width solid transparent;
       border-bottom-color: $dark1;
     }
