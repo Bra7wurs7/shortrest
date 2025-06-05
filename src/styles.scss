@@ -304,33 +304,31 @@ img {
   }
 }
 
-#LEFT_SIDEBAR {
+#LEFT_SIDEBAR_FILELIST {
+  grid-area: 2 / 2 / 7 / 3;
   @extend .flex_col;
-  grid-area: 2 / 2 / 8 / 3;
-  justify-content: space-between;
+  flex-grow: 1;
+  overflow-y: scroll;
 
-  #LEFT_SIDEBAR_FILELIST {
-    @extend .flex_col;
-    flex-grow: 1;
-    overflow-y: scroll;
+  .left_sidebar_filelist_file {
+    @extend .flex_row;
+    @extend .hover_highlight_border;
+    border: $border-width solid transparent;
+    padding: $padding;
+    justify-content: space-between;
+    margin-bottom: $margin;
 
-    .left_sidebar_filelist_file {
-      @extend .flex_row;
-      @extend .hover_highlight_border;
-      border: $border-width solid transparent;
-      padding: $padding;
-      justify-content: space-between;
-      margin-bottom: $margin;
-
-      .left_sidebar_filelist_file_name {
-        @extend .text_overflow_fade;
-        display: flex;
-        flex-direction: row;
-        flex-grow: 1;
-        overflow: hidden;
-      }
+    .left_sidebar_filelist_file_name {
+      @extend .text_overflow_fade;
+      display: flex;
+      flex-direction: row;
+      flex-grow: 1;
+      overflow: hidden;
     }
   }
+}
+
+#LEFT_SIDEBAR_TOOLTIP {
 }
 
 #LEFT_SIDEBAR_ARCHIVES {
@@ -339,6 +337,7 @@ img {
   @extend .rounded_b;
   justify-content: space-between;
   position: relative;
+  grid-area: 7 / 2 / 8 / 3;
 
   &:hover {
     @extend .highlight_border;

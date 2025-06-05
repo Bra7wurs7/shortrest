@@ -94,94 +94,90 @@
     ></span>
     }
   </div>
-  <div id="LEFT_SIDEBAR">
-    <div id="LEFT_SIDEBAR_FILELIST">
-      @for ( file of activeArchiveFiles | filterFiles: controlBar.value; track
-      file ) {
-      <div
-        class="left_sidebar_filelist_file {{file === controlBar.value || $index === highlightedFile() ? this.highlightedSystemAction()?.color : '' }}"
-        [ngClass]="{
-            highlight_border:
-              (file === controlBar.value || $index === highlightedFile()),
-          }"
-        (click)="
-            highlightedFile() !== $index
-              ? (highlightedFile.set($index))
-              : editFile(file);
-              this.highlightedSystemActionIndex.set(openFileSystemActionIndex)
-          "
-        (mouseenter)="(file === controlBar.value || $index === highlightedFile()) ? this.highlightedSystemActionIndex.set(openFileSystemActionIndex) : ''"
-        (mouseleave)="(file === controlBar.value || $index === highlightedFile()) ? this.highlightedSystemActionIndex.set(-1) : ''"
-      >
-        <div class="left_sidebar_filelist_file_name bg_h">
-          <span>
-            {{ (file | parseName).name }} @for (tag of (file | parseName).tags;
-            track tag) {
-            <span class="margin_l font_size_small color_border_color"
-              >#{{ tag }}</span
-            >
-            }
-          </span>
-        </div>
-        <!-- File Extension -->
-        <div class="text-right align_items">{{ (file | parseName).ext }}</div>
+  <div id="LEFT_SIDEBAR_FILELIST">
+    @for ( file of activeArchiveFiles | filterFiles: controlBar.value; track
+    file ) {
+    <div
+      class="left_sidebar_filelist_file {{file === controlBar.value || $index === highlightedFile() ? this.highlightedSystemAction()?.color : '' }}"
+      [ngClass]="{
+          highlight_border:
+            (file === controlBar.value || $index === highlightedFile()),
+        }"
+      (click)="
+          highlightedFile() !== $index
+            ? (highlightedFile.set($index))
+            : editFile(file);
+            this.highlightedSystemActionIndex.set(openFileSystemActionIndex)
+        "
+      (mouseenter)="(file === controlBar.value || $index === highlightedFile()) ? this.highlightedSystemActionIndex.set(openFileSystemActionIndex) : ''"
+      (mouseleave)="(file === controlBar.value || $index === highlightedFile()) ? this.highlightedSystemActionIndex.set(-1) : ''"
+    >
+      <div class="left_sidebar_filelist_file_name bg_h">
+        <span>
+          {{ (file | parseName).name }} @for (tag of (file | parseName).tags;
+          track tag) {
+          <span class="margin_l font_size_small color_border_color"
+            >#{{ tag }}</span
+          >
+          }
+        </span>
       </div>
+      <!-- File Extension -->
+      <div class="text-right align_items">{{ (file | parseName).ext }}</div>
+    </div>
+    }
+  </div>
+  <div
+    id="LEFT_SIDEBAR_ARCHIVES"
+    (wheel)="
+      scrollThroughArchives(true, $event, this.allArchiveNames())
+    "
+  >
+    <div id="LEFT_SIDEBAR_ARCHIVES_TOOLTIP">
+      <span id="LEFT_SIDEBAR_ARCHIVES_TOOLTIP_NAMEINPUT">
+        <input
+          #addArchiveNameInput
+          class="padding rounded_tl"
+          [placeholder]="'Enter new archive name'"
+        />
+        <span
+          class="padding flex icon color_fg4 iconoir-plus hover_color_fg rounded_tr hover_cursor_pointer"
+          (click)="onClickAddArchive(addArchiveNameInput.value, addArchiveNameInput)"
+        ></span>
+      </span>
+      @for(archiveName of this.allArchiveNames(); track
+      this.allArchiveNames().keys()) {
+      <span
+        class="border flex_row border_bottom_color_bg_s"
+        [ngClass]="{
+          bg_s: archiveName === activeArchiveName
+        }"
+      >
+        <span
+          class="padding user_select_none hover_cursor_pointer overflow_hidden text_overflow_fade bg grow"
+          [ngClass]="{
+          bg_s: archiveName === activeArchiveName
+        }"
+          (click)="setActiveArchive(archiveName)"
+          >{{archiveName}}</span
+        >
+        <span
+          class="flex icon color_fg4 iconoir-xmark hover_color_fg padding hover_cursor_pointer"
+          (click)="onClickRemoveArchive(archiveName)"
+        ></span>
+      </span>
       }
     </div>
-    <div
-      id="LEFT_SIDEBAR_ARCHIVES"
-      (wheel)="
-        scrollThroughArchives(true, $event, this.allArchiveNames())
-      "
-    >
-      <div id="LEFT_SIDEBAR_ARCHIVES_TOOLTIP">
-        <span id="LEFT_SIDEBAR_ARCHIVES_TOOLTIP_NAMEINPUT">
-          <input
-            #addArchiveNameInput
-            class="padding rounded_tl"
-            [placeholder]="'Enter new archive name'"
-          />
-          <span
-            class="padding flex icon color_fg4 iconoir-plus hover_color_fg rounded_tr hover_cursor_pointer"
-            (click)="onClickAddArchive(addArchiveNameInput.value, addArchiveNameInput)"
-          ></span>
-        </span>
-        @for(archiveName of this.allArchiveNames(); track
-        this.allArchiveNames().keys()) {
-        <span
-          class="border flex_row border_bottom_color_bg_s"
-          [ngClass]="{
-            bg_s: archiveName === activeArchiveName
-          }"
-        >
-          <span
-            class="padding user_select_none hover_cursor_pointer overflow_hidden text_overflow_fade bg grow"
-            [ngClass]="{
-            bg_s: archiveName === activeArchiveName
-          }"
-            (click)="setActiveArchive(archiveName)"
-            >{{archiveName}}</span
-          >
-          <span
-            class="flex icon color_fg4 iconoir-xmark hover_color_fg padding hover_cursor_pointer"
-            (click)="onClickRemoveArchive(archiveName)"
-          ></span>
-        </span>
-        }
-      </div>
-      <span id="LEFT_SIDEBAR_ARCHIVES_ARCHIVENAME"
-        >{{ activeArchiveName }}</span
-      >
-      <div id="LEFT_SIDEBAR_ARCHIVES_ACTIONS">
-        <span
-          class="flex icon color_fg4 iconoir-upload-square hover_color_fg"
-          (click)="fileInput.click()"
-        ></span>
-        <span
-          class="flex icon color_fg4 iconoir-download-square-solid hover_color_fg"
-          (click)="onClickDownloadArchive(activeArchiveName)"
-        ></span>
-      </div>
+    <span id="LEFT_SIDEBAR_ARCHIVES_ARCHIVENAME">{{ activeArchiveName }}</span>
+    <div id="LEFT_SIDEBAR_ARCHIVES_ACTIONS">
+      <span
+        class="flex icon color_fg4 iconoir-upload-square hover_color_fg"
+        (click)="fileInput.click()"
+      ></span>
+      <span
+        class="flex icon color_fg4 iconoir-download-square-solid hover_color_fg"
+        (click)="onClickDownloadArchive(activeArchiveName)"
+      ></span>
     </div>
   </div>
 
