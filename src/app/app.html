@@ -1,6 +1,6 @@
 <div id="APP_CONTAINER">
   <div id="LEFTMOST_SIDEBAR">
-    <div class="flex_col">
+    <div id="LEFTMOST_SIDEBAR_ACTIONS">
       @for ( system_action of system_actions; track system_action.command ) {
       <div
         class="padding border flex color_fg4 margin_b {{
@@ -372,8 +372,8 @@
   <div id="CENTER_AREA">
     <div id="CENTER_AREA_CONTENT">
       <textarea
-        #contentTextarea
-        class="bg border padding_big rounded_bl vertical_align_bottom hover_highlight_border border_on_focus mono grow"
+        #centerAreaContentTextarea
+        id="CENTER_AREA_CONTENT_TEXTAREA"
         [(ngModel)]="this.activeFile"
         (ngModelChange)="saveFile(activeFileName)"
         (keydown)="textInputOnKeyDown($event)"
@@ -384,10 +384,10 @@
   </div>
 
   <div id="RIGHT_SIDEBAR_HEADER">
-    <div class="flex flex_row grow">
+    <div id="RIGHT_SIDEBAR_HEADER_TOOLBELT">
       @for(tool of right_tools; track tool; let toolindex = $index) {
       <div
-        class="flex_col justify_end h_100 max_height_34px text_overflow_fade rounded_t margin_r color_fg4 hover_cursor_pointer user_select_none position_relative revive_children_on_hover hover_bg"
+        id="RIGHT_SIDEBAR_HEADER_TOOLBELT_TOOL"
         (click)="active_right_tool_index = $index"
       >
         @for(context of tool.context_prompts; track context) {
@@ -428,18 +428,7 @@
 
   <div id="RIGHT_SIDEBAR">
     <div id="RIGHT_SIDEBAR_CENTER">
-      <div class="right_sidebar_item">
-        <div class="right_sidebar_item_header color_fg4">Read File</div>
-        <div class="right_sidebar_item_content">
-          <div class="color_dark4">
-            Extract (the last x) words/paragraphs from a given text file
-          </div>
-          <div>->Filename: string</div>
-          <div>->Type: "paragraphs"/"words"</div>
-          <div>->Amount: number</div>
-          <div><-Text: string</div>
-        </div>
-      </div>
+      <app-right-sidebar-item></app-right-sidebar-item>
       <div class="right_sidebar_item">
         <div class="right_sidebar_item_header color_fg4">Construct Message</div>
         <div class="right_sidebar_item_content">
@@ -482,7 +471,10 @@
   </div>
 
   <div id="RIGHT_SIDEBAR_FOOTER">
-    <div class="flex_row grow hover_cursor_pointer" (click)="buildPrompt()">
+    <div
+      class="flex_row grow hover_cursor_pointer overflow_hidden"
+      (click)="buildPrompt()"
+    >
       <span
         class="border padding grow hover_highlight_border bg_s hover_color_fg overflow_hidden"
         [ngClass]="{

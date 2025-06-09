@@ -14,26 +14,31 @@ import { SimpleHttpRequest } from "../models/simple-http-request.model";
 import { FormsModule } from "@angular/forms";
 import { SystemAction } from "../models/system-action.model";
 import { FilesService } from "../services/files/files.service";
-import { ParseMarkdownPipe } from "../pipes/parse-markdown.pipe";
 import { FilterFilesPipe } from "../pipes/filter-files.pipe";
 import { HttpFetchWrapperService } from "../services/http-client-wrapper/http-fetch-wrapper.service";
 import { OllamaChatBody, OllamaChatResponse } from "../models/ollama";
 import { Context, defaultContext } from "../models/context.model";
-import { PromptComponent } from "../components/prompt/prompt";
 import { ParseNamePipe } from "../pipes/parse-name.pipe";
 import { CenterTool } from "../models/center_tool";
 import { RightTool } from "../models/right_tool";
+import { RightSidebarItemComponent } from "../components/right-sidebar-item/right-sidebar-item.component";
 import { saveAs } from "file-saver";
 
 @Component({
   selector: "app-root",
   templateUrl: "app.html",
-  imports: [CommonModule, FormsModule, FilterFilesPipe, ParseNamePipe],
+  imports: [
+    CommonModule,
+    FormsModule,
+    FilterFilesPipe,
+    ParseNamePipe,
+    RightSidebarItemComponent,
+  ],
 })
 export class AppComponent {
   @ViewChild("controlBar") control_bar!: ElementRef<HTMLInputElement>;
-  @ViewChild("contentTextarea")
-  contentTextarea!: ElementRef<HTMLTextAreaElement>;
+  @ViewChild("centerAreaContentTextarea")
+  centerAreaContentTextarea!: ElementRef<HTMLTextAreaElement>;
 
   protected filesService = inject(FilesService);
   protected http = inject(HttpFetchWrapperService);
@@ -397,8 +402,9 @@ export class AppComponent {
 
   textInputOnKeyUp(e: KeyboardEvent) {
     this.textareaSelectionStart =
-      this.contentTextarea.nativeElement.selectionStart;
-    this.textareaSelectionEnd = this.contentTextarea.nativeElement.selectionEnd;
+      this.centerAreaContentTextarea.nativeElement.selectionStart;
+    this.textareaSelectionEnd =
+      this.centerAreaContentTextarea.nativeElement.selectionEnd;
   }
 
   public iterateHighlightedFiles(steps: number) {

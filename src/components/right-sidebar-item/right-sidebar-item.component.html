@@ -1,0 +1,38 @@
+<div class="right_sidebar_item">
+  <div class="right_sidebar_item_header">
+    <span class="right_sidebar_item_header_title">Read File</span>
+    <span class="right_sidebar_item_header_settings icon iconoir-settings">
+      <div class="right_sidebar_item_header_settings_tooltip">
+        @for (property of inputSchemaProperties(); track property) {
+          <div class="right_sidebar_item_header_settings_tooltip_row">
+            <div
+              class="right_sidebar_item_header_settings_tooltip_input_cap"
+            ></div>
+            <input [placeholder]="property.key" />
+          </div>
+        }
+
+        <div class="right_sidebar_item_header_settings_tooltip_row">
+          <div
+            class="right_sidebar_item_header_settings_tooltip_output_label"
+            draggable="true"
+          >
+            output
+          </div>
+          <div
+            class="right_sidebar_item_header_settings_tooltip_output_cap"
+          ></div>
+        </div>
+      </div>
+    </span>
+  </div>
+  <div class="right_sidebar_item_content">
+    <div class="color_dark4">
+      Extract (the last x) words/paragraphs from a given text file
+    </div>
+    <div>->Filename: string</div>
+    <div>->Type: "paragraphs"/"words"</div>
+    <div>->Amount: number</div>
+    <div><-Text: string</div>
+  </div>
+</div>

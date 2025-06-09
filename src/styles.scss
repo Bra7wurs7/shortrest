@@ -220,6 +220,10 @@ img {
   @extend .flex_col;
   justify-content: space-between;
   grid-area: 1 / 1 / 8 / 1;
+
+  #LEFTMOST_SIDEBAR_ACTIONS {
+    @extend .flex_col;
+  }
 }
 
 #LEFT_SIDEBAR_INPUT {
@@ -391,11 +395,20 @@ img {
 
   #CENTER_AREA_CONTENT {
     @extend .flex_row;
-    @extend .rounded_bl;
+    @extend .rounded_l;
     flex-grow: 1;
     background-color: $dark;
     overflow: hidden;
     justify-content: end;
+
+    #CENTER_AREA_CONTENT_TEXTAREA {
+      @extend .rounded_l;
+      @extend .hover_highlight_border;
+      background-color: $dark;
+      border: $border-width solid $dark1;
+      padding: $bigpadding;
+      font-family: $mono;
+    }
   }
 }
 
@@ -403,6 +416,24 @@ img {
   @extend .flex_row;
   grid-area: 1 / 8 / 2 / 9;
   justify-content: space-between;
+
+  #RIGHT_SIDEBAR_HEADER_TOOLBELT {
+    @extend .flex_row;
+
+    #RIGHT_SIDEBAR_HEADER_TOOLBELT_TOOL {
+      @extend .flex_col;
+      @extend .rounded_tl;
+      @extend .rounded_br;
+      @extend .hover_bg;
+      color: $light4;
+      justify-content: end;
+      height: 34px;
+      margin-right: $margin;
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+    }
+  }
 }
 
 #RIGHT_SIDEBAR {
@@ -412,7 +443,6 @@ img {
 
   #RIGHT_SIDEBAR_CENTER {
     @extend .flex_col;
-    background-color: $dark;
     flex-grow: 1;
     border-top-right-radius: $border-radius;
     overflow-y: scroll;
@@ -424,8 +454,62 @@ img {
       margin-bottom: $margin;
 
       .right_sidebar_item_header {
+        @extend .flex_row;
         background-color: $dark_s;
-        padding: $padding;
+        justify-content: space-between;
+
+        .right_sidebar_item_header_title {
+          padding: $padding;
+          color: $light4;
+        }
+        .right_sidebar_item_header_settings {
+          position: relative;
+          padding: $padding;
+          color: $light4;
+
+          .right_sidebar_item_header_settings_tooltip {
+            @extend .rounded_l;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            width: 7vw;
+            background-color: $dark;
+            font-size: smaller;
+            padding-right: $smallmargin;
+
+            .right_sidebar_item_header_settings_tooltip_row {
+              @extend .flex_row;
+              margin-bottom: $smallmargin;
+
+              input {
+                padding: $smallpadding;
+                border: $border-width solid $dark1;
+                font-family: $mono;
+              }
+              .right_sidebar_item_header_settings_tooltip_input_cap {
+                @extend .rounded_l;
+                padding: $padding;
+                border: $border-width solid $dark1;
+                margin-right: $smallmargin;
+              }
+              .right_sidebar_item_header_settings_tooltip_output_label {
+                @extend .rounded_l;
+
+                flex-grow: 1;
+                padding: $smallpadding;
+                border: $border-width solid $dark1;
+                background-color: $dark_s;
+                user-select: none;
+                cursor: grab;
+              }
+              .right_sidebar_item_header_settings_tooltip_output_cap {
+                padding: $padding;
+                border: $border-width solid $dark1;
+                margin-left: $smallmargin;
+              }
+            }
+          }
+        }
       }
 
       .right_sidebar_item_content {
@@ -489,6 +573,10 @@ img {
 
 .border {
   border: $border-width solid transparent;
+}
+
+.pseudo_input {
+  font-family: $mono;
 }
 
 .pseudo_input:has(> input:focus) {
