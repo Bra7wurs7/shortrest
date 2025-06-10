@@ -463,11 +463,13 @@ img {
           color: $light4;
         }
         .right_sidebar_item_header_settings {
+          @extend .revive_children_on_hover;
           position: relative;
           padding: $padding;
           color: $light4;
 
           .right_sidebar_item_header_settings_tooltip {
+            @extend .collapse_but_allow_revival;
             @extend .rounded_l;
             position: absolute;
             top: 100%;
@@ -476,6 +478,7 @@ img {
             background-color: $dark;
             font-size: smaller;
             padding-right: $smallmargin;
+            z-index: 2;
 
             .right_sidebar_item_header_settings_tooltip_row {
               @extend .flex_row;
@@ -514,13 +517,7 @@ img {
 
       .right_sidebar_item_content {
         padding: $padding;
-      }
-
-      &:first-of-type {
-        border-top-right-radius: $border-radius;
-        .right_sidebar_item_header {
-          border-top-right-radius: $border-radius;
-        }
+        background-color: $dark;
       }
     }
   }

@@ -1,12 +1,4 @@
-import {
-  Component,
-  computed,
-  input,
-  signal,
-  Signal,
-  WritableSignal,
-} from "@angular/core";
-import { map } from "rxjs";
+import { Component, computed, input, Signal } from "@angular/core";
 
 @Component({
   selector: "app-right-sidebar-item",
@@ -15,20 +7,20 @@ import { map } from "rxjs";
   styleUrl: "./right-sidebar-item.component.scss",
 })
 export class RightSidebarItemComponent {
-  inputSchemaName: Signal<keyof typeof schemas> = input<keyof typeof schemas>(
-    "readFileInputSchema",
-  );
+  toolName = input.required<keyof typeof tools>();
 
-  inputSchema: Signal<{ type: string; properties: Record<string, any> }> =
-    computed(() => {
-      let foo = schemas[this.inputSchemaName()];
-      return foo;
-    });
+  tool: Signal<{
+    name: string;
+    inputSchema: { type: string; properties: Record<string, any> };
+    outputSchema: { type: string; properties: Record<string, any> };
+    description: string;
+  }> = computed(() => tools[this.toolName()]);
 
   inputSchemaProperties: Signal<
     Array<{ key: string; type: string; description: string }>
   > = computed(() => {
-    let schema = this.inputSchema();
+    const tool = this.tool();
+    let schema = tool.inputSchema;
     let schemaKeys = Object.keys(schema.properties);
     let properties: Array<{ key: string; type: string; description: string }> =
       [];
@@ -43,39 +35,159 @@ export class RightSidebarItemComponent {
     }
     return properties;
   });
-  inputProperties: Signal<any> = input<any>();
+  outputSchemaProperties: Signal<
+    Array<{ key: string; type: string; description: string }>
+  > = computed(() => {
+    const tool = this.tool();
+    let schema = tool.outputSchema;
+    let schemaKeys = Object.keys(schema.properties);
+    let properties: Array<{ key: string; type: string; description: string }> =
+      [];
+    if (schema.type === "object" && schemaKeys !== undefined) {
+      for (const key of schemaKeys) {
+        properties.push({
+          key,
+          type: `${schema.properties[key].type ?? ""}`,
+          description: `${schema.properties[key].description ?? ""}`,
+        });
+      }
+    }
+    return properties;
+  });
+
+  inputProperties: Signal<any> = input<any>({
+    fileName: "Foobergoob",
+    readType: "Schmoog",
+    readAmount: 5,
+    readEnd: true,
+  });
+  outputProperties: Signal<any> = input<any>({
+    text: "Foobergoob",
+  });
 }
 
-const schemas = {
-  readFileInputSchema: {
-    type: "object",
-    properties: {
-      fileName: {
-        type: "string",
-        description: "Name of the file to read",
-      },
-      readType: {
-        type: "string",
-        description: "Whether to read 'all', 'paragraphs' or 'words'",
-      },
-      readAmount: {
-        type: "number",
-        description: "The maximum number of text units to read from the file",
-      },
-      readEnd: {
-        type: "boolean",
-        description: "whether to read the end of the file instead of its start",
+const tools: Record<
+  string,
+  {
+    name: string;
+    inputSchema: { type: string; properties: Record<string, any> };
+    outputSchema: { type: string; properties: Record<string, any> };
+    description: string;
+  }
+> = {
+  readFile: {
+    name: "Read File",
+    inputSchema: {
+      type: "object",
+      properties: {
+        fileName: {
+          type: "string",
+          description: "Name of the file to read",
+        },
+        readType: {
+          type: "string",
+          description: "Whether to read 'all', 'paragraphs' or 'words'",
+        },
+        readAmount: {
+          type: "number",
+          description: "The maximum number of text units to read from the file",
+        },
+        readEnd: {
+          type: "boolean",
+          description:
+            "whether to read the end of the file instead of its start",
+        },
       },
     },
+    outputSchema: {
+      type: "object",
+      properties: {
+        text: {
+          type: "string",
+          description:
+            "the first/last {readAmount} words or paragraphs of the text",
+        },
+      },
+    },
+    description: "Extract (the last x) words/paragraphs from a given text file",
   },
-  readFileOutputSchema: {
-    type: "object",
-    properties: {
-      text: {
-        type: "string",
-        description:
-          "the first/last {readAmount} words or paragraphs of the text",
+  constructMessage: {
+    name: "Construct Message",
+    inputSchema: {
+      type: "object",
+      properties: {
+        content: {
+          type: "string",
+          description: "The content of the message",
+        },
+        format: {
+          type: "string",
+          description: "How the content of the message should be presented",
+        },
       },
     },
+    outputSchema: {
+      type: "object",
+      properties: {
+        fileName: {
+          type: "object",
+          description: "The constructed message",
+        },
+      },
+    },
+    description: "Construct a message object that can be used by a Chat API",
+  },
+  streamChatApi: {
+    name: "Stream Chat API",
+    inputSchema: {
+      type: "object",
+      properties: {
+        apiName: {
+          type: "string",
+          description: "Name of the registered API to use",
+        },
+        apiConfiguration: {
+          type: "object",
+          description: "LLM Chat API configuration",
+        },
+        messages: {
+          type: "array",
+          description: "Messages",
+        },
+      },
+    },
+    outputSchema: {
+      type: "object",
+      properties: {
+        output: {
+          type: "object",
+          description: "Stream of answer message fragments",
+        },
+      },
+    },
+    description:
+      "Send the provided messages to a Chat API and stream the result",
+  },
+  writeStreamToFile: {
+    name: "Stream Chat API",
+    inputSchema: {
+      type: "object",
+      properties: {
+        apiName: {
+          type: "fileName",
+          description: "Name of the file to write to",
+        },
+        apiConfiguration: {
+          type: "object",
+          description: "Stream of message fragments",
+        },
+      },
+    },
+    outputSchema: {
+      type: "object",
+      properties: {},
+    },
+    description:
+      "Adds tokens from a stream of strings to the end of a given text file ",
   },
 };

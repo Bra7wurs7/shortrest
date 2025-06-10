@@ -428,45 +428,16 @@
 
   <div id="RIGHT_SIDEBAR">
     <div id="RIGHT_SIDEBAR_CENTER">
-      <app-right-sidebar-item></app-right-sidebar-item>
-      <div class="right_sidebar_item">
-        <div class="right_sidebar_item_header color_fg4">Construct Message</div>
-        <div class="right_sidebar_item_content">
-          <div class="color_dark4">
-            Construct a message object that can be used by a Chat API
-          </div>
-          <div>->Content: string | string[]</div>
-          <div>->Content Format: string</div>
-          <div>->Type: "sys"/"us"/"them"</div>
-          <div><-Message: Message</div>
-        </div>
-      </div>
-      <div class="right_sidebar_item">
-        <div class="right_sidebar_item_header color_fg4">
-          Stream LLM Chat API
-        </div>
-        <div class="right_sidebar_item_content">
-          <div class="color_dark4">
-            Send the provided messages to a Chat API and stream the result.
-          </div>
-          <div>->Apiname: string</div>
-          <div>->Messages: Message[]</div>
-          <div>->Configuration: LLMApiCfg</div>
-          <div><-Output: Stream of string</div>
-        </div>
-      </div>
-      <div class="right_sidebar_item">
-        <div class="right_sidebar_item_header color_fg4">
-          Write Stream to File
-        </div>
-        <div class="right_sidebar_item_content">
-          <div class="color_dark4">
-            Adds tokens from a stream of strings to a given text file
-          </div>
-          <div>->Filename: string</div>
-          <div>->Messages: Message[]</div>
-        </div>
-      </div>
+      <app-right-sidebar-item [toolName]="'readFile'"></app-right-sidebar-item>
+      <app-right-sidebar-item
+        [toolName]="'constructMessage'"
+      ></app-right-sidebar-item>
+      <app-right-sidebar-item
+        [toolName]="'streamChatApi'"
+      ></app-right-sidebar-item>
+      <app-right-sidebar-item
+        [toolName]="'writeStreamToFile'"
+      ></app-right-sidebar-item>
     </div>
   </div>
 
@@ -489,11 +460,9 @@
         <span class="icon iconoir-fire-flame margin_r"></span>
       </span>
     </div>
-    <span
-      class="flex_col rounded_br bg_s position_relative revive_children_on_hover"
-    >
+    <span class="flex_col bg_s position_relative revive_children_on_hover">
       <span
-        class="border rounded_br icon padding color_fg4 hover_highlight_border iconoir-reload-window hover_cursor_pointer"
+        class="border icon padding color_fg4 hover_highlight_border iconoir-reload-window hover_cursor_pointer"
         (click)="generateDynamicContextEmitter.emit()"
       ></span>
       <span
