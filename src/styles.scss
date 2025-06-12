@@ -23,9 +23,9 @@ $dark2: #504945;
 $dark3: #665c54;
 $dark4: #7c6f64;
 
-$light_h: #fbf1c7;
+$light_h: #f9f5d7;
 $light: #fbf1c7;
-$light_s: #fbf1c7;
+$light_s: #f2e5bc;
 
 $light1: #ebdbb2;
 $light2: #d5c4a1;
@@ -381,10 +381,32 @@ img {
 
   #CENTER_AREA_HEADER_FILELIST {
     @extend .flex_row;
-  }
 
-  #CENTER_AREA_HEADER_EDITORPREFERENCES {
-    @extend .flex_row;
+    .center_area_header_filelist_file {
+      @extend .flex_row;
+      @extend .revive_children_on_hover;
+      position: relative;
+      cursor: pointer;
+      color: $light4;
+      margin-right: $margin;
+
+      .center_area_header_filelist_file {
+        @extend .flex_row;
+        @extend .w_34px_highlighted_w_150px;
+        @extend .hover_highlight_border;
+        flex-grow: 1;
+        border: $border-width solid transparent;
+        box-sizing: border-box;
+        padding: $padding;
+        border-radius: $border-radius;
+
+        &.highlighted {
+          border: $border-width solid $dark3;
+          background-color: $dark;
+          color: $light1;
+        }
+      }
+    }
   }
 }
 
@@ -419,6 +441,7 @@ img {
 
   #RIGHT_SIDEBAR_HEADER_TOOLBELT {
     @extend .flex_row;
+    flex-grow: 1;
 
     #RIGHT_SIDEBAR_HEADER_TOOLBELT_TOOL {
       @extend .flex_col;
@@ -526,6 +549,17 @@ img {
 #RIGHT_SIDEBAR_FOOTER {
   @extend .flex_row;
   grid-area: 7 / 8 / 8 / 9;
+
+  #RIGHT_SIDEBAR_FOOTER_RUN_BUTTON {
+    @extend .flex_row;
+    @extend .hover_highlight_border;
+    @extend .hover_color_fg;
+    border: $border-width solid $dark1;
+    padding: $padding;
+    background-color: $dark_s;
+    overflow: hidden;
+    flex-grow: 1;
+  }
 }
 
 .mono {
@@ -1147,7 +1181,7 @@ opacity_0_highlighted_opacity_1 {
   background-color: $light;
 }
 
-.icon {
+.bx {
   font-size: $icon;
 }
 

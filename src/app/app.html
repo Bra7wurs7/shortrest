@@ -16,7 +16,7 @@
         (click)="systemActionOnClick(system_action, controlBar, activeArchiveFiles[this.highlightedFile()])"
       >
         <span
-          class="icon {{ system_action.icon }} {{
+          class="{{ system_action.icon }} {{
               $index === highlightedSystemActionIndex()
                 ? system_action.color
                 : ''
@@ -32,7 +32,7 @@
     "
       class="flex"
     >
-      <span class="icon iconoir-archive padding border color_fg4"></span>
+      <span class="bx bx-archive padding border color_fg4"></span>
       <div id="LEFT_SIDEBAR_ARCHIVES_TOOLTIP">
         @for(archiveName of this.allArchiveNames(); track
         this.allArchiveNames().keys()) {
@@ -52,11 +52,11 @@
           >
           <span class="padding flex_row">
             <span
-              class="flex icon color_fg4 iconoir-download hover_color_fg"
+              class="flex color_fg4 bx bx-download hover_color_fg"
               (click)="onClickDownloadArchive(archiveName)"
             ></span>
             <span
-              class="flex icon color_fg4 iconoir-xmark hover_color_fg hover_cursor_pointer"
+              class="flex color_fg4 bx bx-x hover_color_fg hover_cursor_pointer"
               (click)="onClickRemoveArchive(archiveName)"
             ></span>
           </span>
@@ -70,11 +70,11 @@
           />
           <span class="padding flex_row">
             <span
-              class="flex icon color_fg4 iconoir-plus hover_color_fg hover_cursor_pointer"
+              class="flex color_fg4 bx bx-plus hover_color_fg hover_cursor_pointer"
               (click)="onClickAddArchive(addArchiveNameInput.value, addArchiveNameInput)"
             ></span>
             <span
-              class="flex icon color_fg4 iconoir-upload hover_color_fg rounded_br"
+              class="flex color_fg4 bx bx-upload hover_color_fg rounded_br"
               (click)="fileInput.click()"
             ></span>
           </span>
@@ -140,7 +140,7 @@
     highlightedSystemActionIndex() !== -1 ) {
     <span
       id="LEFT_SIDEBAR_INPUT_CLEAR_BUTTON"
-      class="icon iconoir-xmark"
+      class="bx bx-x"
       (click)="
           clearSystemBar();
         "
@@ -187,18 +187,16 @@
     <div id="CENTER_AREA_HEADER_FILELIST">
       @for ( file_name of openedFileNames; track file_name ) {
       <div
-        class="position_relative flex_row hover_cursor_pointer color_fg4 revive_children_on_hover margin_r"
+        class="center_area_header_filelist_file"
         (click)="editFile(file_name)"
       >
         <div
-          class="flex_row grow border box_sizing_border_box padding w_34px_highlighted_w_150px rounded_t hover_highlight_border"
+          class="center_area_header_filelist_file"
           [ngClass]="{
               highlighted: file_name === activeFileName,
-              bg: file_name === activeFileName,
-              color_fg: file_name === activeFileName,
             }"
         >
-          <span class="icon iconoir-page"></span>
+          <span class="bx bx-file"></span>
           <span
             class="bg text_overflow_fade overflow_hidden grow max_w_0_highlighted_max_w_200px opacity_0_highlighted_opacity_1 margin_l"
             [ngClass]="{
@@ -211,161 +209,13 @@
         <div
           class="position_absolute from_bottom left_0 bg_h collapse_but_allow_revival flex_col"
         >
-          @for (tool of center_tools; track tool) {
           <span
-            class="flex icon {{
-                  tool.icon
-                }} border padding hover_highlight_border hover_cursor_pointer"
-            [ngClass]="{
-                  color_fg4: !tool.active,
-                  bg_s: tool.active,
-                }"
-            (click)="tool.active = !tool.active"
-          ></span>
-          }
-          <span
-            class="flex icon iconoir-xmark border padding hover_highlight_border hover_cursor_pointer color_fg4"
+            class="flex bx bx-x border padding hover_highlight_border hover_cursor_pointer color_fg4"
             (click)="closeFile(file_name)"
           ></span>
         </div>
       </div>
       }
-    </div>
-    <div id="CENTER_AREA_HEADER_EDITORPREFERENCES">
-      <div class="margin_r position_relative rounded revive_children_on_hover">
-        <span
-          class="right_0 padding rounded_b border bg_h position_absolute from_bottom collapse_but_allow_revival font_size_small z_index_2"
-          style="width: 10vw"
-          >The position index of the text cursor</span
-        >
-        <span
-          class="flex_row rounded border padding pseudo_input hover_highlight_border"
-        >
-          <input
-            class="flex"
-            placeholder="Read Tokens"
-            [(ngModel)]="textareaSelectionStart"
-            style="width: 40px"
-          />
-          <span
-            class="icon iconoir-text-arrows-up-down hover_cursor_pointer color_fg4"
-          ></span>
-        </span>
-      </div>
-      <div class="margin_r position_relative rounded revive_children_on_hover">
-        <span
-          class="right_0 padding rounded_b border bg_h position_absolute from_bottom collapse_but_allow_revival font_size_small z_index_2"
-          style="width: 10vw"
-          >The end index of the selected area</span
-        >
-        <span
-          class="flex_row rounded border padding pseudo_input hover_highlight_border"
-        >
-          <input
-            class="flex"
-            placeholder="Read Tokens"
-            [(ngModel)]="textareaSelectionEnd"
-            style="width: 40px"
-          />
-          <span
-            class="icon iconoir-text-box hover_cursor_pointer color_fg4"
-          ></span>
-        </span>
-      </div>
-      <div class="margin_r position_relative rounded revive_children_on_hover">
-        <span
-          class="right_0 padding rounded_b border bg_h position_absolute from_bottom collapse_but_allow_revival font_size_small z_index_2"
-          style="width: 10vw"
-          >How many text tokens into the past the LLM gets to read before
-          starting to produce a continuation</span
-        >
-        <span
-          class="flex_row rounded border padding pseudo_input hover_highlight_border"
-        >
-          <input
-            class="flex"
-            placeholder="Read Tokens"
-            [(ngModel)]="right_tools[active_right_tool_index].readTokens"
-            style="width: 40px"
-          />
-          <span class="icon iconoir-eye hover_cursor_pointer color_fg4"></span>
-        </span>
-      </div>
-      <div class="margin_r revive_children_on_hover rounded position_relative">
-        <span
-          class="right_0 padding rounded_b border bg_h position_absolute from_bottom collapse_but_allow_revival font_size_small z_index_2"
-          style="width: 10vw"
-          >The amount of new text tokens the LLM may produce before being
-          terminated</span
-        >
-        <span
-          class="flex_row rounded border padding pseudo_input hover_highlight_border"
-        >
-          <input
-            class="flex"
-            placeholder="Write Tokens"
-            [(ngModel)]="right_tools[active_right_tool_index].writeTokens"
-            style="width: 40px"
-          />
-          <span
-            class="icon iconoir-brain hover_cursor_pointer color_fg4"
-          ></span>
-        </span>
-      </div>
-
-      <span class="flex_col revive_children_on_hover position_relative">
-        <span
-          class="border padding icon color_fg4 iconoir-settings hover_cursor_pointer hover_highlight_border"
-        ></span>
-        <span
-          class="right_0 rounded_b bg_s position_absolute from_bottom collapse_but_allow_revival font_size_small z_index_2"
-          style="width: 20vw"
-        >
-          <div class="flex_row">
-            <div
-              class="flex_row rounded_bl border padding pseudo_input hover_highlight_border bg_h margin_r"
-              title="Seed: number that all random number generation is based on"
-            >
-              <input
-                class="flex"
-                placeholder="Randomness Seed"
-                [(ngModel)]="right_tools[active_right_tool_index].seed"
-              />
-              <span
-                class="icon iconoir-soil-alt hover_cursor_pointer color_fg4"
-              ></span>
-            </div>
-            <div>
-              <div
-                class="flex_row border padding pseudo_input hover_highlight_border bg_h margin_b"
-                title="Randomness (temperature): higher settings make more probable next token options more likely"
-              >
-                <input
-                  class="flex"
-                  placeholder="Randomness"
-                  [(ngModel)]="right_tools[active_right_tool_index].temperature"
-                />
-                <span
-                  class="icon iconoir-dice-six hover_cursor_pointer color_fg4"
-                ></span>
-              </div>
-              <div
-                class="flex_row rounded_br border padding pseudo_input hover_highlight_border bg_h"
-                title="Variety (top_k): the portion of next token options to consider at all"
-              >
-                <input
-                  class="flex"
-                  placeholder="Variety"
-                  [(ngModel)]="right_tools[active_right_tool_index].top_k"
-                />
-                <span
-                  class="icon iconoir-palette hover_cursor_pointer color_fg4"
-                ></span>
-              </div>
-            </div>
-          </div>
-        </span>
-      </span>
     </div>
   </div>
 
@@ -385,33 +235,34 @@
 
   <div id="RIGHT_SIDEBAR_HEADER">
     <div id="RIGHT_SIDEBAR_HEADER_TOOLBELT">
-      @for(tool of right_tools; track tool; let toolindex = $index) {
+      @for(workflow of right_sidebar_workflows; track workflow; let
+      workflowindex = $index) {
       <div
         id="RIGHT_SIDEBAR_HEADER_TOOLBELT_TOOL"
         (click)="active_right_tool_index = $index"
       >
-        @for(context of tool.context_prompts; track context) {
+        @for(context of workflow.nodes; track context) {
         <span
           class="h_5px w_24px rounded_b rounded_tr margin_t bg"
           [ngClass]="{
-            'bg_s': active_right_tool_index === toolindex && (right_tools[active_right_tool_index].context_prompts.length > 0),
+            'bg_s': active_right_tool_index === workflowindex && (right_sidebar_workflows[active_right_tool_index].nodes.length > 0),
             'rounded_tl': $index > 0,
           }"
         >
         </span>
-        } @if(tool.context_prompts.length === 0) {
+        } @if(workflow.nodes.length === 0) {
         <span class="w_24px"></span>
-        } @if(tool.context_prompts.length > 0) {
+        } @if(workflow.nodes.length > 0) {
         <span
           class="border left_0 flex_col rounded_b bg_h position_absolute from_bottom collapse_but_allow_revival font_size_small z_index_2"
         >
           <span
-            class="icon iconoir-cloud-download border margin_t hover_color_fg"
-            (click)="onClickDownloadRightTool(toolindex)"
+            class="bx bx-cloud-download border margin_t hover_color_fg"
+            (click)="onClickDownloadRightTool(workflowindex)"
           ></span>
           <span
-            class="icon iconoir-xmark border margin_t hover_color_fg"
-            (click)="onClickRemoveRightTool(toolindex)"
+            class="bx bx-x border margin_t hover_color_fg"
+            (click)="onClickRemoveRightTool(workflowindex)"
           ></span>
         </span>
         }
@@ -422,7 +273,13 @@
       class="flex border padding hover_highlight_border hover_cursor_pointer color_fg4 hover_color_fg"
       (click)="rightToolsInput.click()"
     >
-      <span class="icon iconoir-cloud-upload"></span>
+      <span class="bx bx-cloud-upload"></span>
+    </div>
+    <div
+      class="flex border padding hover_highlight_border hover_cursor_pointer color_fg4 hover_color_fg"
+      (click)="rightToolsInput.click()"
+    >
+      <span class="bx bx-slider-alt"></span>
     </div>
   </div>
 
@@ -447,7 +304,7 @@
       (click)="buildPrompt()"
     >
       <span
-        class="border padding grow hover_highlight_border bg_s hover_color_fg overflow_hidden"
+        id="RIGHT_SIDEBAR_FOOTER_RUN_BUTTON"
         [ngClass]="{
           color_fg4: this.runningPrompts.size === 0,
           fire: this.runningPrompts.size,
@@ -457,20 +314,9 @@
         <span class="overflow_hidden grow text_overflow_fade bg_s"
           >Run Instructions</span
         >
-        <span class="icon iconoir-fire-flame margin_r"></span>
+        <span class="bx bxs-flame margin_r"></span>
       </span>
     </div>
-    <span class="flex_col bg_s position_relative revive_children_on_hover">
-      <span
-        class="border icon padding color_fg4 hover_highlight_border iconoir-reload-window hover_cursor_pointer"
-        (click)="generateDynamicContextEmitter.emit()"
-      ></span>
-      <span
-        class="right_0 padding border border bg_s position_absolute from_top collapse_but_allow_revival font_size_small z_index_2"
-        style="width: 10vw"
-        >Trigger generation requests for all dynamic contexts</span
-      >
-    </span>
   </div>
 </div>
 

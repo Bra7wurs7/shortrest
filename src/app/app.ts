@@ -10,19 +10,14 @@ import {
   ViewChild,
   WritableSignal,
 } from "@angular/core";
-import { SimpleHttpRequest } from "../models/simple-http-request.model";
 import { FormsModule } from "@angular/forms";
 import { SystemAction } from "../models/system-action.model";
 import { FilesService } from "../services/files/files.service";
 import { FilterFilesPipe } from "../pipes/filter-files.pipe";
-import { HttpFetchWrapperService } from "../services/http-client-wrapper/http-fetch-wrapper.service";
-import { OllamaChatBody, OllamaChatResponse } from "../models/ollama";
-import { Context, defaultContext } from "../models/context.model";
 import { ParseNamePipe } from "../pipes/parse-name.pipe";
-import { CenterTool } from "../models/center_tool";
-import { RightTool } from "../models/right_tool";
 import { RightSidebarItemComponent } from "../components/right-sidebar-item/right-sidebar-item.component";
 import { saveAs } from "file-saver";
+import { Workflow } from "../models/workflow.model";
 
 @Component({
   selector: "app-root",
@@ -41,7 +36,6 @@ export class AppComponent {
   centerAreaContentTextarea!: ElementRef<HTMLTextAreaElement>;
 
   protected filesService = inject(FilesService);
-  protected http = inject(HttpFetchWrapperService);
 
   title = "shortrest";
 
@@ -61,6 +55,9 @@ export class AppComponent {
   preparingPrompts: Set<number> = new Set();
   runningPrompts: Set<number> = new Set();
 
+  right_sidebar_workflows: Workflow[] = [];
+  active_workflow: number = 0;
+
   protected readonly generateDynamicContextEmitter = new EventEmitter();
   protected readonly fileChangeEmitter = new EventEmitter();
 
@@ -70,7 +67,7 @@ export class AppComponent {
       name: "Open File",
       advice: "Enter filename",
       description: (s) => (s ? `Open "${s}"` : "Open a file by its filename"),
-      icon: "iconoir-page",
+      icon: "bx bx-file",
       command: "o",
       color: "blue",
       action: (
@@ -94,7 +91,7 @@ export class AppComponent {
       advice: "Enter new filename",
       description: (s: string) =>
         s ? `Create "${s}", a new file` : "Create a new file from its name",
-      icon: "iconoir-page-plus",
+      icon: "bx bx-file-blank",
       command: "n",
       color: "green",
       action: (
@@ -120,7 +117,7 @@ export class AppComponent {
         s
           ? `Rename "${s}" to something else`
           : "Create a new file from its name",
-      icon: "iconoir-page-edit",
+      icon: "bx bx-edit",
       command: "r",
       color: "yellow",
       action: (
@@ -161,7 +158,7 @@ export class AppComponent {
         s
           ? `Add "${s}" content to the prompt`
           : "Add the selected file's content to the prompt",
-      icon: "iconoir-fire-flame",
+      icon: "bx bxs-hot",
       command: "x",
       color: "fire",
       action: (
@@ -191,7 +188,7 @@ export class AppComponent {
         s
           ? `Delete "${s}" from the library`
           : "Delete a file from the library by its filename",
-      icon: "iconoir-bin-half",
+      icon: "bx bx-trash-alt",
       command: "d",
       color: "red",
       action: (
@@ -211,33 +208,6 @@ export class AppComponent {
     },
   ];
 
-  center_tools: CenterTool[] = [
-    {
-      icon: "iconoir-code",
-      active: true,
-    },
-    {
-      icon: "iconoir-edit-pencil",
-      active: false,
-    },
-    {
-      icon: "iconoir-open-book",
-      active: false,
-    },
-  ];
-
-  right_tools: RightTool[] = [
-    {
-      name: "Default Tool",
-      context_prompts: [],
-      readTokens: "384",
-      writeTokens: "384",
-      seed: 1,
-      temperature: 0.5,
-      top_k: 1,
-    },
-  ];
-
   active_right_tool_index: number = 0;
 
   highlightedSystemAction: Signal<undefined | SystemAction> = computed(
@@ -247,21 +217,13 @@ export class AppComponent {
   highlightedSystemActionIndex = signal(-1);
   openFileSystemActionIndex = -1;
 
-  llm: SimpleHttpRequest = {
-    url: new URL("http://127.0.0.1:11434/v1/chat/completions"),
-    method: "POST",
-    headers: {},
-    body: {},
-    params: {},
-  };
-
   constructor() {
     this.openFileSystemActionIndex = this.system_actions.findIndex(
       (sa) => sa.command === "o",
     );
     this.loadLastArchiveName();
     this.updateActiveArchiveFiles();
-    this.loadRightTools();
+    //this.loadRightTools();
     this.updateArchiveNames();
   }
 
@@ -271,15 +233,7 @@ export class AppComponent {
   }
 
   onAddRightToolClick() {
-    this.right_tools.push({
-      name: "New Tool",
-      context_prompts: [],
-      readTokens: "384",
-      writeTokens: "384",
-      seed: 1,
-      temperature: 0.5,
-      top_k: 1,
-    });
+    throw new Error("NotImplemented");
   }
 
   loadLastArchiveName() {
@@ -584,123 +538,31 @@ export class AppComponent {
   }
 
   public updateRightTools() {
-    this.right_tools = this.right_tools.filter(
-      (tool, index, array) =>
-        tool.context_prompts.length > 0 || index === array.length - 1,
-    );
-    // Ensure that at least one right tool always exists and is not deleted even if it has no context prompts.
-    if (
-      this.right_tools.length === 0 ||
-      this.right_tools[this.right_tools.length - 1].context_prompts.length > 0
-    ) {
-      this.right_tools.push({
-        name: "New Tool",
-        context_prompts: [],
-        readTokens: "384",
-        writeTokens: "384",
-        seed: 1,
-        temperature: 0.5,
-        top_k: 1,
-      });
-    }
-    this.saveRightTools();
+    throw new Error("NotImplemented");
   }
 
   public addInformation(information: string | Blob) {
-    if (information instanceof Blob) {
-      throw Error("Not Implemented");
-    }
-    this.right_tools[this.active_right_tool_index].context_prompts.push({
-      ...defaultContext,
-      content: information,
-    });
+    throw new Error("NotImplemented");
   }
 
   protected onAddContextClick() {
-    this.right_tools[this.active_right_tool_index].context_prompts.push({
-      ...defaultContext,
-    });
-    this.updateRightTools();
+    throw new Error("NotImplemented");
   }
 
   protected onRemoveContextClick(i: number) {
-    this.right_tools[this.active_right_tool_index].context_prompts.splice(i, 1);
-    this.updateRightTools();
+    throw new Error("NotImplemented");
   }
 
   protected saveRightTools() {
-    localStorage.setItem("rightTools", JSON.stringify(this.right_tools));
+    throw new Error("NotImplemented");
   }
 
   protected loadRightTools() {
-    const tools = localStorage.getItem("rightTools");
-    if (tools) {
-      this.right_tools = JSON.parse(tools);
-    }
-    this.updateRightTools();
+    throw new Error("NotImplemented");
   }
 
-  public buildPrompt(): SimpleHttpRequest {
-    const activeContexts: Context[] = this.right_tools[
-      this.active_right_tool_index
-    ].context_prompts.filter((c) => c.visible);
-    const body: OllamaChatBody = {
-      model: "dolphin-mistral",
-      //model: "deepseek-r1:32b",
-      format: "json",
-      stream: true,
-      max_tokens: +this.right_tools[this.active_right_tool_index].writeTokens,
-      messages: [
-        {
-          role: "system",
-          content: activeContexts
-            .map((c) => {
-              switch (c.type) {
-                case "dynamic":
-                  return c.dynamic_content;
-                case "static":
-                  return c.content;
-              }
-            })
-            .join("\n"),
-        },
-        {
-          role: "assistant",
-          content: this.activeFile.slice(
-            -this.right_tools[this.active_right_tool_index].readTokens * 4,
-          ) as string,
-        },
-      ],
-      options: {
-        temperature: this.right_tools[this.active_right_tool_index].temperature,
-        seed: this.right_tools[this.active_right_tool_index].seed,
-        top_k: this.right_tools[this.active_right_tool_index].top_k,
-      },
-    };
-
-    console.log(body);
-
-    this.http.streamPrompt({ ...this.llm, body: body }).then((o) => {
-      let promptId = 0;
-      while (this.runningPrompts.has(promptId)) {
-        promptId += 1;
-      }
-      this.runningPrompts.add(promptId);
-      const sub = o?.stream.subscribe((streamFragment) => {
-        const asTyped = streamFragment as unknown as OllamaChatResponse[];
-        for (const fragment of asTyped) {
-          this.onToken(fragment.choices[0].delta.content);
-          if (fragment.choices[0].finish_reason !== null) {
-            sub?.unsubscribe();
-            this.saveFile(this.activeFileName);
-            this.fileChangeEmitter.emit();
-            this.runningPrompts.delete(promptId);
-          }
-        }
-      });
-    });
-
-    return { ...this.llm, body: body };
+  public buildPrompt(): unknown {
+    throw new Error("NotImplemented");
   }
 
   onClickAddArchive(archiveName: string, input: HTMLInputElement) {
@@ -726,53 +588,21 @@ export class AppComponent {
   }
 
   onClickRemoveRightTool(index: number) {
-    // Check if index is within the valid range and there are more than one tool available.
-    if (
-      index >= 0 &&
-      index < this.right_tools.length &&
-      this.right_tools.length > 1
-    ) {
-      // Remove the tool at the specified index.
-      this.right_tools.splice(index, 1);
-      // Update the right tools to maintain the array's integrity.
-      this.updateRightTools();
-    } else {
-      console.error("Invalid index or no more tools available for removal.");
-    }
+    throw new Error("NotImplemented");
   }
 
   onClickDownloadRightTool(index: number) {
-    if (index >= 0 && index < this.right_tools.length) {
-      const toolToDownload = this.right_tools[index];
-      const blob = new Blob([JSON.stringify(toolToDownload, null, 2)], {
-        type: "application/json",
-      });
-      saveAs(blob, `rightTool_${index}.json`);
-    } else {
-      console.error("Invalid index for downloading right tool.");
-    }
+    throw new Error("NotImplemented");
   }
 
   onRightToolFileInputChange(event: Event) {
-    const target = event.target as HTMLInputElement;
-    if (target.files && target.files.length > 0) {
-      for (const file of Array.from(target.files)) {
-        if (file.type === "application/json") {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            try {
-              const jsonData = JSON.parse(e.target?.result as string);
-              this.right_tools.push(jsonData);
-              this.updateRightTools();
-            } catch (error) {
-              console.error("Error parsing JSON file:", error);
-            }
-          };
-          reader.readAsText(file);
-        } else {
-          console.error(`Unsupported file type: ${file.type}`);
-        }
-      }
-    }
+    throw new Error("NotImplemented");
+  }
+
+  runWorkflow(workflow: Workflow) {
+    /*
+    1. Load global variables for workflow
+
+    */
   }
 }

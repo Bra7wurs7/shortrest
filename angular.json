@@ -25,7 +25,7 @@
             "inlineStyleLanguage": "scss",
             "assets": ["src/favicon.svg", "src/assets"],
             "styles": [
-              "node_modules/iconoir/css/iconoir.css",
+              "node_modules/boxicons/css/boxicons.css",
               "src/styles.scss"
             ],
             "scripts": []
