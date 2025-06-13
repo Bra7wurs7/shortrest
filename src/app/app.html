@@ -187,11 +187,11 @@
     <div id="CENTER_AREA_HEADER_FILELIST">
       @for ( file_name of openedFileNames; track file_name ) {
       <div
-        class="center_area_header_filelist_file"
+        class="center_area_header_filelist_entry"
         (click)="editFile(file_name)"
       >
         <div
-          class="center_area_header_filelist_file"
+          class="center_area_header_filelist_entry_file"
           [ngClass]="{
               highlighted: file_name === activeFileName,
             }"

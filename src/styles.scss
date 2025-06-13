@@ -228,10 +228,13 @@ img {
 
 #LEFT_SIDEBAR_INPUT {
   @extend .flex_row;
+  background-color: $dark_h;
   grid-area: 1 / 2 / 2 / 3;
   position: relative;
   border: $border-width solid transparent;
   padding: $padding;
+  z-index: 3;
+
   &:has(> input:focus) {
     border-color: $dark3;
   }
@@ -382,7 +385,7 @@ img {
   #CENTER_AREA_HEADER_FILELIST {
     @extend .flex_row;
 
-    .center_area_header_filelist_file {
+    .center_area_header_filelist_entry {
       @extend .flex_row;
       @extend .revive_children_on_hover;
       position: relative;
@@ -390,7 +393,7 @@ img {
       color: $light4;
       margin-right: $margin;
 
-      .center_area_header_filelist_file {
+      .center_area_header_filelist_entry_file {
         @extend .flex_row;
         @extend .w_34px_highlighted_w_150px;
         @extend .hover_highlight_border;

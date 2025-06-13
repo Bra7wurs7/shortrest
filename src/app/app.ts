@@ -602,7 +602,13 @@ export class AppComponent {
   runWorkflow(workflow: Workflow) {
     /*
     1. Load global variables for workflow
-
+    2. Load nodes from workflow
+    3. prepare requested inputs for each node
+    4. if nodes have misconfigured inputs, highlight them in red
+    5. else, for each node:
+      1. call node.run(nodeinputs) and store the result
+      2. update inputs based on the result
+      3. execute functions requested by the node
     */
   }
 }
