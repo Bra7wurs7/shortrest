@@ -599,6 +599,14 @@ export class AppComponent {
     throw new Error("NotImplemented");
   }
 
+  validateWorkflow(workflow: Workflow) {
+    /*
+    1. Init global variables
+    2. Init nodes
+    3.
+    */
+  }
+
   runWorkflow(workflow: Workflow) {
     /*
     1. Load global variables for workflow
