@@ -17,6 +17,8 @@ import { FilterFilesPipe } from "../pipes/filter-files.pipe";
 import { ParseNamePipe } from "../pipes/parse-name.pipe";
 import { RightSidebarItemComponent } from "../components/right-sidebar-item/right-sidebar-item.component";
 import { Workflow } from "../models/workflow.model";
+import { WorkflowNode } from "../models/workflow-node.model";
+import { RIGHTSIDEBARTOOLS } from "../constants/tools.constant";
 
 @Component({
   selector: "app-root",
@@ -666,5 +668,13 @@ export class AppComponent {
       2. update inputs based on the result
       3. execute functions requested by the node
     */
+  }
+
+  validateReadFileNode(node: WorkflowNode & { tool: "readFile" }): boolean {
+    const properties = RIGHTSIDEBARTOOLS["readFile"].inputSchema.properties;
+    for (const key of Object.keys(properties)) {
+      if (node.inputProperties[key] !== undefined) properties[key];
+    }
+    return false;
   }
 }
