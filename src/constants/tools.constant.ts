@@ -44,7 +44,7 @@ export const RIGHTSIDEBARTOOLS: Record<
     description: "Extract (the last x) words/paragraphs from a given text file",
   },
   constructMessage: {
-    name: "Construct Message",
+    name: "Message",
     inputSchema: {
       type: "object",
       properties: {
@@ -70,7 +70,7 @@ export const RIGHTSIDEBARTOOLS: Record<
     description: "Construct a message object that can be used by a Chat API",
   },
   streamChatApi: {
-    name: "Stream Chat API",
+    name: "AI Chat",
     inputSchema: {
       type: "object",
       properties: {

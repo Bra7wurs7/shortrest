@@ -32,7 +32,11 @@
     "
       class="flex"
     >
-      <span class="bx bx-archive padding border color_fg4"></span>
+      <span
+        id="LEFT_SIDEBAR_ARCHIVES_ICON"
+        class="bx bx-archive"
+        (click)="addArchiveNameInput.focus()"
+      ></span>
       <div id="LEFT_SIDEBAR_ARCHIVES_TOOLTIP">
         @for(archiveName of this.allArchiveNames(); track
         this.allArchiveNames().keys()) {
@@ -238,18 +242,14 @@
       @for(workflow of right_sidebar_workflows; track workflow; let
       workflowindex = $index) {
       <div
-        id="RIGHT_SIDEBAR_HEADER_TOOLBELT_TOOL"
-        (click)="active_right_tool_index = $index"
+        class="right_sidebar_header_toolbelt_workflow"
+        [ngClass]="{
+          'active': active_workflow() === workflowindex && (right_sidebar_workflows[active_workflow()].nodes.length > 0),
+        }"
+        (click)="active_workflow.set($index)"
       >
         @for(context of workflow.nodes; track context) {
-        <span
-          class="h_5px w_24px rounded_b rounded_tr margin_t bg"
-          [ngClass]="{
-            'bg_s': active_right_tool_index === workflowindex && (right_sidebar_workflows[active_right_tool_index].nodes.length > 0),
-            'rounded_tl': $index > 0,
-          }"
-        >
-        </span>
+        <span class="right_sidebar_header_toolbelt_workflow_node"> </span>
         } @if(workflow.nodes.length === 0) {
         <span class="w_24px"></span>
         } @if(workflow.nodes.length > 0) {
@@ -270,13 +270,13 @@
       }
     </div>
     <div
-      class="flex border padding hover_highlight_border hover_cursor_pointer color_fg4 hover_color_fg"
+      class="right_sidebar_header_icon_button"
       (click)="rightToolsInput.click()"
     >
       <span class="bx bx-cloud-upload"></span>
     </div>
     <div
-      class="flex border padding hover_highlight_border hover_cursor_pointer color_fg4 hover_color_fg"
+      class="right_sidebar_header_icon_button"
       (click)="rightToolsInput.click()"
     >
       <span class="bx bx-slider-alt"></span>
@@ -285,16 +285,10 @@
 
   <div id="RIGHT_SIDEBAR">
     <div id="RIGHT_SIDEBAR_CENTER">
-      <app-right-sidebar-item [toolName]="'readFile'"></app-right-sidebar-item>
-      <app-right-sidebar-item
-        [toolName]="'constructMessage'"
-      ></app-right-sidebar-item>
-      <app-right-sidebar-item
-        [toolName]="'streamChatApi'"
-      ></app-right-sidebar-item>
-      <app-right-sidebar-item
-        [toolName]="'writeStreamToFile'"
-      ></app-right-sidebar-item>
+      @for(node of right_sidebar_workflows[active_workflow()].nodes; track node)
+      {
+      <app-right-sidebar-item [node]="node"></app-right-sidebar-item>
+      }
     </div>
   </div>
 

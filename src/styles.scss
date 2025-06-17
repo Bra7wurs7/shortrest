@@ -354,6 +354,16 @@ img {
     }
   }
 
+  #LEFT_SIDEBAR_ARCHIVES_ICON {
+    padding: $padding;
+    border: $border-width solid transparent;
+    color: $light4;
+    cursor: pointer;
+    &:hover {
+      color: $light;
+    }
+  }
+
   #LEFT_SIDEBAR_ARCHIVES_TOOLTIP {
     @extend .rounded_t;
     @extend .rounded_r;
@@ -446,11 +456,8 @@ img {
     @extend .flex_row;
     flex-grow: 1;
 
-    #RIGHT_SIDEBAR_HEADER_TOOLBELT_TOOL {
+    .right_sidebar_header_toolbelt_workflow {
       @extend .flex_col;
-      @extend .rounded_tl;
-      @extend .rounded_br;
-      @extend .hover_bg;
       color: $light4;
       justify-content: end;
       height: 34px;
@@ -458,6 +465,36 @@ img {
       cursor: pointer;
       user-select: none;
       position: relative;
+
+      &.active {
+        .right_sidebar_header_toolbelt_workflow_node {
+          background-color: $light4;
+        }
+      }
+
+      .right_sidebar_header_toolbelt_workflow_node {
+        height: 5px;
+        width: 20px;
+        margin-top: $margin;
+        background-color: $dark;
+
+        &.running {
+          background-color: $orange_dim;
+        }
+      }
+    }
+  }
+
+  .right_sidebar_header_icon_button {
+    display: flex;
+    border: $border-width solid transparent;
+    padding: $padding;
+    cursor: pointer;
+    color: $light4;
+
+    &:hover {
+      border-color: $dark1;
+      color: $light;
     }
   }
 }

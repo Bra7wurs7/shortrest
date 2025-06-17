@@ -16,7 +16,6 @@ import { FilesService } from "../services/files/files.service";
 import { FilterFilesPipe } from "../pipes/filter-files.pipe";
 import { ParseNamePipe } from "../pipes/parse-name.pipe";
 import { RightSidebarItemComponent } from "../components/right-sidebar-item/right-sidebar-item.component";
-import { saveAs } from "file-saver";
 import { Workflow } from "../models/workflow.model";
 
 @Component({
@@ -55,8 +54,57 @@ export class AppComponent {
   preparingPrompts: Set<number> = new Set();
   runningPrompts: Set<number> = new Set();
 
-  right_sidebar_workflows: Workflow[] = [];
-  active_workflow: number = 0;
+  right_sidebar_workflows: Workflow[] = [
+    {
+      globalVariables: {},
+      name: "",
+      nodes: [
+        {
+          name: "",
+          tool: "readFile",
+          inputProperties: {},
+          outputProperties: {},
+        },
+        {
+          name: "",
+          tool: "constructMessage",
+          inputProperties: {},
+          outputProperties: {},
+        },
+        {
+          name: "",
+          tool: "streamChatApi",
+          inputProperties: {},
+          outputProperties: {},
+        },
+        {
+          name: "",
+          tool: "writeStreamToFile",
+          inputProperties: {},
+          outputProperties: {},
+        },
+      ],
+    },
+    {
+      globalVariables: {},
+      name: "",
+      nodes: [
+        {
+          name: "",
+          tool: "constructMessage",
+          inputProperties: {},
+          outputProperties: {},
+        },
+        {
+          name: "",
+          tool: "constructMessage",
+          inputProperties: {},
+          outputProperties: {},
+        },
+      ],
+    },
+  ];
+  active_workflow: WritableSignal<number> = signal(0);
 
   protected readonly generateDynamicContextEmitter = new EventEmitter();
   protected readonly fileChangeEmitter = new EventEmitter();

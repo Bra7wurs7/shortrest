@@ -3,6 +3,9 @@
     <span class="right_sidebar_item_header_title">{{ tool().name }}</span>
     <span class="right_sidebar_item_header_settings bx bx-slider">
       <div class="right_sidebar_item_header_settings_tooltip">
+        <div class="right_sidebar_item_header_settings_tooltip_row">
+          <input [placeholder]="'foo'" [value]="tool().name" />
+        </div>
         @for (property of inputSchemaProperties(); track property) {
           <div class="right_sidebar_item_header_settings_tooltip_row">
             <div
