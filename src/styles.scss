@@ -476,7 +476,7 @@ img {
         height: 5px;
         width: 20px;
         margin-top: $margin;
-        background-color: $dark;
+        background-color: $dark_s;
 
         &.running {
           background-color: $orange_dim;
@@ -516,6 +516,10 @@ img {
       border-color: $dark1;
       margin-bottom: $margin;
 
+      &.invalid {
+        border-color: $red;
+      }
+
       .right_sidebar_item_header {
         @extend .flex_row;
         background-color: $dark_s;
@@ -537,7 +541,7 @@ img {
             position: absolute;
             top: 100%;
             right: 0;
-            width: 7vw;
+            width: 10vw;
             background-color: $dark;
             font-size: smaller;
             padding-right: $smallmargin;

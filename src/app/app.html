@@ -249,7 +249,7 @@
         (click)="active_workflow.set($index)"
       >
         @for(context of workflow.nodes; track context) {
-        <span class="right_sidebar_header_toolbelt_workflow_node"> </span>
+        <span class="right_sidebar_header_toolbelt_workflow_node"></span>
         } @if(workflow.nodes.length === 0) {
         <span class="w_24px"></span>
         } @if(workflow.nodes.length > 0) {

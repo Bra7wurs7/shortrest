@@ -1,10 +1,20 @@
-<div class="right_sidebar_item">
+<div
+  class="right_sidebar_item"
+  [ngClass]="{
+    invalid: isInvalid,
+  }"
+>
   <div class="right_sidebar_item_header">
     <span class="right_sidebar_item_header_title">{{ tool().name }}</span>
     <span class="right_sidebar_item_header_settings bx bx-slider">
       <div class="right_sidebar_item_header_settings_tooltip">
         <div class="right_sidebar_item_header_settings_tooltip_row">
-          <input [placeholder]="'foo'" [value]="tool().name" />
+          <input
+            #nodeName
+            [placeholder]="'foo'"
+            [value]="node().name ?? ''"
+            (change)="node().name = nodeName.value; validate()"
+          />
         </div>
         @for (property of inputSchemaProperties(); track property) {
           <div class="right_sidebar_item_header_settings_tooltip_row">
@@ -13,7 +23,11 @@
             ></div>
             <input
               [placeholder]="property.key"
-              [value]="inputProperties()[property.key]"
+              [value]="node().inputProperties[property.key] ?? ''"
+              (change)="
+                node().inputProperties[property.key] = nodeName.value;
+                validate()
+              "
             />
           </div>
         }

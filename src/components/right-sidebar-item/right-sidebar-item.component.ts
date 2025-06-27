@@ -1,15 +1,16 @@
-import { Component, computed, input, Signal } from "@angular/core";
+import { Component, computed, effect, input, Signal } from "@angular/core";
 import { RIGHTSIDEBARTOOLS } from "../../constants/tools.constant";
 import { WorkflowNode } from "../../models/workflow-node.model";
+import { CommonModule } from "@angular/common";
 
 @Component({
   selector: "app-right-sidebar-item",
-  imports: [],
+  imports: [CommonModule],
   templateUrl: "./right-sidebar-item.component.html",
-  styleUrl: "./right-sidebar-item.component.scss",
 })
 export class RightSidebarItemComponent {
   node = input.required<WorkflowNode>();
+  isInvalid = true;
 
   tool: Signal<{
     name: string;
@@ -37,6 +38,7 @@ export class RightSidebarItemComponent {
     }
     return properties;
   });
+
   outputSchemaProperties: Signal<
     Array<{ key: string; type: string; description: string }>
   > = computed(() => {
@@ -57,14 +59,40 @@ export class RightSidebarItemComponent {
     return properties;
   });
 
-  inputProperties: Signal<any> = input<any>({
-    fileName: "Foobergoob",
-    readType: "Schmoog",
-    readAmount: 5,
-    readEnd: true,
-  });
+  constructor() {
+    effect(() => {
+      console.log(this.node());
+      this.validate();
+    });
+  }
 
-  outputProperties: any = {
-    text: "Foobergoob",
-  };
+  validate() {
+    console.log(this.node());
+    this.isInvalid = !validateNode(this.node());
+  }
+}
+
+export function validateNode(node: WorkflowNode): boolean {
+  switch (node.tool) {
+    case "readFile":
+      return validateReadFileNode(node as WorkflowNode & { tool: "readFile" });
+    default:
+      return true;
+  }
+}
+
+export function validateReadFileNode(
+  node: WorkflowNode & { tool: "readFile" },
+): boolean {
+  const properties = RIGHTSIDEBARTOOLS["readFile"].inputSchema.properties;
+  console.log(properties);
+  for (const key of Object.keys(properties)) {
+    if (
+      node.inputProperties[key] === undefined ||
+      node.inputProperties[key] === ""
+    ) {
+      return false;
+    }
+  }
+  return true;
 }

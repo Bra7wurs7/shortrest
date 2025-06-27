@@ -669,12 +669,4 @@ export class AppComponent {
       3. execute functions requested by the node
     */
   }
-
-  validateReadFileNode(node: WorkflowNode & { tool: "readFile" }): boolean {
-    const properties = RIGHTSIDEBARTOOLS["readFile"].inputSchema.properties;
-    for (const key of Object.keys(properties)) {
-      if (node.inputProperties[key] !== undefined) properties[key];
-    }
-    return false;
-  }
 }
