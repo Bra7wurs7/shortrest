@@ -10,6 +10,9 @@ import {
   type JSXElement,
 } from "solid-js";
 import { Message } from "ollama";
+import { parseFile } from "./parsers/parseFile.function";
+
+const localStorageOpenFilesKey = "openFiles";
 
 enum AppMode {
   Settings,
@@ -18,12 +21,12 @@ enum AppMode {
   Donate,
 }
 
-interface SavedFile {
+export interface SavedFile {
   name: string;
   content: string;
 }
 
-interface File {
+export interface OpenFile {
   name: Accessor<string>;
   setName: Setter<string>;
   content: Accessor<string>;
@@ -34,8 +37,8 @@ function App(): JSXElement {
   const [appMode, setAppMode] = createSignal(AppMode.Editor);
   const [allFiles, setAllFiles]: [Accessor<SavedFile[]>, Setter<SavedFile[]>] =
     createSignal(loadArchive(""));
-  const [openFiles, setOpenFiles]: [Accessor<File[]>, Setter<File[]>] =
-    createSignal(loadOpenFiles(""));
+  const [openFiles, setOpenFiles]: [Accessor<OpenFile[]>, Setter<OpenFile[]>] =
+    createSignal(loadOpenFiles());
   const [activeFile, setActiveFile]: [Accessor<number>, Setter<number>] =
     createSignal(0);
   const [assistantHistory, setAssistantHistory]: [
@@ -86,7 +89,7 @@ function App(): JSXElement {
       <div id="LEFT_SIDEBAR">
         <div id="L_S_OPENFILES">
           <For each={openFiles()}>
-            {(file: File, index: Accessor<number>) => (
+            {(file: OpenFile, index: Accessor<number>) => (
               <FilelistItem
                 name={file.name}
                 active={activeFile() === index()}
@@ -145,12 +148,13 @@ function App(): JSXElement {
         <Match when={appMode() === AppMode.Editor}>
           <textarea
             id="EDITOR_TEXTAREA"
-            value={openFiles()[activeFile()].content()}
+            value={openFiles()[activeFile()]?.content() ?? ""}
             onChange={(e) => {
               onEditorChange(
                 e,
                 openFiles()[activeFile()].content,
                 openFiles()[activeFile()].setContent,
+                openFiles,
               );
             }}
           ></textarea>
@@ -252,17 +256,36 @@ function loadArchive(name: string): SavedFile[] {
   ];
 }
 
-function loadOpenFiles(archiveName: string): File[] {
-  const [name, setName] = createSignal("a");
-  const [content, setContent] = createSignal("Schmoogenfooger");
-  return [
-    {
-      name,
-      setName,
-      content,
-      setContent,
-    },
-  ];
+/**
+ *
+ * @returns
+ */
+function loadOpenFiles(): OpenFile[] {
+  const storedOpenFiles = localStorage.getItem(localStorageOpenFilesKey);
+  if (storedOpenFiles) {
+    const parsed = parseFile(storedOpenFiles);
+    if (typeof parsed === "string") {
+      console.log(parsed);
+    } else {
+      return parsed;
+    }
+  }
+  return [];
+}
+
+/**
+ * Persists the values of the provided array in localstorage
+ * @param files The File array to store in the localstorage
+ */
+function storeOpenFiles(files: Accessor<OpenFile[]>) {
+  const serializedFiles = files().map((file) => ({
+    name: file.name(),
+    content: file.content(),
+  }));
+  localStorage.setItem(
+    localStorageOpenFilesKey,
+    JSON.stringify(serializedFiles),
+  );
 }
 
 function onClickOpenFile(fileIndex: number, setter: Setter<number>) {
@@ -271,8 +294,8 @@ function onClickOpenFile(fileIndex: number, setter: Setter<number>) {
 
 function onClickSavedFile(
   file: SavedFile,
-  accessor: Accessor<File[]>,
-  setter: Setter<File[]>,
+  accessor: Accessor<OpenFile[]>,
+  setter: Setter<OpenFile[]>,
 ) {
   const openFiles = accessor();
   const fileIndexInOpenFiles = openFiles.findIndex(
@@ -285,6 +308,7 @@ function onClickSavedFile(
     const [content, setContent]: [Accessor<string>, Setter<string>] =
       createSignal(file.content);
     setter([...openFiles, { name, setName, content, setContent }]);
+    storeOpenFiles(accessor);
   }
 }
 
@@ -295,10 +319,12 @@ function onEditorChange(
   },
   accessor: Accessor<string> | undefined,
   setter: Setter<string> | undefined,
+  openFiles: Accessor<OpenFile[]>,
 ) {
   if (accessor && setter) {
     const fileContent = accessor();
     setter(event.target?.value);
+    storeOpenFiles(openFiles);
   }
 }
 
