@@ -313,13 +313,17 @@
         outline: none;
         border-color: var(--color_border_light);
     }
+    .filename {
+        display: flex;
+        flex-grow: 1;
+    }
     .tags {
+        display: flex;
         color: var(--color_border_light);
+        max-width: 50%;
     }
     &.nameless {
         color: var(--color_border_light);
-    }
-    &.empty {
     }
 }
 

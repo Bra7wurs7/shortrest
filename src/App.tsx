@@ -1,6 +1,7 @@
 import {
   Accessor,
   createComputed,
+  createMemo,
   createSignal,
   For,
   Match,
@@ -11,40 +12,29 @@ import {
 } from "solid-js";
 import { Message } from "ollama";
 import { parseFile } from "./parsers/parseFile.function";
+import { AppMode } from "./types/appMode.interface";
+import { SavedFile } from "./types/savedFile.interface";
+import { OpenFile } from "./types/openFile.interface";
 
 const localStorageOpenFilesKey = "openFiles";
 
-enum AppMode {
-  Settings,
-  Assistant,
-  Editor,
-  Donate,
-}
-
-export interface SavedFile {
-  name: string;
-  content: string;
-}
-
-export interface OpenFile {
-  name: Accessor<string>;
-  setName: Setter<string>;
-  content: Accessor<string>;
-  setContent: Setter<string>;
-}
-
 function App(): JSXElement {
-  const [appMode, setAppMode] = createSignal(AppMode.Editor);
-  const [allFiles, setAllFiles]: [Accessor<SavedFile[]>, Setter<SavedFile[]>] =
-    createSignal(loadArchive(""));
-  const [openFiles, setOpenFiles]: [Accessor<OpenFile[]>, Setter<OpenFile[]>] =
-    createSignal(loadOpenFiles());
-  const [activeFile, setActiveFile]: [Accessor<number>, Setter<number>] =
-    createSignal(0);
-  const [assistantHistory, setAssistantHistory]: [
-    Accessor<Message[]>,
-    Setter<Message[]>,
-  ] = createSignal([]);
+  const [appMode, setAppMode] = createSignal<AppMode>(AppMode.Editor);
+  const [allFiles, setAllFiles] = createSignal<SavedFile[]>(loadArchive(""));
+  const [openFiles, setOpenFiles] = createSignal<OpenFile[]>(loadOpenFiles());
+  const [activeFile, setActiveFile] = createSignal<number>(0);
+  const [inputValue, setInputValue] = createSignal<string>("");
+  const filteredOpenFiles = createMemo<OpenFile[]>(() => {
+    return openFiles().filter((of) =>
+      of.name().toLowerCase().includes(inputValue().toLowerCase()),
+    );
+  });
+  const filteredAllFiles = createMemo<SavedFile[]>(() => {
+    return allFiles().filter((af) =>
+      af.name.toLowerCase().includes(inputValue().toLowerCase()),
+    );
+  });
+  const [assistantHistory, setAssistantHistory] = createSignal<Message[]>([]);
 
   return (
     <div id="APP_CONTAINER" class="dark_theme">
@@ -85,10 +75,24 @@ function App(): JSXElement {
           <Archive />
         </div>
       </div>
-      <input id="LEFT_INPUT"></input>
+      <input
+        id="LEFT_INPUT"
+        value={inputValue()}
+        onkeyup={(e) => {
+          onInputKeyUp(
+            e,
+            setInputValue,
+            openFiles,
+            filteredOpenFiles,
+            setOpenFiles,
+            filteredAllFiles,
+            setActiveFile,
+          );
+        }}
+      ></input>
       <div id="LEFT_SIDEBAR">
         <div id="L_S_OPENFILES">
-          <For each={openFiles()}>
+          <For each={filteredOpenFiles()}>
             {(file: OpenFile, index: Accessor<number>) => (
               <FilelistItem
                 name={file.name}
@@ -99,16 +103,16 @@ function App(): JSXElement {
               />
             )}
           </For>
-          <Show when={openFiles().length > 0}>
+          <Show when={filteredOpenFiles().length > 0}>
             <FilelistFooter />
           </Show>
         </div>
         <div id="L_S_BOTTOM">
           <div id="L_S_B_ALLFILES">
-            <Show when={allFiles().length > 0}>
+            <Show when={filteredAllFiles().length > 0}>
               <FilelistHeader />
             </Show>
-            <For each={allFiles()}>
+            <For each={filteredAllFiles()}>
               {(file: SavedFile) => (
                 <FilelistItem
                   name={file.name}
@@ -220,14 +224,25 @@ function Archive(props: any): JSXElement {
 
 function FilelistItem(props: any): JSXElement {
   const active: () => boolean = () => props.active ?? false;
-  const name: () => boolean = () => props.name ?? "Unnamed File";
-  const tags: () => boolean = () => props.tags ?? [];
+  const name: () => string = () => props.name ?? "Unnamed File";
+  const tags: () => string = () => props.tags ?? [];
   const onclick: () => () => void = () => props.onclick ?? (() => {});
 
   return (
     <button
       class={"button_file " + (active() ? "active" : "")}
       onclick={onclick()}
+      draggable={true}
+      ondragstart={(e) => {
+        e.dataTransfer?.setData("text/plain", (name() as any)());
+        console.log(e);
+      }}
+      ondragover={(e) => {
+        e.preventDefault();
+      }}
+      onDrop={(e) => {
+        console.log(e.dataTransfer?.getData("text/plain"));
+      }}
     >
       <div class="filename">{name()}</div>
       <div class="tags">#Tag1 #Tag2</div>
@@ -302,11 +317,8 @@ function onClickSavedFile(
     (f) => f.name() === file.name,
   );
   if (fileIndexInOpenFiles === -1) {
-    const [name, setName]: [Accessor<string>, Setter<string>] = createSignal(
-      file.name,
-    );
-    const [content, setContent]: [Accessor<string>, Setter<string>] =
-      createSignal(file.content);
+    const [name, setName] = createSignal<string>(file.name);
+    const [content, setContent] = createSignal<string>(file.content);
     setter([...openFiles, { name, setName, content, setContent }]);
     storeOpenFiles(accessor);
   }
@@ -325,6 +337,55 @@ function onEditorChange(
     const fileContent = accessor();
     setter(event.target?.value);
     storeOpenFiles(openFiles);
+  }
+}
+
+function onInputKeyUp(
+  e: KeyboardEvent & { currentTarget: HTMLInputElement; target: Element },
+  inputSetter: Setter<string>,
+  openFilesAccessor: Accessor<OpenFile[]>,
+  filteredOpenFilesAccessor: Accessor<OpenFile[]>,
+  openFilesSetter: Setter<OpenFile[]>,
+  filteredSavedFilesAccessor: Accessor<SavedFile[]>,
+  activeFileSetter: Setter<number>,
+) {
+  inputSetter(e.currentTarget.value);
+  switch (e.key) {
+    case "Enter":
+      if (e.ctrlKey) {
+        const [name, setName] = createSignal<string>(e.currentTarget.value);
+        const [content, setContent] = createSignal<string>("");
+        openFilesSetter([
+          ...openFilesAccessor(),
+          { name, setName, content, setContent },
+        ]);
+        activeFileSetter(openFilesAccessor().length - 1);
+        inputSetter("");
+        storeOpenFiles(openFilesAccessor);
+      } else {
+        if ((filteredOpenFilesAccessor().length = 1)) {
+          activeFileSetter(
+            openFilesAccessor().findIndex(
+              (of) => of.name === filteredOpenFilesAccessor()[0].name,
+            ),
+          );
+          inputSetter("");
+        } else if (
+          (filteredSavedFilesAccessor().length =
+            1 && (filteredOpenFilesAccessor().length = 0))
+        ) {
+          const savedFile = filteredSavedFilesAccessor()[0];
+          const [name, setName] = createSignal<string>(savedFile.name);
+          const [content, setContent] = createSignal<string>(savedFile.content);
+          openFilesSetter([
+            ...openFilesAccessor(),
+            { name, setName, content, setContent },
+          ]);
+        }
+      }
+      break;
+    default:
+      break;
   }
 }
 

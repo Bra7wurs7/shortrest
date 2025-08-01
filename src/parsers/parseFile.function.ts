@@ -1,6 +1,6 @@
 import { createSignal } from "solid-js";
-import { OpenFile } from "../App";
-import { SavedFile } from "../App";
+import { OpenFile } from "../types/openFile.interface";
+import { SavedFile } from "../types/savedFile.interface";
 
 /** @author Sebastian Pöhlmann & Codestral:0898a8b286d5 */
 export function parseFile(filesJson: string): OpenFile[] | string {
