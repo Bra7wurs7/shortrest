@@ -304,6 +304,9 @@
     &.active {
         background-color: var(--color_border);
     }
+    &.context_menu {
+        background-color: var(--color_background_hard);
+    }
     &:active {
         transition: background-color 0ms;
         background-color: var(--color_foreground_soft);

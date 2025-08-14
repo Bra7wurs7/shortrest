@@ -25,7 +25,10 @@ function App(): JSXElement {
   const [openFiles, setOpenFiles] = createSignal<OpenFile[]>(loadOpenFiles());
   const [activeFile, setActiveFile] = createSignal<number>(0);
   const [inputValue, setInputValue] = createSignal<string>("");
-  const [rightClickedFile, setRightClickedFile] = createSignal<string>("");
+  const [rightClickedOpenFile, setRightClickedOpenFile] =
+    createSignal<string>("");
+  const [rightClickedSavedFile, setRightClickedSavedFile] =
+    createSignal<string>("");
   const filteredOpenFiles = createMemo<OpenFile[]>(() => {
     return openFiles().filter((of) =>
       of.name().toLowerCase().includes(inputValue().toLowerCase()),
@@ -96,13 +99,25 @@ function App(): JSXElement {
         <div id="L_S_OPENFILES">
           <For each={filteredOpenFiles()}>
             {(file: OpenFile, index: Accessor<number>) => (
-              <FilelistItem
-                name={file.name}
-                active={activeFile() === index()}
+              <button
+                class={
+                  "button_file " +
+                  (activeFile() === index() ? "active " : "") +
+                  (rightClickedOpenFile() === file.name() ? "context_menu" : "")
+                }
                 onclick={() => {
                   onClickOpenFile(index(), setActiveFile);
                 }}
-              />
+                oncontextmenu={(e: PointerEvent) =>
+                  onFileRightclick(e, file.name(), setRightClickedOpenFile)
+                }
+                onmouseleave={() => {
+                  onMouseLeaveFile(setRightClickedOpenFile);
+                }}
+              >
+                <div class="filename">{file.name()}</div>
+                <div class="tags">#Tag1 #Tag2</div>
+              </button>
             )}
           </For>
           <Show when={filteredOpenFiles().length > 0}>
@@ -116,12 +131,27 @@ function App(): JSXElement {
             </Show>
             <For each={filteredAllFiles()}>
               {(file: SavedFile) => (
-                <FilelistItem
-                  name={file.name}
+                <button
+                  class={
+                    "button_file " +
+                    (rightClickedSavedFile() === file.name
+                      ? "context_menu"
+                      : "")
+                  }
                   onclick={() => {
                     onClickSavedFile(file, openFiles, setOpenFiles);
                   }}
-                />
+                  oncontextmenu={(e: PointerEvent) =>
+                    onFileRightclick(e, file.name, setRightClickedSavedFile)
+                  }
+                  onmouseleave={() => {
+                    onMouseLeaveFile(setRightClickedSavedFile);
+                  }}
+                >
+                  <div class="filename">{file.name}</div>
+                  <div class="tags">#Tag1 #Tag2</div>
+                </button>
+                // Alternative container when button was right-clicked
               )}
             </For>
           </div>
@@ -224,58 +254,6 @@ function Archive(props: any): JSXElement {
   );
 }
 
-function FilelistItem(props: any): JSXElement {
-  const active: () => boolean = () => props.active ?? false;
-  const name: () => string = () => props.name ?? "Unnamed File";
-  const tags: () => string = () => props.tags ?? [];
-  const onclick: () => () => void = () => props.onclick ?? (() => {});
-  const draggable: () => boolean = () => props.draggable ?? false;
-  const rightclickedItemSetter: () => Setter<string> | undefined = () =>
-    props.setter;
-  const ondragstart: () => (
-    e: DragEvent & {
-      currentTarget: HTMLButtonElement;
-      target: DOMElement;
-    },
-  ) => void = () => props.ondragstart ?? (() => {});
-  const ondragend: () => (
-    e: DragEvent & {
-      currentTarget: HTMLButtonElement;
-      target: DOMElement;
-    },
-  ) => void = () => props.ondragend ?? (() => {});
-  const ondrop: () => (
-    e: DragEvent & {
-      currentTarget: HTMLButtonElement;
-      target: DOMElement;
-    },
-  ) => void = () => props.ondrop ?? (() => {});
-
-  return (
-    <button
-      class={"button_file " + (active() ? "active" : "")}
-      onclick={onclick()}
-      oncontextmenu={(e: PointerEvent) =>
-        onComponentRightclick(e, name(), rightclickedItemSetter())
-      }
-      draggable={true}
-      ondragstart={(e) => {
-        e.dataTransfer?.setData("text/plain", (name() as any)());
-        console.log(e);
-      }}
-      ondragover={(e) => {
-        e.preventDefault();
-      }}
-      onDrop={(e) => {
-        console.log(e.dataTransfer?.getData("text/plain"));
-      }}
-    >
-      <div class="filename">{name()}</div>
-      <div class="tags">#Tag1 #Tag2</div>
-    </button>
-  );
-}
-
 function prettyStringify(a: any) {
   JSON.stringify(a, null, 2);
 }
@@ -333,6 +311,10 @@ function onClickOpenFile(fileIndex: number, setter: Setter<number>) {
   setter(fileIndex);
 }
 
+function onMouseLeaveFile(setter: Setter<string>) {
+  setter("");
+}
+
 function onClickSavedFile(
   file: SavedFile,
   accessor: Accessor<OpenFile[]>,
@@ -366,7 +348,7 @@ function onEditorChange(
   }
 }
 
-function onComponentRightclick(
+function onFileRightclick(
   e: PointerEvent,
   name: string,
   setter: Setter<string> | undefined,
