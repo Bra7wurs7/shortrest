@@ -15,6 +15,7 @@ import { parseFile } from "./parsers/parseFile.function";
 import { AppMode } from "./types/appMode.interface";
 import { SavedFile } from "./types/savedFile.interface";
 import { OpenFile } from "./types/openFile.interface";
+import { DOMElement } from "solid-js/jsx-runtime";
 
 const localStorageOpenFilesKey = "openFiles";
 
@@ -24,6 +25,7 @@ function App(): JSXElement {
   const [openFiles, setOpenFiles] = createSignal<OpenFile[]>(loadOpenFiles());
   const [activeFile, setActiveFile] = createSignal<number>(0);
   const [inputValue, setInputValue] = createSignal<string>("");
+  const [rightClickedFile, setRightClickedFile] = createSignal<string>("");
   const filteredOpenFiles = createMemo<OpenFile[]>(() => {
     return openFiles().filter((of) =>
       of.name().toLowerCase().includes(inputValue().toLowerCase()),
@@ -227,11 +229,35 @@ function FilelistItem(props: any): JSXElement {
   const name: () => string = () => props.name ?? "Unnamed File";
   const tags: () => string = () => props.tags ?? [];
   const onclick: () => () => void = () => props.onclick ?? (() => {});
+  const draggable: () => boolean = () => props.draggable ?? false;
+  const rightclickedItemSetter: () => Setter<string> | undefined = () =>
+    props.setter;
+  const ondragstart: () => (
+    e: DragEvent & {
+      currentTarget: HTMLButtonElement;
+      target: DOMElement;
+    },
+  ) => void = () => props.ondragstart ?? (() => {});
+  const ondragend: () => (
+    e: DragEvent & {
+      currentTarget: HTMLButtonElement;
+      target: DOMElement;
+    },
+  ) => void = () => props.ondragend ?? (() => {});
+  const ondrop: () => (
+    e: DragEvent & {
+      currentTarget: HTMLButtonElement;
+      target: DOMElement;
+    },
+  ) => void = () => props.ondrop ?? (() => {});
 
   return (
     <button
       class={"button_file " + (active() ? "active" : "")}
       onclick={onclick()}
+      oncontextmenu={(e: PointerEvent) =>
+        onComponentRightclick(e, name(), rightclickedItemSetter())
+      }
       draggable={true}
       ondragstart={(e) => {
         e.dataTransfer?.setData("text/plain", (name() as any)());
@@ -338,6 +364,15 @@ function onEditorChange(
     setter(event.target?.value);
     storeOpenFiles(openFiles);
   }
+}
+
+function onComponentRightclick(
+  e: PointerEvent,
+  name: string,
+  setter: Setter<string> | undefined,
+) {
+  e.preventDefault();
+  if (setter) setter(name);
 }
 
 function onInputKeyUp(
