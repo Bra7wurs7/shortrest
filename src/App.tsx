@@ -45,36 +45,51 @@ function App(): JSXElement {
     <div id="APP_CONTAINER" class="dark_theme">
       <div id="LEFTMOST_SIDEBAR">
         <div id="LM_S_ACTIONS">
-          <Button
-            icon="bx-cog"
-            action={() => {
+          <button
+            onclick={() => {
               setAppMode(AppMode.Settings);
             }}
-            active={appMode() === AppMode.Settings}
-          />
-          <Button
-            icon="bx-conversation"
-            action={() => {
+            class={
+              "button_icon " + (appMode() === AppMode.Settings ? "active" : "")
+            }
+          >
+            <i class={"bx bx-cog"}></i>
+          </button>
+          <button
+            onclick={() => {
               setAppMode(AppMode.Assistant);
             }}
-            active={appMode() === AppMode.Assistant}
-          />
-          <Button
-            icon="bx-file"
-            action={() => {
+            class={
+              "button_icon " + (appMode() === AppMode.Assistant ? "active" : "")
+            }
+          >
+            <i class={"bx bx-conversation"}></i>
+          </button>
+          <button
+            onclick={() => {
               setAppMode(AppMode.Editor);
             }}
-            active={appMode() === AppMode.Editor}
-          />
-          <Button
-            icon="bx-donate-heart"
-            action={() => {
+            class={
+              "button_icon " + (appMode() === AppMode.Editor ? "active" : "")
+            }
+          >
+            <i class={"bx bx-file"}></i>
+          </button>
+          <button
+            onclick={() => {
               setAppMode(AppMode.Donate);
             }}
-            active={appMode() === AppMode.Donate}
-          />
+            class={
+              "button_icon " + (appMode() === AppMode.Donate ? "active" : "")
+            }
+          >
+            <i class={"bx bx-donate-heart"}></i>
+          </button>
         </div>
         <div id="LM_S_ARCHIVES">
+          <button class={"button_icon"}>
+            <i class="bx bx-upload"></i>
+          </button>
           <Archive />
           <Archive opened={true} />
           <Archive />
@@ -99,35 +114,62 @@ function App(): JSXElement {
         <div id="L_S_OPENFILES">
           <For each={filteredOpenFiles()}>
             {(file: OpenFile, index: Accessor<number>) => (
-              <button
-                class={
-                  "button_file " +
-                  (activeFile() === index() ? "active " : "") +
-                  (rightClickedOpenFile() === file.name() ? "context_menu" : "")
-                }
-                onclick={() => {
-                  onClickOpenFile(index(), setActiveFile);
-                }}
-                oncontextmenu={(e: PointerEvent) =>
-                  onFileRightclick(e, file.name(), setRightClickedOpenFile)
-                }
-                onmouseleave={() => {
-                  onMouseLeaveFile(setRightClickedOpenFile);
-                }}
-              >
-                <div class="filename">{file.name()}</div>
-                <div class="tags">#Tag1 #Tag2</div>
-              </button>
+              <Switch>
+                <Match when={rightClickedOpenFile() !== file.name()}>
+                  <button
+                    class={
+                      "button_file " +
+                      (activeFile() === index() ? "active " : "") +
+                      (rightClickedOpenFile() === file.name()
+                        ? "context_menu"
+                        : "")
+                    }
+                    onclick={() => {
+                      onClickOpenFile(index(), setActiveFile);
+                    }}
+                    oncontextmenu={(e: PointerEvent) =>
+                      onFileRightclick(e, file.name(), setRightClickedOpenFile)
+                    }
+                  >
+                    <div class="filename">{file.name()}</div>
+                    <div class="tags">#Tag1 #Tag2</div>
+                  </button>
+                </Match>
+                <Match when={rightClickedOpenFile() === file.name()}>
+                  <div
+                    class="button_file_contextmenu"
+                    onmouseleave={() => {
+                      onMouseLeaveFile(setRightClickedOpenFile);
+                    }}
+                  >
+                    <div class="filename">{file.name()}</div>
+                    <div class="actions">
+                      <button class={"button_icon"}>
+                        <i class="bx bx-save"></i>
+                      </button>
+                      <button class={"button_icon"}>
+                        <i class="bx bx-x-circle"></i>
+                      </button>
+                    </div>
+                  </div>
+                </Match>
+              </Switch>
             )}
           </For>
           <Show when={filteredOpenFiles().length > 0}>
-            <FilelistFooter />
+            <div class="filelist_footer">
+              <span></span>
+              <span>Open Files</span>
+            </div>
           </Show>
         </div>
         <div id="L_S_BOTTOM">
           <div id="L_S_B_ALLFILES">
             <Show when={filteredAllFiles().length > 0}>
-              <FilelistHeader />
+              <div class="filelist_header">
+                <span></span>
+                <span>Saved Files</span>
+              </div>
             </Show>
             <For each={filteredAllFiles()}>
               {(file: SavedFile) => (
@@ -201,41 +243,6 @@ function App(): JSXElement {
         </Match>
       </Switch>
     </div>
-  );
-}
-
-function FilelistHeader(): JSXElement {
-  return (
-    <div class="filelist_header">
-      <span></span>
-      <span>Saved Files</span>
-    </div>
-  );
-}
-
-function FilelistFooter(): JSXElement {
-  return (
-    <div class="filelist_footer">
-      <span></span>
-      <span>Open Files</span>
-    </div>
-  );
-}
-
-function Button(props: any): JSXElement {
-  const icon: () => string = () => props.icon;
-  const classes: () => string = () => props.classes ?? "";
-  const action: () => () => void = () => props.action ?? (() => {});
-  const active: () => boolean = () => props.active ?? false;
-  return (
-    <button
-      onclick={action()}
-      class={"button_icon " + classes() + (active() ? "active" : "")}
-    >
-      <Show when={icon()}>
-        <i class={"bx " + icon()}></i>
-      </Show>
-    </button>
   );
 }
 

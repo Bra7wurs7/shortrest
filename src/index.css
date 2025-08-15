@@ -260,7 +260,7 @@
     box-sizing: border-box;
     width: var(--size_toolbar_width);
     height: var(--size_toolbar_width);
-    background-color: var(--color_background_soft);
+    background-color: transparent;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -327,6 +327,29 @@
     }
     &.nameless {
         color: var(--color_border_light);
+    }
+}
+
+.button_file_contextmenu {
+    height: var(--size_toolbar_width);
+    color: var(--color_foreground);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1px 0px 1px 4px;
+    box-sizing: border-box;
+    border-left: var(--size_border) solid transparent;
+    background-color: var(--color_background_hard);
+
+    .filename {
+        display: flex;
+        flex-grow: 1;
+        font-size: small;
+    }
+
+    .actions {
+        display: flex;
+        flex-direction: row;
     }
 }
 
