@@ -1,6 +1,5 @@
 import {
   Accessor,
-  createComputed,
   createMemo,
   createSignal,
   For,
@@ -144,10 +143,29 @@ function App(): JSXElement {
                   >
                     <div class="filename">{file.name()}</div>
                     <div class="actions">
-                      <button class={"button_icon"}>
+                      <button
+                        class={"button_icon"}
+                        onclick={() => {
+                          onClickSaveOpenFile(
+                            index(),
+                            openFiles,
+                            allFiles,
+                            setAllFiles,
+                          );
+                        }}
+                      >
                         <i class="bx bx-save"></i>
                       </button>
-                      <button class={"button_icon"}>
+                      <button
+                        class={"button_icon"}
+                        onclick={() => {
+                          onClickCloseOpenFile(
+                            index(),
+                            openFiles,
+                            setOpenFiles,
+                          );
+                        }}
+                      >
                         <i class="bx bx-x-circle"></i>
                       </button>
                     </div>
@@ -362,6 +380,35 @@ function onFileRightclick(
 ) {
   e.preventDefault();
   if (setter) setter(name);
+}
+
+function onClickCloseOpenFile(
+  index: number,
+  openFiles: Accessor<OpenFile[]>,
+  setOpenFiles: Setter<OpenFile[]>,
+) {
+  let of = openFiles();
+
+  if (of[index]) {
+    of.splice(index, 1);
+    setOpenFiles([...of]);
+  }
+}
+
+function onClickSaveOpenFile(
+  index: number,
+  openFiles: Accessor<OpenFile[]>,
+  savedFiles: Accessor<SavedFile[]>,
+  setSavedFiles: Setter<SavedFile[]>,
+) {
+  let openFile = openFiles()[index];
+
+  if (openFile) {
+    setSavedFiles([
+      ...savedFiles(),
+      { name: openFile.name(), content: openFile.content() },
+    ]);
+  }
 }
 
 function onInputKeyUp(
