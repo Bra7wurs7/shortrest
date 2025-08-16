@@ -24,6 +24,7 @@ function App(): JSXElement {
   const [openFiles, setOpenFiles] = createSignal<OpenFile[]>(loadOpenFiles());
   const [activeFile, setActiveFile] = createSignal<number>(0);
   const [inputValue, setInputValue] = createSignal<string>("");
+  const [confirmAction, setConfirmAction] = createSignal<string>("");
   const [rightClickedOpenFile, setRightClickedOpenFile] =
     createSignal<string>("");
   const [rightClickedSavedFile, setRightClickedSavedFile] =
@@ -139,30 +140,47 @@ function App(): JSXElement {
                     class="button_file_contextmenu"
                     onmouseleave={() => {
                       onMouseLeaveFile(setRightClickedOpenFile);
+                      setConfirmAction("");
+                    }}
+                    onClick={() => {
+                      setRightClickedOpenFile("");
                     }}
                   >
                     <div class="filename">{file.name()}</div>
                     <div class="actions">
                       <button
-                        class={"button_icon"}
-                        onclick={() => {
+                        class={
+                          "button_icon " +
+                          (confirmAction() === "saveOpenFile" ? "orange" : "")
+                        }
+                        onclick={(e) => {
+                          e.stopImmediatePropagation();
                           onClickSaveOpenFile(
                             index(),
                             openFiles,
                             allFiles,
                             setAllFiles,
+                            confirmAction,
+                            setConfirmAction,
                           );
                         }}
                       >
                         <i class="bx bx-save"></i>
                       </button>
                       <button
-                        class={"button_icon"}
-                        onclick={() => {
+                        class={
+                          "button_icon " +
+                          (confirmAction() === "discardChanges" ? "orange" : "")
+                        }
+                        onclick={(e) => {
+                          e.stopImmediatePropagation();
                           onClickCloseOpenFile(
                             index(),
                             openFiles,
+                            allFiles,
                             setOpenFiles,
+                            confirmAction,
+                            setConfirmAction,
                           );
                         }}
                       >
@@ -385,13 +403,28 @@ function onFileRightclick(
 function onClickCloseOpenFile(
   index: number,
   openFiles: Accessor<OpenFile[]>,
+  savedFiles: Accessor<SavedFile[]>,
   setOpenFiles: Setter<OpenFile[]>,
+  confirmAction: Accessor<string>,
+  setConfirmAction: Setter<string>,
 ) {
-  let of = openFiles();
+  let currentOpenFiles = openFiles();
+  let openFile = currentOpenFiles[index];
 
-  if (of[index]) {
-    of.splice(index, 1);
-    setOpenFiles([...of]);
+  if (openFile) {
+    let savedFile = savedFiles().find((f) => f.name === openFile.name());
+    if (savedFile && savedFile.content !== openFile.content()) {
+      if (confirmAction() === "discardChanges") {
+        currentOpenFiles.splice(index, 1);
+        setOpenFiles([...currentOpenFiles]);
+        setConfirmAction("");
+      } else {
+        setConfirmAction("discardChanges");
+      }
+    } else {
+      currentOpenFiles.splice(index, 1);
+      setOpenFiles([...currentOpenFiles]);
+    }
   }
 }
 
@@ -400,14 +433,29 @@ function onClickSaveOpenFile(
   openFiles: Accessor<OpenFile[]>,
   savedFiles: Accessor<SavedFile[]>,
   setSavedFiles: Setter<SavedFile[]>,
+  confirmAction: Accessor<string>,
+  setConfirmAction: Setter<string>,
 ) {
-  let openFile = openFiles()[index];
+  let openFile: OpenFile | undefined = openFiles()[index];
+  let savedFile = savedFiles().find((sf) => sf.name === openFile?.name());
 
   if (openFile) {
-    setSavedFiles([
-      ...savedFiles(),
-      { name: openFile.name(), content: openFile.content() },
-    ]);
+    if (savedFile) {
+      if (confirmAction() === "saveOpenFile") {
+        setSavedFiles([
+          ...savedFiles(),
+          { name: openFile.name(), content: openFile.content() },
+        ]);
+        setConfirmAction("");
+      } else {
+        setConfirmAction("saveOpenFile");
+      }
+    } else {
+      setSavedFiles([
+        ...savedFiles(),
+        { name: openFile.name(), content: openFile.content() },
+      ]);
+    }
   }
 }
 

@@ -64,6 +64,7 @@
 
     --transition_background_color: background-color ease-in
         var(--transition_duration);
+    --transition_border_color: border-color ease-in var(--transition_duration);
 
     --style_border: solid;
 
@@ -274,14 +275,21 @@
     &.active {
         background-color: var(--color_border);
     }
-    &:active {
-        transition: background-color 0ms;
-        background-color: var(--color_foreground_soft);
-        color: var(--color_background_hard);
+    &.red {
+        background-color: var(--red);
+    }
+    &.orange {
+        background-color: var(--orange);
     }
     &:focus {
         outline: none;
         border-color: var(--color_border_light);
+    }
+    &:active {
+        transition: background-color 0ms;
+        background-color: var(--color_foreground_soft);
+        color: var(--color_background_hard);
+        border: var(--size_border) var(--style_border) var(--color_foreground);
     }
 }
 
@@ -295,7 +303,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-color: var(--color_border);
+    border-color: transparent;
     color: var(--color_foreground);
     font-family: var(--sans);
     &:hover {
@@ -307,14 +315,16 @@
     &.context_menu {
         background-color: var(--color_background_hard);
     }
+
+    &:focus {
+        outline: none;
+        border-color: var(--color_border_light);
+    }
     &:active {
         transition: background-color 0ms;
         background-color: var(--color_foreground_soft);
         color: var(--color_background_hard);
-    }
-    &:focus {
-        outline: none;
-        border-color: var(--color_border_light);
+        border: var(--size_border) var(--style_border) var(--color_foreground);
     }
     .filename {
         display: flex;
@@ -345,6 +355,7 @@
         display: flex;
         flex-grow: 1;
         font-size: small;
+        user-select: none;
     }
 
     .actions {
