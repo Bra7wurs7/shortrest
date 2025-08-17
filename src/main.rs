@@ -19,35 +19,43 @@ struct Assets;
 // `tokio::main` is a macro that sets up the asynchronous runtime.
 #[tokio::main]
 async fn main() {
-    // Define the address and port the server will listen on.
-    // 127.0.0.1 is localhost, meaning it's only accessible from the same machine.
-    // Port 0 tells the OS to pick a random, available port.
-    let addr = SocketAddr::from(([127, 0, 0, 1], 0));
+    // Try binding to port 7777
+    let addr = SocketAddr::from(([127, 0, 0, 1], 7777));
 
-    // Create a TCP listener that binds to the address.
-    let listener = TcpListener::bind(addr).await.unwrap();
+    match TcpListener::bind(&addr).await {
+        Ok(listener) => {
+            println!("✅ Server started successfully!");
+            println!("   Listening on http://{}", addr);
 
-    // Get the actual address the OS assigned to us.
-    let actual_addr = listener.local_addr().unwrap();
-    println!("✅ Server started successfully!");
-    println!("   Listening on http://{}", actual_addr);
+            // Create the Axum router that defines our application's routes.
+            let app = Router::new().fallback(static_handler);
 
-    // Create the Axum router that defines our application's routes.
-    // The `fallback` service is called for any request that doesn't match
-    // another route. This is perfect for serving our single-page application,
-    // as it will serve our assets or fall back to `index.html` for any
-    // client-side routes.
-    let app = Router::new().fallback(static_handler);
+            // Open the default web browser to our server's address.
+            let server_url = format!("http://{}", addr);
+            if let Err(e) = webbrowser::open(&server_url) {
+                eprintln!("🔥 Failed to open web browser: {}", e);
+                eprintln!("   Please navigate to {} manually.", server_url);
+            }
 
-    // Open the default web browser to our server's address.
-    let server_url = format!("http://{}", actual_addr);
-    if let Err(e) = webbrowser::open(&server_url) {
-        eprintln!("🔥 Failed to open web browser: {}", e);
-        eprintln!("   Please navigate to {} manually.", server_url);
+            // Run the server with our Axum application.
+            axum::serve(listener, app).await.unwrap();
+        }
+        Err(e) => {
+            if e.to_string().contains("Address already in use") {
+                println!("🔥 Port 7777 is already in use!");
+                let existing_url = format!("http://{}", addr);
+                if let Err(browser_err) = webbrowser::open(&existing_url) {
+                    eprintln!("🔥 Failed to open web browser: {}", browser_err);
+                    eprintln!("   Please navigate to {} manually.", existing_url);
+                }
+            } else {
+                eprintln!("❌ Server failed to start: {:?}", e);
+            }
+
+            // Exit gracefully
+            std::process::exit(0);
+        }
     }
-
-    // Run the server with our Axum application.
-    axum::serve(listener, app).await.unwrap();
 }
 
 /// Fallback handler for serving static files or the main `index.html`.
