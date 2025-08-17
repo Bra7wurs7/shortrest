@@ -1,4 +1,4 @@
-export interface SavedFile {
+export interface BasicFile {
   name: string;
   content: string;
 }

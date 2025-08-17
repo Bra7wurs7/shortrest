@@ -32,32 +32,34 @@
     --light3: #bdae93;
     --light4: #a89984;
 
+    --gray: #928374;
+    --gray-dim: #a89984;
+
     --red: #fb4934;
-    --green: #b8bb26;
+    --orange: #fe8019;
     --yellow: #fabd2f;
+    --green: #b8bb26;
+    --aqua: #8ec07c;
     --blue: #83a598;
     --purple: #d3869b;
-    --aqua: #8ec07c;
-    --gray: #928374;
-    --orange: #fe8019;
 
     --red-dim: #cc2412;
-    --green-dim: #98971a;
+    --orange-dim: #d65d0e;
     --yellow-dim: #d79921;
+    --green-dim: #98971a;
+    --aqua-dim: #689d6a;
     --blue-dim: #458588;
     --purple-dim: #b16286;
-    --aqua-dim: #689d6a;
-    --gray-dim: #a89984;
-    --orange-dim: #d65d0e;
 
     --size_border: 2px;
     --size_border_wide: 4px;
     --size_border_radius: 6px;
+    --size_border_radius_large: 12px;
     --size_toolbar_width: 36px;
     --size_toolbar_width_half: 18px;
     --size_margin: 3px;
     --size_padding: 3px;
-    --size_padding_large: 6px;
+    --size_padding_large: 24px;
     --size_icon: large;
 
     --transition_duration: 150ms;
@@ -109,8 +111,10 @@
 }
 
 #APP_CONTAINER {
+    padding: var(--size_margin);
+    box-sizing: border-box;
     display: grid;
-    grid-gap: 3px;
+    grid-gap: var(--size_margin);
     grid-template-rows: var(--size_toolbar_width) repeat(5, 1fr) var(
             --size_toolbar_width
         );
@@ -125,6 +129,8 @@
         display: flex;
         flex-direction: column;
         justify-content: space-between;
+        box-shadow: var(--shadow);
+
         #LM_S_ACTIONS {
             display: flex;
             flex-direction: column;
@@ -141,6 +147,8 @@
         border-color: var(--color_border);
         font-family: var(--sans);
         color: var(--color_foreground);
+        box-shadow: var(--shadow);
+
         &:hover {
             border-color: var(--color_border_light);
         }
@@ -155,6 +163,7 @@
         display: flex;
         flex-direction: column;
         justify-content: space-between;
+        box-shadow: var(--shadow);
     }
     #SETTINGS_WINDOW {
         grid-area: 1 / 3 / 8 / 8;
@@ -180,7 +189,7 @@
             color: var(--color_foreground);
             padding: var(--size_padding_large);
             border: var(--size_border) var(--style_border) var(--color_border);
-            border-radius: var(--size_border_radius);
+            border-radius: var(--size_border_radius_large);
             &:not(:last-of-type) {
                 margin-bottom: var(--size_margin);
             }
@@ -236,6 +245,7 @@
         color: var(--color_foreground_hard);
         font-family: var(--sans);
         padding: var(--size_padding);
+        box-shadow: var(--shadow);
         &:hover {
             border-color: var(--color_border_light);
         }
@@ -246,8 +256,8 @@
     }
     #EDITOR_TOOLBAR {
         grid-area: 1 / 8 / 8 / 9;
-        border: var(--size_border) var(--style_border) var(--color_border);
         background-color: var(--color_background_soft);
+        box-shadow: var(--shadow);
     }
     #DONATE_MESSAGE {
         grid-area: 1 / 3 / 8 / 9;
@@ -276,10 +286,10 @@
         background-color: var(--color_border);
     }
     &.red {
-        background-color: var(--red);
+        background-color: var(--red-dim);
     }
     &.orange {
-        background-color: var(--orange);
+        background-color: var(--orange-dim);
     }
     &:focus {
         outline: none;

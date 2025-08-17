@@ -1,6 +1,6 @@
 import { Accessor, Setter } from "solid-js";
 
-export interface OpenFile {
+export interface ReactiveFile {
   name: Accessor<string>;
   setName: Setter<string>;
   content: Accessor<string>;

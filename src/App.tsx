@@ -10,18 +10,25 @@ import {
   type JSXElement,
 } from "solid-js";
 import { Message } from "ollama";
-import { parseFile } from "./parsers/parseFile.function";
-import { AppMode } from "./types/appMode.interface";
-import { SavedFile } from "./types/savedFile.interface";
-import { OpenFile } from "./types/openFile.interface";
+import { parseFile } from "./functions/parseFile.function";
+import { AppMode } from "./types/appMode.enum";
+import { BasicFile } from "./types/basicFile.interface";
+import { ReactiveFile } from "./types/reactiveFile.interface";
 import { DOMElement } from "solid-js/jsx-runtime";
+import { loadOpenFiles } from "./functions/loadOpenFiles.function";
+import { loadArchive } from "./functions/loadArchive.function";
+import { storeOpenFiles } from "./functions/storeOpenFiles.function";
+import { IDBPDatabase, openDB } from "idb";
 
-const localStorageOpenFilesKey = "openFiles";
+export const localStorageOpenFilesKey = "openFiles";
 
 function App(): JSXElement {
   const [appMode, setAppMode] = createSignal<AppMode>(AppMode.Editor);
-  const [allFiles, setAllFiles] = createSignal<SavedFile[]>(loadArchive(""));
-  const [openFiles, setOpenFiles] = createSignal<OpenFile[]>(loadOpenFiles());
+  const [directories, setDirectories] = createSignal<BasicFile[][]>([]);
+  const [directoryIndex, setDirectoryIndex] = createSignal<number>(-1);
+  const [directory, setDirectory] = createSignal<BasicFile[]>(loadArchive(""));
+  const [openFiles, setOpenFiles] =
+    createSignal<ReactiveFile[]>(loadOpenFiles());
   const [activeFile, setActiveFile] = createSignal<number>(0);
   const [inputValue, setInputValue] = createSignal<string>("");
   const [confirmAction, setConfirmAction] = createSignal<string>("");
@@ -29,17 +36,28 @@ function App(): JSXElement {
     createSignal<string>("");
   const [rightClickedSavedFile, setRightClickedSavedFile] =
     createSignal<string>("");
-  const filteredOpenFiles = createMemo<OpenFile[]>(() => {
+  const [assistantHistory, setAssistantHistory] = createSignal<Message[]>([]);
+
+  const filteredOpenFiles = createMemo<ReactiveFile[]>(() => {
     return openFiles().filter((of) =>
       of.name().toLowerCase().includes(inputValue().toLowerCase()),
     );
   });
-  const filteredAllFiles = createMemo<SavedFile[]>(() => {
-    return allFiles().filter((af) =>
+  const filteredAllFiles = createMemo<BasicFile[]>(() => {
+    return directory().filter((af) =>
       af.name.toLowerCase().includes(inputValue().toLowerCase()),
     );
   });
-  const [assistantHistory, setAssistantHistory] = createSignal<Message[]>([]);
+
+  const indexedDatabase: Promise<IDBPDatabase<unknown>> = openDB(
+    "directoriesDb",
+    1,
+    {
+      upgrade(db) {
+        db.createObjectStore("directories");
+      },
+    },
+  );
 
   return (
     <div id="APP_CONTAINER" class="dark_theme">
@@ -90,9 +108,29 @@ function App(): JSXElement {
           <button class={"button_icon"}>
             <i class="bx bx-upload"></i>
           </button>
-          <Archive />
-          <Archive opened={true} />
-          <Archive />
+          <button class={"button_icon"}>
+            <i class="bx bxs-folder-plus"></i>
+          </button>
+          <For each={directories()}>
+            {(directory: BasicFile[], index: Accessor<number>) => (
+              <button
+                class={
+                  "button_icon " +
+                  (index() === directoryIndex() ? "active" : "")
+                }
+              >
+                <Show when={index() === directoryIndex()}>
+                  <i class="bx bxs-folder-open"></i>
+                </Show>
+                <Show when={!(index() === directoryIndex())}>
+                  <i class="bx bxs-folder"></i>
+                </Show>
+              </button>
+            )}
+          </For>
+          <button class={"button_icon"}>
+            <i class="bx bxs-trash-alt"></i>
+          </button>
         </div>
       </div>
       <input
@@ -113,7 +151,7 @@ function App(): JSXElement {
       <div id="LEFT_SIDEBAR">
         <div id="L_S_OPENFILES">
           <For each={filteredOpenFiles()}>
-            {(file: OpenFile, index: Accessor<number>) => (
+            {(file: ReactiveFile, index: Accessor<number>) => (
               <Switch>
                 <Match when={rightClickedOpenFile() !== file.name()}>
                   <button
@@ -148,20 +186,18 @@ function App(): JSXElement {
                   >
                     <div class="filename">{file.name()}</div>
                     <div class="actions">
+                      <button class={"button_icon"}>
+                        <i class="bx bx-download"></i>
+                      </button>
                       <button
-                        class={
-                          "button_icon " +
-                          (confirmAction() === "saveOpenFile" ? "orange" : "")
-                        }
+                        class={"button_icon"}
                         onclick={(e) => {
                           e.stopImmediatePropagation();
                           onClickSaveOpenFile(
                             index(),
                             openFiles,
-                            allFiles,
-                            setAllFiles,
-                            confirmAction,
-                            setConfirmAction,
+                            directory,
+                            setDirectory,
                           );
                         }}
                       >
@@ -170,14 +206,14 @@ function App(): JSXElement {
                       <button
                         class={
                           "button_icon " +
-                          (confirmAction() === "discardChanges" ? "orange" : "")
+                          (confirmAction() === "discardChanges" ? "red" : "")
                         }
                         onclick={(e) => {
                           e.stopImmediatePropagation();
                           onClickCloseOpenFile(
                             index(),
                             openFiles,
-                            allFiles,
+                            directory,
                             setOpenFiles,
                             confirmAction,
                             setConfirmAction,
@@ -208,28 +244,65 @@ function App(): JSXElement {
               </div>
             </Show>
             <For each={filteredAllFiles()}>
-              {(file: SavedFile) => (
-                <button
-                  class={
-                    "button_file " +
-                    (rightClickedSavedFile() === file.name
-                      ? "context_menu"
-                      : "")
-                  }
-                  onclick={() => {
-                    onClickSavedFile(file, openFiles, setOpenFiles);
-                  }}
-                  oncontextmenu={(e: PointerEvent) =>
-                    onFileRightclick(e, file.name, setRightClickedSavedFile)
-                  }
-                  onmouseleave={() => {
-                    onMouseLeaveFile(setRightClickedSavedFile);
-                  }}
-                >
-                  <div class="filename">{file.name}</div>
-                  <div class="tags">#Tag1 #Tag2</div>
-                </button>
-                // Alternative container when button was right-clicked
+              {(file: BasicFile, index: Accessor<number>) => (
+                <Switch>
+                  <Match when={rightClickedSavedFile() !== file.name}>
+                    <button
+                      class={
+                        "button_file " +
+                        (rightClickedSavedFile() === file.name
+                          ? "context_menu"
+                          : "")
+                      }
+                      onclick={() => {
+                        onClickSavedFile(file, openFiles, setOpenFiles);
+                      }}
+                      oncontextmenu={(e: PointerEvent) =>
+                        onFileRightclick(e, file.name, setRightClickedSavedFile)
+                      }
+                    >
+                      <div class="filename">{file.name}</div>
+                      <div class="tags">#Tag1 #Tag2</div>
+                    </button>
+                  </Match>
+                  <Match when={rightClickedSavedFile() === file.name}>
+                    <div
+                      class="button_file_contextmenu"
+                      onmouseleave={() => {
+                        onMouseLeaveFile(setRightClickedSavedFile);
+                        setConfirmAction("");
+                      }}
+                      onClick={() => {
+                        setRightClickedSavedFile("");
+                      }}
+                    >
+                      <div class="filename">{file.name}</div>
+                      <div class="actions">
+                        <button
+                          class={
+                            "button_icon " +
+                            (confirmAction() === "saveOpenFile" ? "orange" : "")
+                          }
+                          onclick={(e) => {
+                            e.stopImmediatePropagation();
+                          }}
+                        >
+                          <i class="bx bx-download"></i>
+                        </button>
+                        <button
+                          class={
+                            "button_icon " +
+                            (confirmAction() === "discardChanges"
+                              ? "orange"
+                              : "")
+                          }
+                        >
+                          <i class="bx bx-trash-alt"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </Match>
+                </Switch>
               )}
             </For>
           </div>
@@ -282,74 +355,6 @@ function App(): JSXElement {
   );
 }
 
-function Archive(props: any): JSXElement {
-  const opened: () => boolean = () => props.opened;
-
-  return (
-    <button class={"button_icon " + (opened() ? "active" : "")}>
-      <Show when={opened() === true}>
-        <i class="bx bx-folder-open"></i>
-      </Show>
-      <Show when={!(opened() === true)}>
-        <i class="bx bx-folder"></i>
-      </Show>
-    </button>
-  );
-}
-
-function prettyStringify(a: any) {
-  JSON.stringify(a, null, 2);
-}
-
-function loadArchive(name: string): SavedFile[] {
-  return [
-    {
-      name: "a",
-      content: "Foo",
-    },
-    {
-      name: "b",
-      content: "",
-    },
-    {
-      name: "c",
-      content: "Aaaaaaas",
-    },
-  ];
-}
-
-/**
- *
- * @returns
- */
-function loadOpenFiles(): OpenFile[] {
-  const storedOpenFiles = localStorage.getItem(localStorageOpenFilesKey);
-  if (storedOpenFiles) {
-    const parsed = parseFile(storedOpenFiles);
-    if (typeof parsed === "string") {
-      console.log(parsed);
-    } else {
-      return parsed;
-    }
-  }
-  return [];
-}
-
-/**
- * Persists the values of the provided array in localstorage
- * @param files The File array to store in the localstorage
- */
-function storeOpenFiles(files: Accessor<OpenFile[]>) {
-  const serializedFiles = files().map((file) => ({
-    name: file.name(),
-    content: file.content(),
-  }));
-  localStorage.setItem(
-    localStorageOpenFilesKey,
-    JSON.stringify(serializedFiles),
-  );
-}
-
 function onClickOpenFile(fileIndex: number, setter: Setter<number>) {
   setter(fileIndex);
 }
@@ -359,9 +364,9 @@ function onMouseLeaveFile(setter: Setter<string>) {
 }
 
 function onClickSavedFile(
-  file: SavedFile,
-  accessor: Accessor<OpenFile[]>,
-  setter: Setter<OpenFile[]>,
+  file: BasicFile,
+  accessor: Accessor<ReactiveFile[]>,
+  setter: Setter<ReactiveFile[]>,
 ) {
   const openFiles = accessor();
   const fileIndexInOpenFiles = openFiles.findIndex(
@@ -382,7 +387,7 @@ function onEditorChange(
   },
   accessor: Accessor<string> | undefined,
   setter: Setter<string> | undefined,
-  openFiles: Accessor<OpenFile[]>,
+  openFiles: Accessor<ReactiveFile[]>,
 ) {
   if (accessor && setter) {
     const fileContent = accessor();
@@ -402,9 +407,9 @@ function onFileRightclick(
 
 function onClickCloseOpenFile(
   index: number,
-  openFiles: Accessor<OpenFile[]>,
-  savedFiles: Accessor<SavedFile[]>,
-  setOpenFiles: Setter<OpenFile[]>,
+  openFiles: Accessor<ReactiveFile[]>,
+  savedFiles: Accessor<BasicFile[]>,
+  setOpenFiles: Setter<ReactiveFile[]>,
   confirmAction: Accessor<string>,
   setConfirmAction: Setter<string>,
 ) {
@@ -424,48 +429,38 @@ function onClickCloseOpenFile(
     } else {
       currentOpenFiles.splice(index, 1);
       setOpenFiles([...currentOpenFiles]);
+      setConfirmAction("");
     }
   }
 }
 
 function onClickSaveOpenFile(
   index: number,
-  openFiles: Accessor<OpenFile[]>,
-  savedFiles: Accessor<SavedFile[]>,
-  setSavedFiles: Setter<SavedFile[]>,
-  confirmAction: Accessor<string>,
-  setConfirmAction: Setter<string>,
+  openFiles: Accessor<ReactiveFile[]>,
+  savedFiles: Accessor<BasicFile[]>,
+  setSavedFiles: Setter<BasicFile[]>,
 ) {
-  let openFile: OpenFile | undefined = openFiles()[index];
-  let savedFile = savedFiles().find((sf) => sf.name === openFile?.name());
+  let openFile: ReactiveFile | undefined = openFiles()[index];
+  let savedFile: BasicFile | undefined = savedFiles().splice(
+    savedFiles().findIndex((sf) => sf.name === openFile.name()),
+    1,
+  )[0];
 
   if (openFile) {
-    if (savedFile) {
-      if (confirmAction() === "saveOpenFile") {
-        setSavedFiles([
-          ...savedFiles(),
-          { name: openFile.name(), content: openFile.content() },
-        ]);
-        setConfirmAction("");
-      } else {
-        setConfirmAction("saveOpenFile");
-      }
-    } else {
-      setSavedFiles([
-        ...savedFiles(),
-        { name: openFile.name(), content: openFile.content() },
-      ]);
-    }
+    setSavedFiles([
+      ...savedFiles(),
+      { name: openFile.name(), content: openFile.content() },
+    ]);
   }
 }
 
 function onInputKeyUp(
   e: KeyboardEvent & { currentTarget: HTMLInputElement; target: Element },
   inputSetter: Setter<string>,
-  openFilesAccessor: Accessor<OpenFile[]>,
-  filteredOpenFilesAccessor: Accessor<OpenFile[]>,
-  openFilesSetter: Setter<OpenFile[]>,
-  filteredSavedFilesAccessor: Accessor<SavedFile[]>,
+  openFilesAccessor: Accessor<ReactiveFile[]>,
+  filteredOpenFilesAccessor: Accessor<ReactiveFile[]>,
+  openFilesSetter: Setter<ReactiveFile[]>,
+  filteredSavedFilesAccessor: Accessor<BasicFile[]>,
   activeFileSetter: Setter<number>,
 ) {
   inputSetter(e.currentTarget.value);
@@ -507,5 +502,7 @@ function onInputKeyUp(
       break;
   }
 }
+
+async function onClickUploadFile() {}
 
 export default App;
