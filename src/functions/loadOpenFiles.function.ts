@@ -1,8 +1,8 @@
 import { localStorageOpenFilesKey } from "../App";
-import { OpenFile } from "../types/openFile.interface";
+import { ReactiveFile } from "../types/reactiveFile.interface";
 import { parseFile } from "./parseFile.function";
 
-export function loadOpenFiles(): OpenFile[] {
+export function loadOpenFiles(): ReactiveFile[] {
   const storedOpenFiles = localStorage.getItem(localStorageOpenFilesKey);
   if (storedOpenFiles) {
     const parsed = parseFile(storedOpenFiles);

@@ -1,11 +1,13 @@
 import {
   Accessor,
+  createEffect,
   createMemo,
   createSignal,
   For,
   Match,
   Setter,
   Show,
+  Signal,
   Switch,
   type JSXElement,
 } from "solid-js";
@@ -19,14 +21,14 @@ import { loadOpenFiles } from "./functions/loadOpenFiles.function";
 import { loadArchive } from "./functions/loadArchive.function";
 import { storeOpenFiles } from "./functions/storeOpenFiles.function";
 import { IDBPDatabase, openDB } from "idb";
+import { Directory } from "./types/directory.enum";
 
 export const localStorageOpenFilesKey = "openFiles";
 
 function App(): JSXElement {
   const [appMode, setAppMode] = createSignal<AppMode>(AppMode.Editor);
-  const [directories, setDirectories] = createSignal<BasicFile[][]>([]);
-  const [directoryIndex, setDirectoryIndex] = createSignal<number>(-1);
-  const [directory, setDirectory] = createSignal<BasicFile[]>(loadArchive(""));
+  const [directories, setDirectories] = createSignal<Directory[]>([]);
+  const [directoryIndex, setDirectoryIndex] = createSignal<number>(0);
   const [openFiles, setOpenFiles] =
     createSignal<ReactiveFile[]>(loadOpenFiles());
   const [activeFile, setActiveFile] = createSignal<number>(0);
@@ -36,17 +38,28 @@ function App(): JSXElement {
     createSignal<string>("");
   const [rightClickedSavedFile, setRightClickedSavedFile] =
     createSignal<string>("");
-  const [assistantHistory, setAssistantHistory] = createSignal<Message[]>([]);
 
+  const activeDirectory = createMemo<Signal<Directory>>(() => {
+    const [files, setFiles] = createSignal<BasicFile[]>([]);
+    return createSignal<Directory>(
+      directories()[directoryIndex()] ?? {
+        name: "",
+        files,
+        setFiles,
+      },
+    );
+  });
   const filteredOpenFiles = createMemo<ReactiveFile[]>(() => {
     return openFiles().filter((of) =>
       of.name().toLowerCase().includes(inputValue().toLowerCase()),
     );
   });
   const filteredAllFiles = createMemo<BasicFile[]>(() => {
-    return directory().filter((af) =>
-      af.name.toLowerCase().includes(inputValue().toLowerCase()),
-    );
+    return activeDirectory()[0]()
+      .files()
+      .filter((af) =>
+        af.name.toLowerCase().includes(inputValue().toLowerCase()),
+      );
   });
 
   const indexedDatabase: Promise<IDBPDatabase<unknown>> = openDB(
@@ -58,6 +71,8 @@ function App(): JSXElement {
       },
     },
   );
+
+  onModifyDirectory(directories, setDirectories);
 
   return (
     <div id="APP_CONTAINER" class="dark_theme">
@@ -108,28 +123,41 @@ function App(): JSXElement {
           <button class={"button_icon"}>
             <i class="bx bx-upload"></i>
           </button>
-          <button class={"button_icon"}>
-            <i class="bx bxs-folder-plus"></i>
-          </button>
           <For each={directories()}>
-            {(directory: BasicFile[], index: Accessor<number>) => (
+            {(directory: Directory, index: Accessor<number>) => (
               <button
                 class={
                   "button_icon " +
                   (index() === directoryIndex() ? "active" : "")
                 }
+                onclick={() => {
+                  setDirectoryIndex(index());
+                }}
               >
                 <Show when={index() === directoryIndex()}>
                   <i class="bx bxs-folder-open"></i>
                 </Show>
-                <Show when={!(index() === directoryIndex())}>
+                <Show
+                  when={
+                    !(index() === directoryIndex()) &&
+                    directory.files().length > 0
+                  }
+                >
                   <i class="bx bxs-folder"></i>
+                </Show>
+                <Show
+                  when={
+                    !(index() === directoryIndex()) &&
+                    directory.files().length === 0
+                  }
+                >
+                  <i class="bx bx-folder-plus"></i>
                 </Show>
               </button>
             )}
           </For>
           <button class={"button_icon"}>
-            <i class="bx bxs-trash-alt"></i>
+            <i class="bx bx-trash-alt"></i>
           </button>
         </div>
       </div>
@@ -196,8 +224,7 @@ function App(): JSXElement {
                           onClickSaveOpenFile(
                             index(),
                             openFiles,
-                            directory,
-                            setDirectory,
+                            activeDirectory()[0],
                           );
                         }}
                       >
@@ -213,7 +240,7 @@ function App(): JSXElement {
                           onClickCloseOpenFile(
                             index(),
                             openFiles,
-                            directory,
+                            activeDirectory()[0],
                             setOpenFiles,
                             confirmAction,
                             setConfirmAction,
@@ -408,7 +435,7 @@ function onFileRightclick(
 function onClickCloseOpenFile(
   index: number,
   openFiles: Accessor<ReactiveFile[]>,
-  savedFiles: Accessor<BasicFile[]>,
+  directory: Accessor<Directory>,
   setOpenFiles: Setter<ReactiveFile[]>,
   confirmAction: Accessor<string>,
   setConfirmAction: Setter<string>,
@@ -417,7 +444,9 @@ function onClickCloseOpenFile(
   let openFile = currentOpenFiles[index];
 
   if (openFile) {
-    let savedFile = savedFiles().find((f) => f.name === openFile.name());
+    let savedFile = directory()
+      .files()
+      .find((f) => f.name === openFile.name());
     if (savedFile && savedFile.content !== openFile.content()) {
       if (confirmAction() === "discardChanges") {
         currentOpenFiles.splice(index, 1);
@@ -437,18 +466,21 @@ function onClickCloseOpenFile(
 function onClickSaveOpenFile(
   index: number,
   openFiles: Accessor<ReactiveFile[]>,
-  savedFiles: Accessor<BasicFile[]>,
-  setSavedFiles: Setter<BasicFile[]>,
+  directory: Accessor<Directory>,
 ) {
   let openFile: ReactiveFile | undefined = openFiles()[index];
-  let savedFile: BasicFile | undefined = savedFiles().splice(
-    savedFiles().findIndex((sf) => sf.name === openFile.name()),
-    1,
-  )[0];
+  let savedFile: BasicFile | undefined = directory()
+    .files()
+    .splice(
+      directory()
+        .files()
+        .findIndex((sf) => sf.name === openFile.name()),
+      1,
+    )[0];
 
   if (openFile) {
-    setSavedFiles([
-      ...savedFiles(),
+    directory().setFiles([
+      ...directory().files(),
       { name: openFile.name(), content: openFile.content() },
     ]);
   }
@@ -501,6 +533,25 @@ function onInputKeyUp(
     default:
       break;
   }
+}
+
+function onModifyDirectory(
+  directories: Accessor<Directory[]>,
+  setDirectories: Setter<Directory[]>,
+) {
+  // There should always be only one empty directory, namely the last directory of the list.
+  const dirs: Directory[] = directories().filter(
+    (dir, i) => dir.files().length === 0 && i != dirs.length - 1,
+  );
+  if (dirs.length === 0 || dirs[dirs.length - 1].files().length > 0) {
+    const [files, setFiles] = createSignal<BasicFile[]>([]);
+    dirs.push({
+      name: "",
+      files: files,
+      setFiles: setFiles,
+    });
+  }
+  setDirectories([...dirs]);
 }
 
 async function onClickUploadFile() {}

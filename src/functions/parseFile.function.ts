@@ -1,10 +1,10 @@
 import { createSignal } from "solid-js";
-import { OpenFile } from "../types/openFile.interface";
-import { StaticFile } from "../types/savedFile.interface";
+import { ReactiveFile } from "../types/reactiveFile.interface";
+import { BasicFile } from "../types/basicFile.interface";
 
 /** @author Sebastian Pöhlmann & Codestral:0898a8b286d5 */
-export function parseFile(filesJson: string): OpenFile[] | string {
-  let files: StaticFile[];
+export function parseFile(filesJson: string): ReactiveFile[] | string {
+  let files: BasicFile[];
   try {
     // Try to parse the JSON string
     files = JSON.parse(filesJson);

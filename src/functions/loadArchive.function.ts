@@ -1,6 +1,6 @@
-import { StaticFile } from "../types/savedFile.interface";
+import { BasicFile } from "../types/basicFile.interface";
 
-export function loadArchive(name: string): StaticFile[] {
+export function loadArchive(name: string): BasicFile[] {
   return [
     {
       name: "a",
