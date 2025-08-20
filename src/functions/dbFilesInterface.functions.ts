@@ -1,194 +1,104 @@
 import { IDBPDatabase, openDB } from "idb";
-import JSZip from "jszip";
-import { saveAs } from "file-saver";
-import dayjs from "dayjs";
+import { BasicFile } from "../types/basicFile.interface";
+import { Directory } from "../types/directory.interface";
 
-export async function createArchive(
-  dbPromise: Promise<IDBPDatabase<unknown>>,
-  name: string,
-) {
+const dbPromise = openDB("shortrest", 1, {
+  upgrade(db: IDBPDatabase<"shortrest">) {
+    // Create object stores for directories and files
+    const dirsStore = db.createObjectStore("directories", { keyPath: "name" });
+    const filesStore = db.createObjectStore("files", {
+      keyPath: ["dirName", "fileName"],
+    });
+
+    // Create indexes to make querying more efficient
+    filesStore.createIndex("dirName", "dirName");
+  },
+});
+
+// List all directories stored in the IDB
+export async function listAllDirectories(): Promise<string[]> {
   const db = await dbPromise;
-  const tx = db.transaction("archives", "readonly");
-  const store = tx.objectStore("archives");
+  return (await db.getAll("directories")).map((d: Directory) => d.name);
+}
 
-  if (await store.getKey(name)) {
-    throw new Error(`Archive named ${name} already exists`);
+// Add a new directory to the database (if it doesn't already exist)
+export async function addDirectory(dirName: string): Promise<void> {
+  const db = await dbPromise;
+
+  // Check if the directory exists, if not, create it
+  const existingDir = await db.get("directories", dirName);
+  if (!existingDir) {
+    const newDir = { name: dirName };
+    await db.add("directories", newDir);
   }
-
-  await tx.done;
-
-  const writeTx = db.transaction("archives", "readwrite");
-  const writeStore = writeTx.objectStore("archives");
-
-  await writeStore.put({ files: {} }, name);
-  await writeTx.done;
 }
 
-export async function listArchives(dbPromise: Promise<IDBPDatabase<unknown>>) {
+// List the names of all files contained inside the directory with the given name
+export async function listFileNamesInDirectory(
+  dirName: string,
+): Promise<string[]> {
   const db = await dbPromise;
-  const tx = db.transaction("archives", "readonly");
-  const store = tx.objectStore("archives");
-  return Array.from(await store.getAllKeys(), (key) => String(key));
+  const transaction = db.transaction(["files"], "readonly");
+  const store = transaction.objectStore("files");
+  const index = store.index("dirName");
+  const files = await index.getAll(IDBKeyRange.only(dirName));
+  return files.map((f: BasicFile) => f.name);
 }
 
-export async function deleteArchive(
-  dbPromise: Promise<IDBPDatabase<unknown>>,
-  name: string,
-) {
-  const db = await dbPromise;
-  const tx = db.transaction("archives", "readwrite");
-  const store = tx.objectStore("archives");
-
-  await store.delete(name);
-  await tx.done;
-}
-
-export async function saveFileToArchive(
-  dbPromise: Promise<IDBPDatabase<unknown>>,
-  archiveName: string,
+// Get the content of a file from a directory
+export async function getFileContent(
+  dirName: string,
   fileName: string,
-  fileContent: string | Blob,
-) {
-  if (typeof fileContent !== "string" && !(fileContent instanceof Blob)) {
-    throw new Error(
-      "Invalid file content type. Only strings or Blobs are allowed.",
-    );
-  }
-
+): Promise<string | null> {
   const db = await dbPromise;
-  const tx = db.transaction("archives", "readwrite");
-  const store = tx.objectStore("archives");
-
-  let archive = await store.get(archiveName);
-
-  if (!archive) {
-    throw new Error(`Archive named ${archiveName} does not exist`);
-  }
-
-  archive.files[fileName] = fileContent;
-  await store.put(archive, archiveName);
-  await tx.done;
+  const file = await db.get("files", [dirName, fileName]);
+  return file ? file.content : null;
 }
 
-export async function listFilesInArchive(
-  dbPromise: Promise<IDBPDatabase<unknown>>,
-  archiveName: string,
-) {
-  const db = await dbPromise;
-  const tx = db.transaction("archives", "readonly");
-  const store = tx.objectStore("archives");
-
-  const archive = await store.get(archiveName);
-
-  if (!archive) {
-    throw new Error(`Archive named ${archiveName} does not exist`);
+// Write (overwrite) a file to a directory
+export async function writeFileToDirectory(
+  dirName: string,
+  file: BasicFile,
+): Promise<void> {
+  // Ensure the directory exists
+  let directory = await dbPromise.then((db) => db.get("directories", dirName));
+  if (!directory) {
+    const db = await dbPromise;
+    directory = { name: dirName, files: [], setFiles: [] };
+    await db.add("directories", directory);
   }
 
-  return Object.keys(archive.files);
+  // Add or update the file in the database
+  const db = await dbPromise;
+  await db.put("files", {
+    dirName: dirName,
+    fileName: file.name,
+    content: file.content,
+  });
 }
 
-export async function removeFileFromArchive(
-  dbPromise: Promise<IDBPDatabase<unknown>>,
-  archiveName: string,
+// Remove a file from a directory
+export async function removeFileFromDirectory(
+  dirName: string,
   fileName: string,
-) {
+): Promise<void> {
   const db = await dbPromise;
-  const tx = db.transaction("archives", "readwrite");
-  const store = tx.objectStore("archives");
-
-  let archive = await store.get(archiveName);
-
-  if (!archive) {
-    throw new Error(`Archive named ${archiveName} does not exist`);
-  }
-
-  if (!(fileName in archive.files)) {
-    throw new Error(
-      `File with name ${fileName} does not exist in archive named ${archiveName}`,
-    );
-  }
-
-  delete archive.files[fileName];
-  await store.put(archive, archiveName);
-  await tx.done;
+  return db.delete("files", [dirName, fileName]);
 }
 
-export async function getFileFromArchive(
-  dbPromise: Promise<IDBPDatabase<unknown>>,
-  archiveName: string,
-  fileName: string,
-) {
+// Remove a whole directory (and all its files)
+export async function removeDirectory(dirName: string): Promise<void> {
   const db = await dbPromise;
-  const tx = db.transaction("archives", "readonly");
-  const store = tx.objectStore("archives");
 
-  const archive = await store.get(archiveName);
-
-  if (!archive) {
-    throw new Error(`Archive named ${archiveName} does not exist`);
+  // First delete all files in the directory
+  const transaction = db.transaction(["files"], "readwrite");
+  const store = transaction.objectStore("files");
+  const index = store.index("dirName");
+  const files = await index.getAll(IDBKeyRange.only(dirName));
+  for (const file of files) {
+    await store.delete([file.dirName, file.fileName]);
   }
 
-  if (!(fileName in archive.files)) {
-    throw new Error(
-      `File with name ${fileName} does not exist in archive named ${archiveName}`,
-    );
-  }
-
-  return archive.files[fileName];
-}
-
-export async function downloadArchive(
-  dbPromise: Promise<IDBPDatabase<unknown>>,
-  archiveName: string,
-) {
-  const fileNames = await listFilesInArchive(dbPromise, archiveName);
-  const zip = new JSZip();
-
-  for (const fileName of fileNames) {
-    const fileContent = await getFileFromArchive(
-      dbPromise,
-      archiveName,
-      fileName,
-    );
-    zip.file(fileName, fileContent);
-  }
-
-  const content = await zip.generateAsync({ type: "blob" });
-  const now = new Date();
-  saveAs(
-    content,
-    `${archiveName} - ${dayjs().format("YYYY-MM-DD HH:mm:ss")}.zip`,
-  );
-}
-
-export async function uploadArchive(
-  dbPromise: Promise<IDBPDatabase<unknown>>,
-  event: InputEvent,
-) {
-  const input = event.target;
-  if (input.files && input.files[0]) {
-    const file = input.files[0];
-    const archiveName = file.name.replace(".zip", "");
-    await createArchive(dbPromise, archiveName);
-
-    // Check if the uploaded file is a text file
-    if (!file.type.match("text.*")) {
-      throw new Error(`The file ${file.name} is not a text file`);
-    }
-
-    const zip = new JSZip();
-    const zipContent = await zip.loadAsync(file);
-
-    for (const fileName in zipContent.files) {
-      if (!zipContent.files[fileName].dir) {
-        const fileContent = await zipContent.files[fileName].async("blob");
-        await saveFileToArchive(
-          dbPromise,
-          archiveName,
-          fileName,
-          await new Response(fileContent).text(),
-        );
-      }
-    }
-  }
+  // Then delete the directory itself
+  return db.delete("directories", dirName);
 }

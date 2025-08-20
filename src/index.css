@@ -57,7 +57,7 @@
     --size_border_radius_large: 12px;
     --size_toolbar_width: 36px;
     --size_toolbar_width_half: 18px;
-    --size_margin: 3px;
+    --size_margin: 2px;
     --size_padding: 3px;
     --size_padding_large: 24px;
     --size_icon: large;
@@ -144,7 +144,7 @@
     #LEFT_INPUT {
         grid-area: 1 / 1 / 2 / 3;
         background-color: var(--color_background_soft);
-        border-color: var(--color_border);
+        border-color: transparent;
         font-family: var(--sans);
         color: var(--color_foreground);
         box-shadow: var(--shadow);
@@ -241,10 +241,11 @@
         resize: none;
         grid-area: 1 / 3 / 8 / 8;
         background-color: var(--color_background);
-        border: var(--size_border) var(--style_border) var(--color_border);
+        border: var(--size_border) var(--style_border) transparent;
         color: var(--color_foreground_hard);
         font-family: var(--sans);
         padding: var(--size_padding);
+        margin: 0;
         box-shadow: var(--shadow);
         &:hover {
             border-color: var(--color_border_light);

@@ -18,10 +18,9 @@ import { BasicFile } from "./types/basicFile.interface";
 import { ReactiveFile } from "./types/reactiveFile.interface";
 import { DOMElement } from "solid-js/jsx-runtime";
 import { loadOpenFiles } from "./functions/loadOpenFiles.function";
-import { loadArchive } from "./functions/loadArchive.function";
 import { storeOpenFiles } from "./functions/storeOpenFiles.function";
 import { IDBPDatabase, openDB } from "idb";
-import { Directory } from "./types/directory.enum";
+import { Directory } from "./types/directory.interface";
 
 export const localStorageOpenFilesKey = "openFiles";
 
@@ -61,16 +60,6 @@ function App(): JSXElement {
         af.name.toLowerCase().includes(inputValue().toLowerCase()),
       );
   });
-
-  const indexedDatabase: Promise<IDBPDatabase<unknown>> = openDB(
-    "directoriesDb",
-    1,
-    {
-      upgrade(db) {
-        db.createObjectStore("directories");
-      },
-    },
-  );
 
   onModifyDirectory(directories, setDirectories);
 
@@ -447,7 +436,11 @@ function onClickCloseOpenFile(
     let savedFile = directory()
       .files()
       .find((f) => f.name === openFile.name());
-    if (savedFile && savedFile.content !== openFile.content()) {
+
+    const changesExist = savedFile && savedFile.content !== openFile.content();
+
+    if (!savedFile || changesExist) {
+      // Require confirmation for unsaved changes or non-existent saved file
       if (confirmAction() === "discardChanges") {
         currentOpenFiles.splice(index, 1);
         setOpenFiles([...currentOpenFiles]);
@@ -456,6 +449,7 @@ function onClickCloseOpenFile(
         setConfirmAction("discardChanges");
       }
     } else {
+      // No confirmation needed for saved changes
       currentOpenFiles.splice(index, 1);
       setOpenFiles([...currentOpenFiles]);
       setConfirmAction("");
