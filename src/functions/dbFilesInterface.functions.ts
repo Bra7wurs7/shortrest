@@ -42,6 +42,7 @@ export async function listFileNamesInDirectory(
   const store = transaction.objectStore("files");
   const index = store.index("dirName");
   const files = await index.getAll(IDBKeyRange.only(dirName));
+  console.log(files);
   return files.map((f: BasicFile) => f.name);
 }
 
@@ -88,7 +89,6 @@ export async function removeFileFromDirectory(
 
 // Remove a whole directory (and all its files)
 export async function removeDirectory(dirName: string): Promise<void> {
-  console.log("CACACACAC");
   const db = await dbPromise;
 
   // First delete all files in the directory
@@ -115,6 +115,5 @@ export async function countFilesInDirectory(dirName: string): Promise<number> {
   const files = await index.getAll(IDBKeyRange.only(dirName));
 
   // Return the count of files found in that directory
-  console.log(files.length);
   return files.length;
 }

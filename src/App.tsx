@@ -123,32 +123,26 @@ function App(): JSXElement {
             <i class="bx bx-upload"></i>
           </button>
           <For each={directoryNames()}>
-            {(directory: string, index: Accessor<number>) => (
+            {(name: string, index: Accessor<number>) => (
               <button
                 class={
                   "button_icon " +
-                  (directory === activeDirectoryName() ? "active" : "")
+                  (name === activeDirectoryName() ? "active" : "")
                 }
                 onclick={() => {
-                  setActiveDirectoryName(directory);
+                  setActiveDirectoryName(name);
                 }}
               >
-                <Show
-                  when={directory === activeDirectoryName() && index() === 0}
-                >
+                <Show when={name === activeDirectoryName() && index() === 0}>
                   <i class="bx bx-folder-open"></i>
                 </Show>
-                <Show when={directory === activeDirectoryName() && index() > 0}>
+                <Show when={name === activeDirectoryName() && index() > 0}>
                   <i class="bx bxs-folder-open"></i>
                 </Show>
-                <Show
-                  when={!(directory === activeDirectoryName()) && index() > 0}
-                >
+                <Show when={!(name === activeDirectoryName()) && index() > 0}>
                   <i class="bx bxs-folder"></i>
                 </Show>
-                <Show
-                  when={!(directory === activeDirectoryName()) && index() === 0}
-                >
+                <Show when={!(name === activeDirectoryName()) && index() === 0}>
                   <i class="bx bx-folder-plus"></i>
                 </Show>
               </button>
@@ -507,8 +501,8 @@ function onClickSaveOpenFile(
           ...activeDirectoryFileNames()[0](),
           openFile.name(),
         ]);
+      onUpdateDirectory(directoryNames, setDirectoryNames).then();
     });
-    onUpdateDirectory(directoryNames, setDirectoryNames).then();
   }
 }
 
@@ -578,14 +572,14 @@ async function onUpdateDirectory(
   directoryNames: Accessor<string[]>,
   setDirectoryNames: Setter<string[]>,
 ) {
-  console.log(directoryNames());
   for (let i = 0; i < directoryNames().length; i++) {
     const name = directoryNames()[i];
+    console.log(`${name} ` + (await countFilesInDirectory(name)));
     if ((await countFilesInDirectory(name)) === 0 && i !== 0) {
       await removeDirectory(name);
     }
   }
-  const dirs = await listAllDirectories();
+  let dirs = await listAllDirectories();
   if (dirs.length === 0 || (await countFilesInDirectory(dirs[0])) > 0) {
     const newDirName = uuidv4();
     addDirectory(newDirName).then(() => dirs.unshift(newDirName));

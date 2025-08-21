@@ -7,7 +7,6 @@ export function loadOpenFiles(): ReactiveFile[] {
   if (storedOpenFiles) {
     const parsed = parseFile(storedOpenFiles);
     if (typeof parsed === "string") {
-      console.log(parsed);
     } else {
       return parsed;
     }
