@@ -88,6 +88,7 @@ export async function removeFileFromDirectory(
 
 // Remove a whole directory (and all its files)
 export async function removeDirectory(dirName: string): Promise<void> {
+  console.log("CACACACAC");
   const db = await dbPromise;
 
   // First delete all files in the directory
@@ -101,4 +102,19 @@ export async function removeDirectory(dirName: string): Promise<void> {
 
   // Then delete the directory itself
   return db.delete("directories", dirName);
+}
+
+// Function to get the amount of files contained in a directory
+export async function countFilesInDirectory(dirName: string): Promise<number> {
+  const db = await dbPromise;
+  const transaction = db.transaction(["files"], "readonly");
+  const store = transaction.objectStore("files");
+  const index = store.index("dirName");
+
+  // Get all files in the directory using the dirName index
+  const files = await index.getAll(IDBKeyRange.only(dirName));
+
+  // Return the count of files found in that directory
+  console.log(files.length);
+  return files.length;
 }
