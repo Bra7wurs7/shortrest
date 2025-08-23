@@ -24,6 +24,7 @@ import {
   listAllDirectories,
   listFileNamesInDirectory,
   removeDirectory,
+  removeFileFromDirectory,
   writeFileToDirectory,
 } from "./functions/dbFilesInterface.functions";
 import { v4 as uuidv4 } from "uuid";
@@ -325,8 +326,17 @@ function App(): JSXElement {
                               ? "orange"
                               : "")
                           }
+                          onclick={() => {
+                            onClickTrashSavedFile(
+                              fileName,
+                              activeDirectoryName,
+                              activeDirectoryFileNames,
+                              directoryNames,
+                              setDirectoryNames,
+                            ).then();
+                          }}
                         >
-                          <i class="bx bx-trash-alt"></i>
+                          <i class="bx bxs-trash-alt"></i>
                         </button>
                       </div>
                     </div>
@@ -506,6 +516,21 @@ function onClickSaveOpenFile(
   }
 }
 
+async function onClickTrashSavedFile(
+  name: string,
+  activeDirectoryName: Accessor<string>,
+  activeDirectoryFileNames: Accessor<Signal<string[]>>,
+  directoryNames: Accessor<string[]>,
+  setDirectoryNames: Setter<string[]>,
+) {
+  /** @TODO: Move into trash instead of deleting outright. */
+  await removeFileFromDirectory(activeDirectoryName(), name);
+  activeDirectoryFileNames()[1](
+    await listFileNamesInDirectory(activeDirectoryName()),
+  );
+  await onUpdateDirectory(directoryNames, setDirectoryNames);
+}
+
 function onInputKeyUp(
   e: KeyboardEvent & { currentTarget: HTMLInputElement; target: Element },
   activeDirectoryName: Accessor<string>,
@@ -582,7 +607,7 @@ async function onUpdateDirectory(
   for (const dns of directoryNamesAndSize) {
     if (dns.count === 0) {
       if (foundEmptyDirectory) {
-        removeDirectory(dns.name);
+        await removeDirectory(dns.name);
       } else {
         foundEmptyDirectory = dns.name;
       }
@@ -590,8 +615,8 @@ async function onUpdateDirectory(
   }
   if (foundEmptyDirectory === undefined) {
     await addDirectory(uuidv4());
-    setDirectoryNames(await listAllDirectories());
   }
+  setDirectoryNames(await listAllDirectories());
 }
 
 async function onClickUploadFile() {}
