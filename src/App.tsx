@@ -49,9 +49,9 @@ function App(): JSXElement {
 
   const activeDirectoryFileNames = createMemo<Signal<string[]>>(() => {
     const signal: Signal<string[]> = createSignal<string[]>([]);
-    listFileNamesInDirectory(activeDirectoryName()).then((names) =>
-      signal[1](names),
-    );
+    listFileNamesInDirectory(activeDirectoryName()).then((names) => {
+      return signal[1](names);
+    });
     return signal;
   });
   const filteredOpenFiles = createMemo<ReactiveFile[]>(() => {
@@ -572,19 +572,26 @@ async function onUpdateDirectory(
   directoryNames: Accessor<string[]>,
   setDirectoryNames: Setter<string[]>,
 ) {
-  for (let i = 0; i < directoryNames().length; i++) {
-    const name = directoryNames()[i];
-    console.log(`${name} ` + (await countFilesInDirectory(name)));
-    if ((await countFilesInDirectory(name)) === 0 && i !== 0) {
-      await removeDirectory(name);
+  const directoryNamesAndSize: { name: string; count: number }[] =
+    await Promise.all(
+      directoryNames().map(async (name) => {
+        return { name, count: await countFilesInDirectory(name) };
+      }),
+    );
+  let foundEmptyDirectory: string | undefined = undefined;
+  for (const dns of directoryNamesAndSize) {
+    if (dns.count === 0) {
+      if (foundEmptyDirectory) {
+        removeDirectory(dns.name);
+      } else {
+        foundEmptyDirectory = dns.name;
+      }
     }
   }
-  let dirs = await listAllDirectories();
-  if (dirs.length === 0 || (await countFilesInDirectory(dirs[0])) > 0) {
-    const newDirName = uuidv4();
-    addDirectory(newDirName).then(() => dirs.unshift(newDirName));
+  if (foundEmptyDirectory === undefined) {
+    await addDirectory(uuidv4());
+    setDirectoryNames(await listAllDirectories());
   }
-  setDirectoryNames([...dirs]);
 }
 
 async function onClickUploadFile() {}

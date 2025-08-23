@@ -15,10 +15,33 @@ const dbPromise = openDB("shortrest", 1, {
   },
 });
 
-// List all directories stored in the IDB
+// List all directories stored in the IDB, with empty directories at the start
 export async function listAllDirectories(): Promise<string[]> {
   const db = await dbPromise;
-  return (await db.getAll("directories")).map((d: Directory) => d.name);
+  const dirs = await db.getAll("directories");
+
+  // Fetch file counts for each directory
+  const dirNamePromises = dirs.map(async (d: Directory) => {
+    const transaction = db.transaction(["files"], "readonly");
+    const store = transaction.objectStore("files");
+    const index = store.index("dirName");
+    const files = await index.getAll(IDBKeyRange.only(d.name));
+    return { name: d.name, fileCount: files.length };
+  });
+
+  // Wait for all promises to resolve
+  const dirsWithCounts = await Promise.all(dirNamePromises);
+
+  // Separate empty directories from non-empty ones
+  const emptyDirs = dirsWithCounts
+    .filter((d) => d.fileCount === 0)
+    .map((d) => d.name);
+  const nonEmptyDirs = dirsWithCounts
+    .filter((d) => d.fileCount > 0)
+    .map((d) => d.name);
+
+  // Combine lists with empty directories first
+  return [...emptyDirs, ...nonEmptyDirs];
 }
 
 // Add a new directory to the database (if it doesn't already exist)
@@ -42,8 +65,7 @@ export async function listFileNamesInDirectory(
   const store = transaction.objectStore("files");
   const index = store.index("dirName");
   const files = await index.getAll(IDBKeyRange.only(dirName));
-  console.log(files);
-  return files.map((f: BasicFile) => f.name);
+  return files.map((f) => f.fileName);
 }
 
 // Get the content of a file from a directory
