@@ -13,10 +13,8 @@ import {
 import { AppMode } from "./types/appMode.enum";
 import { BasicFile } from "./types/basicFile.interface";
 import { ReactiveFile } from "./types/reactiveFile.interface";
-import { DOMElement } from "solid-js/jsx-runtime";
 import { loadOpenFiles } from "./functions/loadOpenFiles.function";
 import { storeOpenFiles } from "./functions/storeOpenFiles.function";
-import { Directory } from "./types/directory.interface";
 import {
   addDirectory,
   countFilesInDirectory,
@@ -48,6 +46,8 @@ function App(): JSXElement {
   const [rightClickedOpenFile, setRightClickedOpenFile] =
     createSignal<string>("");
   const [rightClickedSavedFile, setRightClickedSavedFile] =
+    createSignal<string>("");
+  const [rightClickedDirectory, setRightClickedDirectory] =
     createSignal<string>("");
 
   const activeDirectoryFileNames = createMemo<Signal<string[]>>(() => {
@@ -133,28 +133,58 @@ function App(): JSXElement {
           </button>
           <For each={directoryNames()}>
             {(name: string, index: Accessor<number>) => (
-              <button
-                class={
-                  "button_icon " +
-                  (name === activeDirectoryName() ? "active" : "")
-                }
-                onclick={() => {
-                  setActiveDirectoryName(name);
-                }}
-              >
-                <Show when={name === activeDirectoryName() && index() === 0}>
-                  <i class="bx bx-folder-open"></i>
-                </Show>
-                <Show when={name === activeDirectoryName() && index() > 0}>
-                  <i class="bx bxs-folder-open"></i>
-                </Show>
-                <Show when={!(name === activeDirectoryName()) && index() > 0}>
-                  <i class="bx bxs-folder"></i>
-                </Show>
-                <Show when={!(name === activeDirectoryName()) && index() === 0}>
-                  <i class="bx bx-folder-plus"></i>
-                </Show>
-              </button>
+              <Switch>
+                <Match when={rightClickedDirectory() !== name}>
+                  <button
+                    class={
+                      "button_icon " +
+                      (name === activeDirectoryName() ? "active" : "")
+                    }
+                    onclick={() => {
+                      setActiveDirectoryName(name);
+                    }}
+                    oncontextmenu={(e: PointerEvent) => {
+                      e.preventDefault();
+                      setRightClickedDirectory(name);
+                    }}
+                  >
+                    <Show
+                      when={name === activeDirectoryName() && index() === 0}
+                    >
+                      <i class="bx bx-folder-open"></i>
+                    </Show>
+                    <Show when={name === activeDirectoryName() && index() > 0}>
+                      <i class="bx bxs-folder-open"></i>
+                    </Show>
+                    <Show
+                      when={!(name === activeDirectoryName()) && index() > 0}
+                    >
+                      <i class="bx bxs-folder"></i>
+                    </Show>
+                    <Show
+                      when={!(name === activeDirectoryName()) && index() === 0}
+                    >
+                      <i class="bx bx-folder-plus"></i>
+                    </Show>
+                  </button>
+                </Match>
+                <Match when={rightClickedDirectory() === name}>
+                  <button
+                    class={
+                      "button_icon " +
+                      (name === activeDirectoryName() ? "active" : "")
+                    }
+                    onclick={() => {
+                      onClickDownloadDirectory(name);
+                    }}
+                    onmouseleave={() => {
+                      setRightClickedDirectory("");
+                    }}
+                  >
+                    <i class="bx bxs-download"></i>
+                  </button>
+                </Match>
+              </Switch>
             )}
           </For>
         </div>
@@ -192,9 +222,9 @@ function App(): JSXElement {
                     onclick={() => {
                       onClickOpenFile(index(), setActiveFile);
                     }}
-                    oncontextmenu={(e: PointerEvent) =>
-                      onFileRightclick(e, file.name(), setRightClickedOpenFile)
-                    }
+                    oncontextmenu={(e: PointerEvent) => {
+                      onFileRightclick(e, file.name(), setRightClickedOpenFile);
+                    }}
                   >
                     <div class="filename">{file.name()}</div>
                     <div class="tags">#Tag1 #Tag2</div>
@@ -220,7 +250,7 @@ function App(): JSXElement {
                           onClickDownloadOpenFile(openFiles, file.name());
                         }}
                       >
-                        <i class="bx bx-download"></i>
+                        <i class="bx bxs-download"></i>
                       </button>
                       <button
                         class={"button_icon"}
@@ -332,7 +362,7 @@ function App(): JSXElement {
                             e.stopImmediatePropagation();
                           }}
                         >
-                          <i class="bx bx-download"></i>
+                          <i class="bx bxs-download"></i>
                         </button>
                         <button
                           class={
@@ -503,6 +533,8 @@ async function onClickCloseOpenFile(
       setOpenFiles([...currentOpenFiles]);
       setConfirmAction("");
     }
+
+    storeOpenFiles(openFiles);
   }
 }
 
@@ -719,6 +751,46 @@ function onClickUploadDirectory(
   };
 
   input.click();
+}
+
+function onClickDownloadDirectory(name: string) {
+  // Get all file names in the directory
+  listFileNamesInDirectory(name)
+    .then((fileNames) => {
+      if (fileNames.length === 0) {
+        console.warn(`No files found in directory ${name}`);
+        return;
+      }
+
+      // Create a ZIP archive with all files from the directory
+      const zip = new JSZip();
+      const promises = fileNames.map((fileName) => {
+        return getFileContent(name, fileName)
+          .then((content) => {
+            if (content !== null) {
+              zip.file(fileName, content);
+            } else {
+              console.error(`File ${fileName} not found in directory ${name}`);
+            }
+          })
+          .catch((error) => {
+            console.error(`Error getting file ${fileName}:`, error);
+          });
+      });
+
+      return Promise.all(promises)
+        .then(() => zip.generateAsync({ type: "blob" }))
+        .then((zipBlob) => {
+          // Download the ZIP archive
+          saveAs(zipBlob, `${name}.zip`);
+        })
+        .catch((error) => {
+          console.error("Error generating ZIP:", error);
+        });
+    })
+    .catch((error) => {
+      console.error(`Error listing files in directory ${name}:`, error);
+    });
 }
 
 export default App;
