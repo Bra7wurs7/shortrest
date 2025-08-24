@@ -28,49 +28,69 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { saveAs } from "file-saver";
 import JSZip from "jszip";
+import { ConfirmAction } from "./types/confirmAction.enum";
 
 export const localStorageOpenFilesKey = "openFiles";
 
 function App(): JSXElement {
+  // Signals
   const [appMode, setAppMode] = createSignal<AppMode>(AppMode.Editor);
-  /** List of the names of all directories stored in the IDB */
   const [directoryNames, setDirectoryNames] = createSignal<string[]>([]);
-  /** The name of the currently viewed directory */
-  const [activeDirectoryName, setActiveDirectoryName] =
-    createSignal<string>("");
+  const [activeDirectoryName, setActiveDirectoryName] = createSignal<
+    string | undefined
+  >("");
   const [openFiles, setOpenFiles] =
     createSignal<ReactiveFile[]>(loadOpenFiles());
-  const [activeFile, setActiveFile] = createSignal<number>(0);
+  const [activeFileName, setActiveFileName] = createSignal<
+    string | undefined
+  >();
   const [inputValue, setInputValue] = createSignal<string>("");
-  const [confirmAction, setConfirmAction] = createSignal<string>("");
-  const [rightClickedOpenFile, setRightClickedOpenFile] =
-    createSignal<string>("");
-  const [rightClickedSavedFile, setRightClickedSavedFile] =
-    createSignal<string>("");
-  const [rightClickedDirectory, setRightClickedDirectory] =
-    createSignal<string>("");
+  const [confirmAction, setConfirmAction] = createSignal<
+    ConfirmAction | undefined
+  >();
+  const [rightClickedOpenFile, setRightClickedOpenFile] = createSignal<
+    string | undefined
+  >();
+  const [rightClickedSavedFile, setRightClickedSavedFile] = createSignal<
+    string | undefined
+  >();
+  const [rightClickedDirectory, setRightClickedDirectory] = createSignal<
+    string | undefined
+  >();
 
-  const activeDirectoryFileNames = createMemo<Signal<string[]>>(() => {
-    const signal: Signal<string[]> = createSignal<string[]>([]);
-    listFileNamesInDirectory(activeDirectoryName()).then((names) => {
-      return signal[1](names);
-    });
-    return signal;
-  });
+  // Memos
+  const activeDirectoryFileNames = createMemo<Signal<string[]> | undefined>(
+    () => {
+      const activeDirName = activeDirectoryName();
+      const signal: Signal<string[]> = createSignal<string[]>([]);
+      if (activeDirName) {
+        listFileNamesInDirectory(activeDirName).then((names) => {
+          signal[1](names);
+        });
+        return signal;
+      }
+      return undefined;
+    },
+  );
   const filteredOpenFiles = createMemo<ReactiveFile[]>(() => {
     return openFiles().filter((of) =>
       of.name().toLowerCase().includes(inputValue().toLowerCase()),
     );
   });
-  const filteredAllFileNames = createMemo<string[]>(() => {
-    return activeDirectoryFileNames()[0]().filter(
-      (name: string | undefined) => {
-        if (name !== undefined)
-          return name.toLowerCase().includes(inputValue().toLowerCase());
-      },
-    );
+  const filteredAllFileNames = createMemo<string[] | undefined>(() => {
+    const activeDirFileNames = activeDirectoryFileNames();
+    if (activeDirFileNames) {
+      return activeDirFileNames[0]().filter((name: string) =>
+        name.toLowerCase().includes(inputValue().toLowerCase()),
+      );
+    }
+    return [];
   });
+  const activeFile = createMemo<ReactiveFile | undefined>(() =>
+    openFiles().find((of) => of.name() === activeFileName()),
+  );
 
+  // Initialization
   listAllDirectories().then((names) => {
     setDirectoryNames(names);
     onUpdateDirectory(directoryNames, setDirectoryNames).then();
@@ -201,7 +221,7 @@ function App(): JSXElement {
             filteredOpenFiles,
             setOpenFiles,
             filteredAllFileNames,
-            setActiveFile,
+            setActiveFileName,
           );
         }}
       ></input>
@@ -214,16 +234,17 @@ function App(): JSXElement {
                   <button
                     class={
                       "button_file " +
-                      (activeFile() === index() ? "active " : "") +
+                      (activeFileName() === file.name() ? "active " : "") +
                       (rightClickedOpenFile() === file.name()
                         ? "context_menu"
                         : "")
                     }
                     onclick={() => {
-                      onClickOpenFile(index(), setActiveFile);
+                      setActiveFileName(file.name());
                     }}
                     oncontextmenu={(e: PointerEvent) => {
-                      onFileRightclick(e, file.name(), setRightClickedOpenFile);
+                      e.preventDefault();
+                      setRightClickedOpenFile(file.name());
                     }}
                   >
                     <div class="filename">{file.name()}</div>
@@ -234,11 +255,11 @@ function App(): JSXElement {
                   <div
                     class="button_file_contextmenu"
                     onmouseleave={() => {
-                      onMouseLeaveFile(setRightClickedOpenFile);
-                      setConfirmAction("");
+                      setRightClickedOpenFile(undefined);
+                      setConfirmAction(undefined);
                     }}
                     onClick={() => {
-                      setRightClickedOpenFile("");
+                      setRightClickedOpenFile(undefined);
                     }}
                   >
                     <div class="filename">{file.name()}</div>
@@ -263,7 +284,6 @@ function App(): JSXElement {
                             setDirectoryNames,
                             activeDirectoryFileNames,
                             activeDirectoryName,
-                            setActiveDirectoryName,
                           );
                         }}
                       >
@@ -272,7 +292,9 @@ function App(): JSXElement {
                       <button
                         class={
                           "button_icon " +
-                          (confirmAction() === "discardChanges" ? "orange" : "")
+                          (confirmAction() === ConfirmAction.DiscardChanges
+                            ? "orange"
+                            : "")
                         }
                         onclick={(e) => {
                           e.stopImmediatePropagation();
@@ -302,95 +324,97 @@ function App(): JSXElement {
           </Show>
         </div>
         <div id="L_S_BOTTOM">
-          <div id="L_S_B_ALLFILES">
-            <Show when={filteredAllFileNames().length > 0}>
-              <div class="filelist_header">
-                <span></span>
-                <span>Saved Files</span>
-              </div>
-            </Show>
-            <For each={filteredAllFileNames()}>
-              {(fileName: string, index: Accessor<number>) => (
-                <Switch>
-                  <Match when={rightClickedSavedFile() !== fileName}>
-                    <button
-                      class={
-                        "button_file " +
-                        (rightClickedSavedFile() === fileName
-                          ? "context_menu"
-                          : "")
-                      }
-                      onclick={() => {
-                        onClickSavedFile(
-                          fileName,
-                          activeDirectoryName,
-                          openFiles,
-                          setOpenFiles,
-                        );
-                      }}
-                      oncontextmenu={(e: PointerEvent) =>
-                        onFileRightclick(e, fileName, setRightClickedSavedFile)
-                      }
-                    >
-                      <div class="filename">{fileName}</div>
-                      <div class="tags">#Tag1 #Tag2</div>
-                    </button>
-                  </Match>
-                  <Match when={rightClickedSavedFile() === fileName}>
-                    <div
-                      class="button_file_contextmenu"
-                      onmouseleave={() => {
-                        onMouseLeaveFile(setRightClickedSavedFile);
-                        setConfirmAction("");
-                      }}
-                      onClick={() => {
-                        setRightClickedSavedFile("");
-                      }}
-                    >
-                      <div class="filename">{fileName}</div>
-                      <div class="actions">
-                        <button
-                          class={
-                            "button_icon " +
-                            (confirmAction() === "saveOpenFile" ? "orange" : "")
-                          }
-                          onclick={(e) => {
-                            onClickDownloadSavedFile(
-                              activeDirectoryName,
-                              fileName,
-                            );
-                            e.stopImmediatePropagation();
-                          }}
-                        >
-                          <i class="bx bxs-download"></i>
-                        </button>
-                        <button
-                          class={
-                            "button_icon " +
-                            (confirmAction() === "trashFile" ? "red" : "")
-                          }
-                          onclick={(e) => {
-                            e.stopPropagation();
-                            onClickTrashSavedFile(
-                              fileName,
-                              activeDirectoryName,
-                              activeDirectoryFileNames,
-                              directoryNames,
-                              setDirectoryNames,
-                              confirmAction,
-                              setConfirmAction,
-                            ).then();
-                          }}
-                        >
-                          <i class="bx bxs-trash-alt"></i>
-                        </button>
+          <Show when={filteredAllFileNames() !== undefined}>
+            <div id="L_S_B_ALLFILES">
+              <Show when={filteredAllFileNames()!.length > 0}>
+                <div class="filelist_header">
+                  <span>Saved Files</span>
+                </div>
+              </Show>
+              <For each={filteredAllFileNames()}>
+                {(fileName: string, index: Accessor<number>) => (
+                  <Switch>
+                    <Match when={rightClickedSavedFile() !== fileName}>
+                      <button
+                        class={
+                          "button_file " +
+                          (rightClickedSavedFile() === fileName
+                            ? "context_menu"
+                            : "")
+                        }
+                        onclick={() => {
+                          onClickSavedFile(
+                            fileName,
+                            activeDirectoryName,
+                            openFiles,
+                            setOpenFiles,
+                          );
+                        }}
+                        oncontextmenu={(e: PointerEvent) => {
+                          e.preventDefault();
+                          setRightClickedSavedFile(fileName);
+                        }}
+                      >
+                        <div class="filename">{fileName}</div>
+                        <div class="tags">#Tag1 #Tag2</div>
+                      </button>
+                    </Match>
+                    <Match when={rightClickedSavedFile() === fileName}>
+                      <div
+                        class="button_file_contextmenu"
+                        onmouseleave={() => {
+                          setRightClickedSavedFile(undefined);
+                          setConfirmAction(undefined);
+                        }}
+                        onClick={() => {
+                          setRightClickedSavedFile(undefined);
+                        }}
+                      >
+                        <div class="filename">{fileName}</div>
+                        <div class="actions">
+                          <button
+                            class={"button_icon"}
+                            onclick={(e) => {
+                              onClickDownloadSavedFile(
+                                activeDirectoryName,
+                                fileName,
+                              );
+                              e.stopPropagation();
+                            }}
+                          >
+                            <i class="bx bxs-download"></i>
+                          </button>
+                          <button
+                            class={
+                              "button_icon " +
+                              (confirmAction() === ConfirmAction.TrashFile
+                                ? "red"
+                                : "")
+                            }
+                            onclick={(e) => {
+                              e.stopPropagation();
+                              onClickTrashSavedFile(
+                                fileName,
+                                activeDirectoryName,
+                                activeDirectoryFileNames,
+                                directoryNames,
+                                setDirectoryNames,
+                                confirmAction,
+                                setConfirmAction,
+                              ).then();
+                            }}
+                          >
+                            <i class="bx bxs-trash-alt"></i>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  </Match>
-                </Switch>
-              )}
-            </For>
-          </div>
+                    </Match>
+                  </Switch>
+                )}
+              </For>
+            </div>
+          </Show>
+
           <div id="L_S_B_TOOLTIP"></div>
         </div>
       </div>
@@ -420,12 +444,15 @@ function App(): JSXElement {
         <Match when={appMode() === AppMode.Editor}>
           <textarea
             id="EDITOR_TEXTAREA"
-            value={openFiles()[activeFile()]?.content() ?? ""}
+            value={
+              activeFile()?.content() ??
+              "Please open a file to start editing its contents"
+            }
             onChange={(e) => {
               onEditorChange(
                 e,
-                openFiles()[activeFile()].content,
-                openFiles()[activeFile()].setContent,
+                activeFile()?.content,
+                activeFile()?.setContent,
                 openFiles,
               );
             }}
@@ -440,17 +467,9 @@ function App(): JSXElement {
   );
 }
 
-function onClickOpenFile(fileIndex: number, setter: Setter<number>) {
-  setter(fileIndex);
-}
-
-function onMouseLeaveFile(setter: Setter<string>) {
-  setter("");
-}
-
 function onClickSavedFile(
   fileName: string,
-  activeDirectoryName: Accessor<string>,
+  activeDirectoryName: Accessor<string | undefined>,
   openFiles: Accessor<ReactiveFile[]>,
   setOpenFiles: Setter<ReactiveFile[]>,
 ) {
@@ -461,15 +480,18 @@ function onClickSavedFile(
   if (fileIndexInOpenFiles === -1) {
     const [name, setName] = createSignal<string>(fileName);
     const [content, setContent] = createSignal<string>("");
-    getFileContent(activeDirectoryName(), fileName).then((content) => {
-      if (content !== null) {
-        setContent(content);
-      } else {
-        throw new Error("file not found");
-      }
-    });
-    setOpenFiles([...openFiles(), { name, setName, content, setContent }]);
-    storeOpenFiles(openFiles);
+    const activeDirName = activeDirectoryName();
+    if (activeDirName !== undefined) {
+      getFileContent(activeDirName, fileName).then((content) => {
+        if (content !== null) {
+          setContent(content);
+        } else {
+          throw new Error("file not found");
+        }
+      });
+      setOpenFiles([...openFiles(), { name, setName, content, setContent }]);
+      storeOpenFiles(openFiles);
+    }
   }
 }
 
@@ -489,49 +511,41 @@ function onEditorChange(
   }
 }
 
-function onFileRightclick(
-  e: PointerEvent,
-  name: string,
-  setter: Setter<string> | undefined,
-) {
-  e.preventDefault();
-  if (setter) setter(name);
-}
-
 async function onClickCloseOpenFile(
   index: number,
   openFiles: Accessor<ReactiveFile[]>,
-  activeDirectoryName: Accessor<string>,
+  activeDirectoryName: Accessor<string | undefined>,
   setOpenFiles: Setter<ReactiveFile[]>,
-  confirmAction: Accessor<string>,
-  setConfirmAction: Setter<string>,
+  confirmAction: Accessor<ConfirmAction | undefined>,
+  setConfirmAction: Setter<ConfirmAction | undefined>,
 ) {
-  let currentOpenFiles = openFiles();
-  let openFile = currentOpenFiles[index];
+  const currentOpenFiles = openFiles();
+  const openFile = currentOpenFiles[index];
+  const activeDirName = activeDirectoryName();
 
   if (openFile) {
-    const savedFileContent = await getFileContent(
-      activeDirectoryName(),
-      openFile.name(),
-    );
+    const savedFileContent =
+      activeDirName !== undefined
+        ? await getFileContent(activeDirName, openFile.name())
+        : null;
 
     const changesExist =
       savedFileContent !== null && savedFileContent !== openFile.content();
 
     if (savedFileContent === null || changesExist) {
       // Require confirmation for unsaved changes or non-existent saved file
-      if (confirmAction() === "discardChanges") {
+      if (confirmAction() === ConfirmAction.DiscardChanges) {
         currentOpenFiles.splice(index, 1);
         setOpenFiles([...currentOpenFiles]);
-        setConfirmAction("");
+        setConfirmAction(undefined);
       } else {
-        setConfirmAction("discardChanges");
+        setConfirmAction(ConfirmAction.DiscardChanges);
       }
     } else {
       // No confirmation needed for saved changes
       currentOpenFiles.splice(index, 1);
       setOpenFiles([...currentOpenFiles]);
-      setConfirmAction("");
+      setConfirmAction(undefined);
     }
 
     storeOpenFiles(openFiles);
@@ -543,22 +557,21 @@ function onClickSaveOpenFile(
   openFiles: Accessor<ReactiveFile[]>,
   directoryNames: Accessor<string[]>,
   setDirectoryNames: Setter<string[]>,
-  activeDirectoryFileNames: Accessor<Signal<string[]>>,
-  activeDirectoryName: Accessor<string>,
-  setActiveDirectoryName: Setter<string>,
+  activeDirectoryFileNames: Accessor<Signal<string[]> | undefined>,
+  activeDirectoryName: Accessor<string | undefined>,
 ) {
-  let openFile: ReactiveFile | undefined = openFiles()[index];
+  const openFile: ReactiveFile | undefined = openFiles()[index];
+  const activeDirName: string | undefined = activeDirectoryName();
+  const activeDirFileNames: Signal<string[]> | undefined =
+    activeDirectoryFileNames();
 
-  if (openFile) {
-    writeFileToDirectory(activeDirectoryName(), {
+  if (openFile && activeDirName && activeDirFileNames) {
+    writeFileToDirectory(activeDirName, {
       name: openFile.name(),
       content: openFile.content(),
     }).then(() => {
-      if (!activeDirectoryFileNames()[0]().includes(openFile.name()))
-        activeDirectoryFileNames()[1]([
-          ...activeDirectoryFileNames()[0](),
-          openFile.name(),
-        ]);
+      if (!activeDirFileNames[0]().includes(openFile.name()))
+        activeDirFileNames[1]([...activeDirFileNames[0](), openFile.name()]);
       onUpdateDirectory(directoryNames, setDirectoryNames).then();
     });
   }
@@ -567,67 +580,68 @@ function onClickSaveOpenFile(
 /** @TODO Put deleted files into a "trash" directory instead of deleting them outright */
 async function onClickTrashSavedFile(
   name: string,
-  activeDirectoryName: Accessor<string>,
-  activeDirectoryFileNames: Accessor<Signal<string[]>>,
+  activeDirectoryName: Accessor<string | undefined>,
+  activeDirectoryFileNames: Accessor<Signal<string[]> | undefined>,
   directoryNames: Accessor<string[]>,
   setDirectoryNames: Setter<string[]>,
-  confirmAction: Accessor<string>,
-  setConfirmAction: Setter<string>,
+  confirmAction: Accessor<ConfirmAction | undefined>,
+  setConfirmAction: Setter<ConfirmAction | undefined>,
 ) {
-  if (confirmAction() === "trashFile") {
-    await removeFileFromDirectory(activeDirectoryName(), name);
-    activeDirectoryFileNames()[1](
-      await listFileNamesInDirectory(activeDirectoryName()),
-    );
+  const activeDirName = activeDirectoryName();
+  const activeDirFileNames = activeDirectoryFileNames();
+
+  if (
+    confirmAction() === ConfirmAction.TrashFile &&
+    activeDirName !== undefined &&
+    activeDirFileNames !== undefined
+  ) {
+    await removeFileFromDirectory(activeDirName, name);
+    activeDirFileNames[1](await listFileNamesInDirectory(activeDirName));
     await onUpdateDirectory(directoryNames, setDirectoryNames);
-    setConfirmAction("");
+    setConfirmAction(undefined);
   } else {
-    setConfirmAction("trashFile");
+    setConfirmAction(ConfirmAction.TrashFile);
   }
 }
 
 function onInputKeyUp(
   e: KeyboardEvent & { currentTarget: HTMLInputElement; target: Element },
-  activeDirectoryName: Accessor<string>,
-  inputSetter: Setter<string>,
-  openFilesAccessor: Accessor<ReactiveFile[]>,
-  filteredOpenFilesAccessor: Accessor<ReactiveFile[]>,
-  openFilesSetter: Setter<ReactiveFile[]>,
-  filteredAllFileNames: Accessor<string[]>,
-  activeFileSetter: Setter<number>,
+  activeDirectoryName: Accessor<string | undefined>,
+  setInputValue: Setter<string>,
+  openFiles: Accessor<ReactiveFile[]>,
+  filteredOpenFiles: Accessor<ReactiveFile[]>,
+  setOpenFiles: Setter<ReactiveFile[]>,
+  filteredAllFileNames: Accessor<string[] | undefined>,
+  setActiveFile: Setter<string | undefined>,
 ) {
-  inputSetter(e.currentTarget.value);
+  const filtrdAllFileNames = filteredAllFileNames();
+  const filtrdOpenFiles = filteredOpenFiles();
+  const activeDirName = activeDirectoryName();
+
+  setInputValue(e.currentTarget.value);
   switch (e.key) {
     case "Enter":
       if (e.ctrlKey) {
         const [name, setName] = createSignal<string>(e.currentTarget.value);
         const [content, setContent] = createSignal<string>("");
-        openFilesSetter([
-          ...openFilesAccessor(),
-          { name, setName, content, setContent },
-        ]);
-        activeFileSetter(openFilesAccessor().length - 1);
-        inputSetter("");
-        storeOpenFiles(openFilesAccessor);
+        setOpenFiles([...openFiles(), { name, setName, content, setContent }]);
+        setActiveFile(name);
+        setInputValue("");
+        storeOpenFiles(openFiles);
       } else {
-        if ((filteredOpenFilesAccessor().length = 1)) {
-          activeFileSetter(
-            openFilesAccessor().findIndex(
-              (of) => of.name === filteredOpenFilesAccessor()[0].name,
-            ),
-          );
-          inputSetter("");
+        if ((filtrdOpenFiles.length = 1)) {
+          setActiveFile(filtrdOpenFiles[0].name);
+          setInputValue("");
         } else if (
-          (filteredAllFileNames().length =
-            1 && (filteredOpenFilesAccessor().length = 0))
+          filtrdAllFileNames !== undefined &&
+          activeDirName !== undefined &&
+          (filtrdAllFileNames.length = 1 && (filtrdOpenFiles.length = 0))
         ) {
-          const [name, setName] = createSignal<string>(
-            filteredAllFileNames()[0],
-          );
+          const [name, setName] = createSignal<string>(filtrdAllFileNames[0]);
           const [content, setContent] = createSignal<string>(
-            filteredAllFileNames()[0],
+            filtrdAllFileNames[0],
           );
-          getFileContent(activeDirectoryName(), filteredAllFileNames()[0]).then(
+          getFileContent(activeDirName, filtrdAllFileNames[0]).then(
             (content) => {
               if (content !== null) {
                 setContent(content);
@@ -636,8 +650,8 @@ function onInputKeyUp(
               }
             },
           );
-          openFilesSetter([
-            ...openFilesAccessor(),
+          setOpenFiles([
+            ...openFiles(),
             { name, setName, content, setContent },
           ]);
         }
@@ -675,24 +689,27 @@ async function onUpdateDirectory(
 }
 
 function onClickDownloadSavedFile(
-  activeDirectoryName: Accessor<string>,
+  activeDirectoryName: Accessor<string | undefined>,
   name: string,
 ) {
-  // Get file content from the active directory
-  getFileContent(activeDirectoryName(), name)
-    .then((content) => {
-      if (content !== null) {
-        const blob = new Blob([content], { type: "text/plain" });
-        saveAs(blob, name);
-      } else {
-        console.error(
-          `File ${name} not found in directory ${activeDirectoryName()}`,
-        );
-      }
-    })
-    .catch((error) => {
-      console.error("Error downloading file:", error);
-    });
+  const activeDirName = activeDirectoryName();
+
+  if (activeDirName) {
+    getFileContent(activeDirName, name)
+      .then((content) => {
+        if (content !== null) {
+          const blob = new Blob([content], { type: "text/plain" });
+          saveAs(blob, name);
+        } else {
+          console.error(
+            `File ${name} not found in directory ${activeDirectoryName()}`,
+          );
+        }
+      })
+      .catch((error) => {
+        console.error("Error downloading file:", error);
+      });
+  }
 }
 
 function onClickDownloadOpenFile(

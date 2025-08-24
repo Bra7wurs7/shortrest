@@ -381,7 +381,7 @@
     font-family: var(--sans);
     color: var(--color_border_light);
     font-size: small;
-    justify-content: space-between;
+    justify-content: end;
     border-bottom: var(--size_border) var(--style_border)
         var(--color_border_light);
     border-left: var(--size_border) var(--style_border)
