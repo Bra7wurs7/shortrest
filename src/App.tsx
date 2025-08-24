@@ -29,6 +29,7 @@ import {
 } from "./functions/dbFilesInterface.functions";
 import { v4 as uuidv4 } from "uuid";
 import { saveAs } from "file-saver";
+import JSZip from "jszip";
 
 export const localStorageOpenFilesKey = "openFiles";
 
@@ -121,7 +122,13 @@ function App(): JSXElement {
           </button>
         </div>
         <div id="LM_S_ARCHIVES">
-          <button class={"button_icon"}>
+          <button
+            class={"button_icon"}
+            onclick={(e) => {
+              e.stopPropagation();
+              onClickUploadDirectory(directoryNames, setDirectoryNames);
+            }}
+          >
             <i class="bx bx-upload"></i>
           </button>
           <For each={directoryNames()}>
@@ -150,9 +157,6 @@ function App(): JSXElement {
               </button>
             )}
           </For>
-          <button class={"button_icon"}>
-            <i class="bx bx-trash-alt"></i>
-          </button>
         </div>
       </div>
       <input
@@ -238,7 +242,7 @@ function App(): JSXElement {
                       <button
                         class={
                           "button_icon " +
-                          (confirmAction() === "discardChanges" ? "red" : "")
+                          (confirmAction() === "discardChanges" ? "orange" : "")
                         }
                         onclick={(e) => {
                           e.stopImmediatePropagation();
@@ -528,6 +532,7 @@ function onClickSaveOpenFile(
   }
 }
 
+/** @TODO Put deleted files into a "trash" directory instead of deleting them outright */
 async function onClickTrashSavedFile(
   name: string,
   activeDirectoryName: Accessor<string>,
@@ -679,6 +684,41 @@ function onClickDownloadOpenFile(
   }
 }
 
-async function onClickUploadFile() {}
+function onClickUploadDirectory(
+  directoryNames: Accessor<string[]>,
+  setDirectoryNames: Setter<string[]>,
+) {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.webkitdirectory = true;
+  input.onchange = async (event) => {
+    const files = (event.target as HTMLInputElement).files;
+
+    if (!files) return;
+
+    // Create a new directory in the IDB
+    const directoryName = uuidv4();
+    await addDirectory(directoryName);
+
+    // Upload each file to the new directory
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const reader = new FileReader();
+
+      reader.readAsText(file);
+      reader.onload = async () => {
+        const content = reader.result as string;
+        await writeFileToDirectory(directoryName, {
+          name: file.name,
+          content,
+        });
+      };
+    }
+
+    onUpdateDirectory(directoryNames, setDirectoryNames).then();
+  };
+
+  input.click();
+}
 
 export default App;
