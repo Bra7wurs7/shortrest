@@ -28,6 +28,7 @@ import {
   writeFileToDirectory,
 } from "./functions/dbFilesInterface.functions";
 import { v4 as uuidv4 } from "uuid";
+import { saveAs } from "file-saver";
 
 export const localStorageOpenFilesKey = "openFiles";
 
@@ -208,7 +209,13 @@ function App(): JSXElement {
                   >
                     <div class="filename">{file.name()}</div>
                     <div class="actions">
-                      <button class={"button_icon"}>
+                      <button
+                        class={"button_icon"}
+                        onclick={(e) => {
+                          e.stopPropagation();
+                          onClickDownloadOpenFile(openFiles, file.name());
+                        }}
+                      >
                         <i class="bx bx-download"></i>
                       </button>
                       <button
@@ -314,6 +321,10 @@ function App(): JSXElement {
                             (confirmAction() === "saveOpenFile" ? "orange" : "")
                           }
                           onclick={(e) => {
+                            onClickDownloadSavedFile(
+                              activeDirectoryName,
+                              fileName,
+                            );
                             e.stopImmediatePropagation();
                           }}
                         >
@@ -322,17 +333,18 @@ function App(): JSXElement {
                         <button
                           class={
                             "button_icon " +
-                            (confirmAction() === "discardChanges"
-                              ? "orange"
-                              : "")
+                            (confirmAction() === "trashFile" ? "red" : "")
                           }
-                          onclick={() => {
+                          onclick={(e) => {
+                            e.stopPropagation();
                             onClickTrashSavedFile(
                               fileName,
                               activeDirectoryName,
                               activeDirectoryFileNames,
                               directoryNames,
                               setDirectoryNames,
+                              confirmAction,
+                              setConfirmAction,
                             ).then();
                           }}
                         >
@@ -522,13 +534,19 @@ async function onClickTrashSavedFile(
   activeDirectoryFileNames: Accessor<Signal<string[]>>,
   directoryNames: Accessor<string[]>,
   setDirectoryNames: Setter<string[]>,
+  confirmAction: Accessor<string>,
+  setConfirmAction: Setter<string>,
 ) {
-  /** @TODO: Move into trash instead of deleting outright. */
-  await removeFileFromDirectory(activeDirectoryName(), name);
-  activeDirectoryFileNames()[1](
-    await listFileNamesInDirectory(activeDirectoryName()),
-  );
-  await onUpdateDirectory(directoryNames, setDirectoryNames);
+  if (confirmAction() === "trashFile") {
+    await removeFileFromDirectory(activeDirectoryName(), name);
+    activeDirectoryFileNames()[1](
+      await listFileNamesInDirectory(activeDirectoryName()),
+    );
+    await onUpdateDirectory(directoryNames, setDirectoryNames);
+    setConfirmAction("");
+  } else {
+    setConfirmAction("trashFile");
+  }
 }
 
 function onInputKeyUp(
@@ -617,6 +635,48 @@ async function onUpdateDirectory(
     await addDirectory(uuidv4());
   }
   setDirectoryNames(await listAllDirectories());
+}
+
+function onClickDownloadSavedFile(
+  activeDirectoryName: Accessor<string>,
+  name: string,
+) {
+  // Get file content from the active directory
+  getFileContent(activeDirectoryName(), name)
+    .then((content) => {
+      if (content !== null) {
+        const blob = new Blob([content], { type: "text/plain" });
+        saveAs(blob, name);
+      } else {
+        console.error(
+          `File ${name} not found in directory ${activeDirectoryName()}`,
+        );
+      }
+    })
+    .catch((error) => {
+      console.error("Error downloading file:", error);
+    });
+}
+
+function onClickDownloadOpenFile(
+  openFiles: Accessor<ReactiveFile[]>,
+  name: string,
+) {
+  const openFile = openFiles().find((file) => file.name() === name);
+
+  if (openFile) {
+    // Get content from the open file's signal
+    const content = openFile.content();
+
+    if (content !== null && content !== undefined) {
+      const blob = new Blob([content], { type: "text/plain" });
+      saveAs(blob, name);
+    } else {
+      console.error(`Content for file ${name} not found`);
+    }
+  } else {
+    console.error(`Open file ${name} not found`);
+  }
 }
 
 async function onClickUploadFile() {}
