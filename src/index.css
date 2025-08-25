@@ -130,14 +130,19 @@
         flex-direction: column;
         justify-content: space-between;
         box-shadow: var(--shadow);
+        overflow: hidden;
 
         #LM_S_ACTIONS {
             display: flex;
             flex-direction: column;
         }
-        #LM_S_ARCHIVES {
+        #LM_S_BOTTOM {
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+            #LM_S_DIRECTORIES {
+                overflow: scroll;
+            }
         }
     }
 
@@ -164,6 +169,27 @@
         flex-direction: column;
         justify-content: space-between;
         box-shadow: var(--shadow);
+        overflow: hidden;
+
+        #L_S_TOP {
+            display: flex;
+            flex-direction: column;
+            max-height: 50%;
+
+            #L_S_OPENFILES {
+                overflow-y: scroll;
+            }
+        }
+
+        #L_S_BOTTOM {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+
+            #L_S_B_ALLFILES {
+                overflow-y: scroll;
+            }
+        }
     }
     #SETTINGS_WINDOW {
         grid-area: 1 / 3 / 8 / 8;
@@ -340,6 +366,7 @@
     .filename {
         display: flex;
         flex-grow: 1;
+        overflow: hidden;
     }
     .tags {
         display: flex;
@@ -367,6 +394,7 @@
         flex-grow: 1;
         font-size: small;
         user-select: none;
+        overflow: hidden;
     }
 
     .actions {
@@ -381,7 +409,8 @@
     font-family: var(--sans);
     color: var(--color_border_light);
     font-size: small;
-    justify-content: end;
+    justify-content: start;
+    align-content: center;
     border-bottom: var(--size_border) var(--style_border)
         var(--color_border_light);
     border-left: var(--size_border) var(--style_border)
@@ -391,6 +420,19 @@
 
     padding-left: var(--size_padding);
     padding-right: var(--size_padding);
+
+    .bx {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: small;
+    }
+
+    &:hover {
+        background-color: var(--color_background);
+        border-left-color: var(--color_border_light);
+        border-right-color: var(--color_background);
+    }
 }
 
 .filelist_footer {
@@ -399,7 +441,7 @@
     font-family: var(--sans);
     color: var(--color_border_light);
     font-size: small;
-    justify-content: space-between;
+    justify-content: end;
     border-top: var(--size_border) var(--style_border) var(--color_border_light);
     border-left: var(--size_border) var(--style_border)
         var(--color_background_soft);
@@ -408,6 +450,19 @@
 
     padding-left: var(--size_padding);
     padding-right: var(--size_padding);
+
+    .bx {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: small;
+    }
+
+    &:hover {
+        background-color: var(--color_background);
+        border-left-color: var(--color_background);
+        border-right-color: var(--color_border_light);
+    }
 }
 
 .bx {
