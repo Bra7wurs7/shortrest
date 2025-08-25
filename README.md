@@ -1,5 +1,5 @@
 # shortrest
-aims to become the most powerful tool for using language models to work with text
+aims to become the most powerful tool for using language models to work with and on text
 
 ### using shortrest
 To start using shortrest, download the latest release from the [releases tab](https://github.com/Bra7wurs7/shortrest/releases).
