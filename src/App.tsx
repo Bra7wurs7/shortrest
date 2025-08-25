@@ -11,7 +11,6 @@ import {
   type JSXElement,
 } from "solid-js";
 import { AppMode } from "./types/appMode.enum";
-import { BasicFile } from "./types/basicFile.interface";
 import { ReactiveFile } from "./types/reactiveFile.interface";
 import { loadOpenFiles } from "./functions/loadOpenFiles.function";
 import { storeOpenFiles } from "./functions/storeOpenFiles.function";

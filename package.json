@@ -7,7 +7,9 @@
     "start": "vite",
     "dev": "vite",
     "build": "vite build",
-    "build-release": "(vite build --minify) & (cargo build --release)",
+    "build-linux": "(vite build --minify) & (cargo build --target x86_64-unknown-linux-gnu --release)",
+    "build-windows": "(vite build --minify) & (cargo build --target x86_64-pc-windows-gnu --release)",
+    "build-apple": "(vite build --minify) & (cargo build --target aarch64-apple-darwin --release)",
     "clean": "(rm -r ./dist) & (rm -r ./target)",
     "serve": "vite preview"
   },
