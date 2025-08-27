@@ -28,6 +28,8 @@ import { v4 as uuidv4 } from "uuid";
 import { saveAs } from "file-saver";
 import JSZip from "jszip";
 import { ConfirmAction } from "./types/confirmAction.enum";
+import { parseFileName } from "./functions/parseFileName.function";
+import { ParsedFileName } from "./types/parsedFileName.interface";
 
 export const localStorageOpenFilesKey = "openFiles";
 
@@ -70,34 +72,42 @@ function App(): JSXElement {
     }
     return null;
   });
-  const filteredOpenFiles = createMemo<ReactiveFile[]>(() => {
-    return openFiles().filter((of) =>
-      of.name().toLowerCase().includes(inputValue().toLowerCase()),
-    );
+  const filteredParsedOpenFileNames = createMemo<ParsedFileName[]>(() => {
+    return openFiles()
+      .filter((of) =>
+        of.name().toLowerCase().includes(inputValue().toLowerCase()),
+      )
+      .map((of) => parseFileName(of.name()));
   });
-  const filteredAllFileNames = createMemo<string[] | null>(() => {
+  const filteredParsedAllFileNames = createMemo<ParsedFileName[] | null>(() => {
     const activeDirFileNames = activeDirectoryFileNames();
     if (activeDirFileNames) {
-      return activeDirFileNames[0]().filter((name: string) =>
-        name.toLowerCase().includes(inputValue().toLowerCase()),
-      );
+      return activeDirFileNames[0]()
+        .filter((name: string) =>
+          name.toLowerCase().includes(inputValue().toLowerCase()),
+        )
+        .map((name) => parseFileName(name));
     }
     return null;
   });
   const activeFile = createMemo<ReactiveFile | null>(
     () => openFiles().find((of) => of.name() === activeFileName()) ?? null,
   );
-  const hoveredDirectoryFileNames = createMemo<Signal<string[]> | null>(() => {
-    const hoveredDirName = hoveredDirectoryName();
-    const signal: Signal<string[]> = createSignal<string[]>([]);
-    if (hoveredDirName) {
-      listFileNamesInDirectory(hoveredDirName).then((names) => {
-        signal[1](names);
-      });
-      return signal;
-    }
-    return null;
-  });
+  const hoveredDirectoryFileNames = createMemo<Signal<ParsedFileName[]> | null>(
+    () => {
+      const hoveredDirName = hoveredDirectoryName();
+      const signal: Signal<ParsedFileName[]> = createSignal<ParsedFileName[]>(
+        [],
+      );
+      if (hoveredDirName) {
+        listFileNamesInDirectory(hoveredDirName).then((names) => {
+          signal[1](names.map((name) => parseFileName(name)));
+        });
+        return signal;
+      }
+      return null;
+    },
+  );
 
   // Initialization
   listAllDirectories().then((names) => {
@@ -239,9 +249,9 @@ function App(): JSXElement {
             activeDirectoryName,
             setInputValue,
             openFiles,
-            filteredOpenFiles,
+            filteredParsedOpenFileNames,
             setOpenFiles,
-            filteredAllFileNames,
+            filteredParsedAllFileNames,
             setActiveFileName,
           );
         }}
@@ -249,31 +259,37 @@ function App(): JSXElement {
       <div id="LEFT_SIDEBAR">
         <div id="L_S_TOP">
           <div id="L_S_OPENFILES">
-            <For each={filteredOpenFiles()}>
-              {(file: ReactiveFile, index: Accessor<number>) => (
+            <For each={filteredParsedOpenFileNames()}>
+              {(parsedName: ParsedFileName, index: Accessor<number>) => (
                 <Switch>
-                  <Match when={rightClickedOpenFile() !== file.name()}>
+                  <Match when={rightClickedOpenFile() !== parsedName.name}>
                     <button
                       class={
                         "button_file " +
-                        (activeFileName() === file.name() ? "active " : "") +
-                        (rightClickedOpenFile() === file.name()
+                        (activeFileName() === parsedName.name
+                          ? "active "
+                          : "") +
+                        (rightClickedOpenFile() === parsedName.name
                           ? "context_menu"
                           : "")
                       }
                       onclick={() => {
-                        setActiveFileName(file.name());
+                        setActiveFileName(parsedName.name);
                       }}
                       oncontextmenu={(e: PointerEvent) => {
                         e.preventDefault();
-                        setRightClickedOpenFile(file.name());
+                        setRightClickedOpenFile(parsedName.name);
                       }}
                     >
-                      <div class="filename">{file.name()}</div>
-                      <div class="tags">#Tag1 #Tag2</div>
+                      <div class="filename">{parsedName.baseName}</div>
+                      <div class="tags">
+                        <For each={parsedName.tags}>
+                          {(tag: string) => <span>#{tag}&nbsp;</span>}
+                        </For>
+                      </div>
                     </button>
                   </Match>
-                  <Match when={rightClickedOpenFile() === file.name()}>
+                  <Match when={rightClickedOpenFile() === parsedName.name}>
                     <div
                       class="button_file_contextmenu"
                       onmouseleave={() => {
@@ -284,13 +300,13 @@ function App(): JSXElement {
                         setRightClickedOpenFile(null);
                       }}
                     >
-                      <div class="filename">{file.name()}</div>
+                      <div class="filename">{parsedName.name}</div>
                       <div class="actions">
                         <button
                           class={"button_icon"}
                           onclick={(e) => {
                             e.stopPropagation();
-                            onClickDownloadOpenFile(openFiles, file.name());
+                            onClickDownloadOpenFile(openFiles, parsedName.name);
                           }}
                         >
                           <i class="bx bxs-download"></i>
@@ -339,7 +355,7 @@ function App(): JSXElement {
               )}
             </For>
           </div>
-          <Show when={filteredOpenFiles().length > 0}>
+          <Show when={filteredParsedOpenFileNames().length > 0}>
             <div class="filelist_footer">
               <span>Open Files</span>
               <i class="bx bx-edit-alt"></i>
@@ -351,7 +367,8 @@ function App(): JSXElement {
             when={
               hoveredDirectoryFileNames()
                 ? hoveredDirectoryFileNames()![0]().length > 0
-                : filteredAllFileNames() && filteredAllFileNames()!.length > 0
+                : filteredParsedAllFileNames() &&
+                  filteredParsedAllFileNames()!.length > 0
             }
           >
             <div class="filelist_header">
@@ -361,7 +378,8 @@ function App(): JSXElement {
           </Show>
           <Show
             when={
-              hoveredDirectoryFileNames() || filteredAllFileNames() !== null
+              hoveredDirectoryFileNames() ||
+              filteredParsedAllFileNames() !== null
             }
           >
             <div id="L_S_B_ALLFILES">
@@ -369,22 +387,22 @@ function App(): JSXElement {
                 each={
                   hoveredDirectoryFileNames()
                     ? hoveredDirectoryFileNames()![0]()
-                    : filteredAllFileNames()
+                    : filteredParsedAllFileNames()
                 }
               >
-                {(fileName: string, index: Accessor<number>) => (
+                {(parsedName: ParsedFileName, index: Accessor<number>) => (
                   <Switch>
-                    <Match when={rightClickedSavedFile() !== fileName}>
+                    <Match when={rightClickedSavedFile() !== parsedName.name}>
                       <button
                         class={
                           "button_file " +
-                          (rightClickedSavedFile() === fileName
+                          (rightClickedSavedFile() === parsedName.name
                             ? "context_menu"
                             : "")
                         }
                         onclick={() => {
                           onClickSavedFile(
-                            fileName,
+                            parsedName.name,
                             activeDirectoryName,
                             openFiles,
                             setOpenFiles,
@@ -392,14 +410,18 @@ function App(): JSXElement {
                         }}
                         oncontextmenu={(e: PointerEvent) => {
                           e.preventDefault();
-                          setRightClickedSavedFile(fileName);
+                          setRightClickedSavedFile(parsedName.name);
                         }}
                       >
-                        <div class="filename">{fileName}</div>
-                        <div class="tags">#Tag1 #Tag2</div>
+                        <div class="filename">{parsedName.baseName}</div>
+                        <div class="tags">
+                          <For each={parsedName.tags}>
+                            {(tag: string) => <span>#{tag}</span>}
+                          </For>
+                        </div>
                       </button>
                     </Match>
-                    <Match when={rightClickedSavedFile() === fileName}>
+                    <Match when={rightClickedSavedFile() === parsedName.name}>
                       <div
                         class="button_file_contextmenu"
                         onmouseleave={() => {
@@ -410,14 +432,14 @@ function App(): JSXElement {
                           setRightClickedSavedFile(null);
                         }}
                       >
-                        <div class="filename">{fileName}</div>
+                        <div class="filename">{parsedName.baseName}</div>
                         <div class="actions">
                           <button
                             class={"button_icon"}
                             onclick={(e) => {
                               onClickDownloadSavedFile(
                                 activeDirectoryName,
-                                fileName,
+                                parsedName.name,
                               );
                               e.stopPropagation();
                             }}
@@ -434,7 +456,7 @@ function App(): JSXElement {
                             onclick={(e) => {
                               e.stopPropagation();
                               onClickTrashSavedFile(
-                                fileName,
+                                parsedName.name,
                                 activeDirectoryName,
                                 activeDirectoryFileNames,
                                 directoryNames,
@@ -647,13 +669,13 @@ function onInputKeyUp(
   activeDirectoryName: Accessor<string | null>,
   setInputValue: Setter<string>,
   openFiles: Accessor<ReactiveFile[]>,
-  filteredOpenFiles: Accessor<ReactiveFile[]>,
+  filteredParsedOpenFileNames: Accessor<ParsedFileName[]>,
   setOpenFiles: Setter<ReactiveFile[]>,
-  filteredAllFileNames: Accessor<string[] | null>,
+  filteredParsedAllFileNames: Accessor<ParsedFileName[] | null>,
   setActiveFile: Setter<string | null>,
 ) {
-  const filtrdAllFileNames = filteredAllFileNames();
-  const filtrdOpenFiles = filteredOpenFiles();
+  const filtrdAllFileNames = filteredParsedAllFileNames();
+  const filtrdOpenFiles = filteredParsedOpenFileNames();
   const activeDirName = activeDirectoryName();
 
   setInputValue(e.currentTarget.value);
@@ -675,11 +697,11 @@ function onInputKeyUp(
           activeDirName !== null &&
           (filtrdAllFileNames.length = 1 && (filtrdOpenFiles.length = 0))
         ) {
-          const [name, setName] = createSignal<string>(filtrdAllFileNames[0]);
-          const [content, setContent] = createSignal<string>(
-            filtrdAllFileNames[0],
+          const [name, setName] = createSignal<string>(
+            filtrdAllFileNames[0].name,
           );
-          getFileContent(activeDirName, filtrdAllFileNames[0]).then(
+          const [content, setContent] = createSignal<string>("");
+          getFileContent(activeDirName, filtrdAllFileNames[0].name).then(
             (content) => {
               if (content !== null) {
                 setContent(content);
