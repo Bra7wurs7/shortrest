@@ -395,6 +395,15 @@
         font-size: small;
         user-select: none;
         overflow: hidden;
+        white-space: nowrap;
+
+        &:hover {
+            background-color: var(--color_border);
+        }
+        &:focus {
+            outline: none;
+            background-color: var(--color_border);
+        }
     }
 
     .actions {

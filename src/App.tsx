@@ -50,9 +50,13 @@ function App(): JSXElement {
   const [rightClickedOpenFile, setRightClickedOpenFile] = createSignal<
     string | null
   >(null);
+  const [rightClickedOpenFileNewName, setRightClickedOpenFileNewName] =
+    createSignal<string | null>(null);
   const [rightClickedSavedFile, setRightClickedSavedFile] = createSignal<
     string | null
   >(null);
+  const [rightClickedSavedFileNewName, setRightClickedSavedFileNewName] =
+    createSignal<string | null>(null);
   const [rightClickedDirectory, setRightClickedDirectory] = createSignal<
     string | null
   >(null);
@@ -284,7 +288,7 @@ function App(): JSXElement {
                       <div class="filename">{parsedName.baseName}</div>
                       <div class="tags">
                         <For each={parsedName.tags}>
-                          {(tag: string) => <span>#{tag}&nbsp;</span>}
+                          {(tag: string) => <span>&nbsp;#{tag}</span>}
                         </For>
                       </div>
                     </button>
@@ -294,60 +298,110 @@ function App(): JSXElement {
                       class="button_file_contextmenu"
                       onmouseleave={() => {
                         setRightClickedOpenFile(null);
+                        setRightClickedOpenFileNewName(null);
                         setConfirmAction(null);
                       }}
                       onClick={() => {
                         setRightClickedOpenFile(null);
                       }}
                     >
-                      <div class="filename">{parsedName.name}</div>
+                      <div
+                        class="filename"
+                        contenteditable={true}
+                        onclick={(e) => {
+                          e.stopPropagation();
+                        }}
+                        oninput={(e) => {
+                          onInputExistingFileName(
+                            e,
+                            setRightClickedOpenFileNewName,
+                          );
+                        }}
+                      >
+                        {parsedName.name ?? "unnamed file"}
+                      </div>
                       <div class="actions">
-                        <button
-                          class={"button_icon"}
-                          onclick={(e) => {
-                            e.stopPropagation();
-                            onClickDownloadOpenFile(openFiles, parsedName.name);
-                          }}
-                        >
-                          <i class="bx bxs-download"></i>
-                        </button>
-                        <button
-                          class={"button_icon"}
-                          onclick={(e) => {
-                            e.stopImmediatePropagation();
-                            onClickSaveOpenFile(
-                              index(),
-                              openFiles,
-                              directoryNames,
-                              setDirectoryNames,
-                              activeDirectoryFileNames,
-                              activeDirectoryName,
-                            );
-                          }}
-                        >
-                          <i class="bx bx-save"></i>
-                        </button>
-                        <button
-                          class={
-                            "button_icon " +
-                            (confirmAction() === ConfirmAction.DiscardChanges
-                              ? "orange"
-                              : "")
-                          }
-                          onclick={(e) => {
-                            e.stopImmediatePropagation();
-                            onClickCloseOpenFile(
-                              index(),
-                              openFiles,
-                              activeDirectoryName,
-                              setOpenFiles,
-                              confirmAction,
-                              setConfirmAction,
-                            ).then();
-                          }}
-                        >
-                          <i class="bx bx-x-circle"></i>
-                        </button>
+                        <Switch>
+                          <Match
+                            when={
+                              rightClickedOpenFileNewName() === null ||
+                              rightClickedOpenFile() ===
+                                rightClickedOpenFileNewName()
+                            }
+                          >
+                            <button
+                              class={"button_icon"}
+                              onclick={(e) => {
+                                e.stopPropagation();
+                                onClickDownloadOpenFile(
+                                  openFiles,
+                                  parsedName.name,
+                                );
+                              }}
+                            >
+                              <i class="bx bxs-download"></i>
+                            </button>
+                            <button
+                              class={"button_icon"}
+                              onclick={(e) => {
+                                e.stopImmediatePropagation();
+                                onClickSaveOpenFile(
+                                  index(),
+                                  openFiles,
+                                  directoryNames,
+                                  setDirectoryNames,
+                                  activeDirectoryFileNames,
+                                  activeDirectoryName,
+                                );
+                              }}
+                            >
+                              <i class="bx bx-save"></i>
+                            </button>
+                            <button
+                              class={
+                                "button_icon " +
+                                (confirmAction() ===
+                                ConfirmAction.DiscardChanges
+                                  ? "orange"
+                                  : "")
+                              }
+                              onclick={(e) => {
+                                e.stopImmediatePropagation();
+                                onClickCloseOpenFile(
+                                  index(),
+                                  openFiles,
+                                  activeDirectoryName,
+                                  setOpenFiles,
+                                  confirmAction,
+                                  setConfirmAction,
+                                  setRightClickedOpenFile,
+                                ).then();
+                              }}
+                            >
+                              <i class="bx bx-x-circle"></i>
+                            </button>
+                          </Match>
+                          <Match
+                            when={
+                              rightClickedOpenFile() !==
+                              rightClickedOpenFileNewName()
+                            }
+                          >
+                            <button
+                              class={"button_icon"}
+                              onclick={(e) => {
+                                e.stopPropagation();
+                                onRenameOpenFile(
+                                  rightClickedOpenFile(),
+                                  rightClickedOpenFileNewName(),
+                                  openFiles,
+                                );
+                              }}
+                            >
+                              <i class="bx bx-check"></i>
+                            </button>
+                          </Match>
+                        </Switch>
                       </div>
                     </div>
                   </Match>
@@ -426,6 +480,7 @@ function App(): JSXElement {
                         class="button_file_contextmenu"
                         onmouseleave={() => {
                           setRightClickedSavedFile(null);
+                          setRightClickedSavedFileNewName(null);
                           setConfirmAction(null);
                         }}
                         onClick={() => {
@@ -463,6 +518,7 @@ function App(): JSXElement {
                                 setDirectoryNames,
                                 confirmAction,
                                 setConfirmAction,
+                                setRightClickedSavedFile,
                               ).then();
                             }}
                           >
@@ -578,6 +634,7 @@ async function onClickCloseOpenFile(
   setOpenFiles: Setter<ReactiveFile[]>,
   confirmAction: Accessor<ConfirmAction | null>,
   setConfirmAction: Setter<ConfirmAction | null>,
+  setRightClickedOpenFile: Setter<string | null>,
 ) {
   const currentOpenFiles = openFiles();
   const openFile = currentOpenFiles[index];
@@ -598,6 +655,7 @@ async function onClickCloseOpenFile(
         currentOpenFiles.splice(index, 1);
         setOpenFiles([...currentOpenFiles]);
         setConfirmAction(null);
+        setRightClickedOpenFile(null);
       } else {
         setConfirmAction(ConfirmAction.DiscardChanges);
       }
@@ -606,6 +664,7 @@ async function onClickCloseOpenFile(
       currentOpenFiles.splice(index, 1);
       setOpenFiles([...currentOpenFiles]);
       setConfirmAction(null);
+      setRightClickedOpenFile(null);
     }
 
     storeOpenFiles(openFiles);
@@ -646,6 +705,7 @@ async function onClickTrashSavedFile(
   setDirectoryNames: Setter<string[]>,
   confirmAction: Accessor<ConfirmAction | null>,
   setConfirmAction: Setter<ConfirmAction | null>,
+  setRightClickedSavedFile: Setter<string | null>,
 ) {
   const activeDirName = activeDirectoryName();
   const activeDirFileNames = activeDirectoryFileNames();
@@ -659,6 +719,7 @@ async function onClickTrashSavedFile(
     activeDirFileNames[1](await listFileNamesInDirectory(activeDirName));
     await onUpdateDirectory(directoryNames, setDirectoryNames);
     setConfirmAction(null);
+    setRightClickedSavedFile(null);
   } else {
     setConfirmAction(ConfirmAction.TrashFile);
   }
@@ -868,6 +929,34 @@ function onClickDownloadDirectory(name: string) {
     .catch((error) => {
       console.error(`Error listing files in directory ${name}:`, error);
     });
+}
+
+function onInputExistingFileName(
+  newNameEvent: Event & {
+    currentTarget: HTMLDivElement;
+    target: Element;
+  },
+  fileNameChangeSetter: Setter<string | null>,
+) {
+  const newFileName: string | undefined = (
+    newNameEvent.target.firstChild as (ChildNode | null) & { data: string }
+  ).data;
+  if (newFileName !== undefined) {
+    fileNameChangeSetter(newFileName);
+  }
+}
+
+function onRenameOpenFile(
+  oldName: string | null,
+  newName: string | null,
+  openFiles: Accessor<ReactiveFile[]>,
+) {
+  const fileToRename: ReactiveFile | undefined = openFiles().find((of) => {
+    of.name() === oldName;
+  });
+  if (fileToRename !== undefined && newName !== null) {
+    fileToRename.setName(newName);
+  }
 }
 
 export default App;
