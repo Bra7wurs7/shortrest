@@ -398,11 +398,11 @@
         white-space: nowrap;
 
         &:hover {
-            background-color: var(--color_border);
+            color: var(--color_foreground_hard);
         }
         &:focus {
             outline: none;
-            background-color: var(--color_border);
+            color: var(--color_foreground_hard);
         }
     }
 

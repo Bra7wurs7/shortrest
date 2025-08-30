@@ -30,6 +30,7 @@ import JSZip from "jszip";
 import { ConfirmAction } from "./types/confirmAction.enum";
 import { parseFileName } from "./functions/parseFileName.function";
 import { ParsedFileName } from "./types/parsedFileName.interface";
+import { BasicFile } from "./types/basicFile.interface";
 
 export const localStorageOpenFilesKey = "openFiles";
 
@@ -487,43 +488,91 @@ function App(): JSXElement {
                           setRightClickedSavedFile(null);
                         }}
                       >
-                        <div class="filename">{parsedName.baseName}</div>
+                        <div
+                          class="filename"
+                          contenteditable={true}
+                          onclick={(e) => {
+                            e.stopPropagation();
+                          }}
+                          oninput={(e) => {
+                            onInputExistingFileName(
+                              e,
+                              setRightClickedSavedFileNewName,
+                            );
+                          }}
+                        >
+                          {parsedName.name ?? "unnamed file"}
+                        </div>
                         <div class="actions">
-                          <button
-                            class={"button_icon"}
-                            onclick={(e) => {
-                              onClickDownloadSavedFile(
-                                activeDirectoryName,
-                                parsedName.name,
-                              );
-                              e.stopPropagation();
-                            }}
-                          >
-                            <i class="bx bxs-download"></i>
-                          </button>
-                          <button
-                            class={
-                              "button_icon " +
-                              (confirmAction() === ConfirmAction.TrashFile
-                                ? "red"
-                                : "")
-                            }
-                            onclick={(e) => {
-                              e.stopPropagation();
-                              onClickTrashSavedFile(
-                                parsedName.name,
-                                activeDirectoryName,
-                                activeDirectoryFileNames,
-                                directoryNames,
-                                setDirectoryNames,
-                                confirmAction,
-                                setConfirmAction,
-                                setRightClickedSavedFile,
-                              ).then();
-                            }}
-                          >
-                            <i class="bx bxs-trash-alt"></i>
-                          </button>
+                          <Switch>
+                            <Match
+                              when={
+                                rightClickedSavedFileNewName() === null ||
+                                rightClickedSavedFileNewName() ===
+                                  rightClickedSavedFile()
+                              }
+                            >
+                              <button
+                                class={"button_icon"}
+                                onclick={(e) => {
+                                  onClickDownloadSavedFile(
+                                    activeDirectoryName,
+                                    parsedName.name,
+                                  );
+                                  e.stopPropagation();
+                                }}
+                              >
+                                <i class="bx bxs-download"></i>
+                              </button>
+                              <button
+                                class={
+                                  "button_icon " +
+                                  (confirmAction() === ConfirmAction.TrashFile
+                                    ? "red"
+                                    : "")
+                                }
+                                onclick={(e) => {
+                                  e.stopPropagation();
+                                  onClickTrashSavedFile(
+                                    parsedName.name,
+                                    activeDirectoryName,
+                                    activeDirectoryFileNames,
+                                    directoryNames,
+                                    setDirectoryNames,
+                                    confirmAction,
+                                    setConfirmAction,
+                                    setRightClickedSavedFile,
+                                  ).then();
+                                }}
+                              >
+                                <i class="bx bxs-trash-alt"></i>
+                              </button>
+                            </Match>
+                            <Match
+                              when={
+                                rightClickedSavedFileNewName() !== null &&
+                                rightClickedSavedFileNewName() !==
+                                  rightClickedSavedFile()
+                              }
+                            >
+                              <button
+                                class={"button_icon"}
+                                onclick={(e) => {
+                                  e.stopPropagation();
+                                  onRenameSavedFile(
+                                    parsedName.name,
+                                    rightClickedSavedFileNewName(),
+                                    activeDirectoryFileNames,
+                                    activeDirectoryName,
+                                    directoryNames,
+                                    setDirectoryNames,
+                                  );
+                                }}
+                              >
+                                <i class="bx bx-check"></i>
+                              </button>
+                            </Match>
+                          </Switch>
                         </div>
                       </div>
                     </Match>
@@ -919,7 +968,6 @@ function onClickDownloadDirectory(name: string) {
       return Promise.all(promises)
         .then(() => zip.generateAsync({ type: "blob" }))
         .then((zipBlob) => {
-          // Download the ZIP archive
           saveAs(zipBlob, `${name}.zip`);
         })
         .catch((error) => {
@@ -951,11 +999,43 @@ function onRenameOpenFile(
   newName: string | null,
   openFiles: Accessor<ReactiveFile[]>,
 ) {
-  const fileToRename: ReactiveFile | undefined = openFiles().find((of) => {
-    of.name() === oldName;
-  });
+  //@TODO Check whether a file with the new name already exists
+  const fileToRename: ReactiveFile | undefined = openFiles().find(
+    (of) => of.name() === oldName,
+  );
   if (fileToRename !== undefined && newName !== null) {
     fileToRename.setName(newName);
+  }
+  storeOpenFiles(openFiles);
+}
+
+async function onRenameSavedFile(
+  oldName: string | null,
+  newName: string | null,
+  activeDirectoryFileNames: Accessor<Signal<string[]> | null>,
+  activeDirectoryName: Accessor<string | null>,
+  directoryNames: Accessor<string[]>,
+  setDirectoryNames: Setter<string[]>,
+) {
+  const activeDirName = activeDirectoryName();
+  const activeDirFileNames = activeDirectoryFileNames();
+  const fileWithSameNameAlreadyExists =
+    activeDirFileNames !== null
+      ? activeDirFileNames[0]().some((sf) => sf === newName)
+      : false;
+
+  if (
+    activeDirName !== null &&
+    oldName !== null &&
+    newName !== null &&
+    !fileWithSameNameAlreadyExists &&
+    activeDirFileNames !== null
+  ) {
+    const fileContent = await getFileContent(activeDirName, oldName);
+    const newFile: BasicFile = { name: newName, content: fileContent ?? "" };
+    await writeFileToDirectory(activeDirName, newFile);
+    await removeFileFromDirectory(activeDirName, oldName);
+    activeDirFileNames[1](await listFileNamesInDirectory(activeDirName));
   }
 }
 
