@@ -791,7 +791,10 @@ function onInputKeyUp(
   setInputValue(e.currentTarget.value);
   switch (e.key) {
     case "Enter":
-      if (e.ctrlKey) {
+      if (
+        e.ctrlKey &&
+        !openFiles().some((of) => of.name() === e.currentTarget.value)
+      ) {
         const [name, setName] = createSignal<string>(e.currentTarget.value);
         const [content, setContent] = createSignal<string>("");
         setOpenFiles([...openFiles(), { name, setName, content, setContent }]);
@@ -999,7 +1002,12 @@ function onRenameOpenFile(
   newName: string | null,
   openFiles: Accessor<ReactiveFile[]>,
 ) {
-  //@TODO Check whether a file with the new name already exists
+  const fileWithSameNameAlreadyExists = openFiles().some(
+    (of) => of.name() === newName,
+  );
+
+  if (fileWithSameNameAlreadyExists) return;
+
   const fileToRename: ReactiveFile | undefined = openFiles().find(
     (of) => of.name() === oldName,
   );
