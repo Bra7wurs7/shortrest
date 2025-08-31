@@ -31,19 +31,27 @@ import { ConfirmAction } from "./types/confirmAction.enum";
 import { parseFileName } from "./functions/parseFileName.function";
 import { ParsedFileName } from "./types/parsedFileName.interface";
 import { BasicFile } from "./types/basicFile.interface";
+import { storeActiveFileName } from "./functions/storeActiveFileName.function";
 
 export const localStorageOpenFilesKey = "openFiles";
+export const localStorageActiveFileNameKey = "activeFile";
+export const localStorageActiveDirectoryName = "activeDirectory";
+export const localStorageAppMode = "appMode";
 
 function App(): JSXElement {
   // Signals
-  const [appMode, setAppMode] = createSignal<AppMode>(AppMode.Editor);
+  const [appMode, setAppMode] = createSignal<AppMode>(
+    localStorage.getItem(localStorageAppMode) as AppMode,
+  );
   const [directoryNames, setDirectoryNames] = createSignal<string[]>([]);
   const [activeDirectoryName, setActiveDirectoryName] = createSignal<
     string | null
-  >(null);
+  >(localStorage.getItem(localStorageActiveDirectoryName));
   const [openFiles, setOpenFiles] =
     createSignal<ReactiveFile[]>(loadOpenFiles());
-  const [activeFileName, setActiveFileName] = createSignal<string | null>(null);
+  const [activeFileName, setActiveFileName] = createSignal<string | null>(
+    localStorage.getItem(localStorageActiveFileNameKey),
+  );
   const [inputValue, setInputValue] = createSignal<string>("");
   const [confirmAction, setConfirmAction] = createSignal<ConfirmAction | null>(
     null,
@@ -127,6 +135,7 @@ function App(): JSXElement {
           <button
             onclick={() => {
               setAppMode(AppMode.Settings);
+              localStorage.setItem(localStorageAppMode, AppMode.Settings);
             }}
             class={
               "button_icon " + (appMode() === AppMode.Settings ? "active" : "")
@@ -137,6 +146,7 @@ function App(): JSXElement {
           <button
             onclick={() => {
               setAppMode(AppMode.Assistant);
+              localStorage.setItem(localStorageAppMode, AppMode.Assistant);
             }}
             class={
               "button_icon " + (appMode() === AppMode.Assistant ? "active" : "")
@@ -147,6 +157,7 @@ function App(): JSXElement {
           <button
             onclick={() => {
               setAppMode(AppMode.Editor);
+              localStorage.setItem(localStorageAppMode, AppMode.Editor);
             }}
             class={
               "button_icon " + (appMode() === AppMode.Editor ? "active" : "")
@@ -157,6 +168,7 @@ function App(): JSXElement {
           <button
             onclick={() => {
               setAppMode(AppMode.Donate);
+              localStorage.setItem(localStorageAppMode, AppMode.Donate);
             }}
             class={
               "button_icon " + (appMode() === AppMode.Donate ? "active" : "")
@@ -187,6 +199,10 @@ function App(): JSXElement {
                       }
                       onclick={() => {
                         setActiveDirectoryName(name);
+                        localStorage.setItem(
+                          localStorageActiveDirectoryName,
+                          name,
+                        );
                       }}
                       oncontextmenu={(e: PointerEvent) => {
                         e.preventDefault();
@@ -280,6 +296,7 @@ function App(): JSXElement {
                       }
                       onclick={() => {
                         setActiveFileName(parsedName.name);
+                        storeActiveFileName(parsedName.name);
                       }}
                       oncontextmenu={(e: PointerEvent) => {
                         e.preventDefault();
@@ -799,11 +816,13 @@ function onInputKeyUp(
         const [content, setContent] = createSignal<string>("");
         setOpenFiles([...openFiles(), { name, setName, content, setContent }]);
         setActiveFile(name);
+        storeActiveFileName(name());
         setInputValue("");
         storeOpenFiles(openFiles);
       } else {
         if ((filtrdOpenFiles.length = 1)) {
           setActiveFile(filtrdOpenFiles[0].name);
+          storeActiveFileName(filtrdOpenFiles[0].name);
           setInputValue("");
         } else if (
           filtrdAllFileNames !== null &&

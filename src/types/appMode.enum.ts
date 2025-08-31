@@ -1,6 +1,6 @@
 export enum AppMode {
-  Settings,
-  Assistant,
-  Editor,
-  Donate,
+  Settings = "settings",
+  Assistant = "assistant",
+  Editor = "editor",
+  Donate = "donate",
 }
