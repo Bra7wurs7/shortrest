@@ -192,14 +192,35 @@
         }
     }
     #SETTINGS_WINDOW {
-        grid-area: 1 / 3 / 8 / 8;
-        border: var(--size_border) var(--style_border) var(--color_border);
-        background-color: var(--color_background);
-    }
-    #SETTINGS_CATEGORIES {
-        grid-area: 1 / 8 / 8 / 9;
-        border: var(--size_border) var(--style_border) var(--color_border);
-        background-color: var(--color_background);
+        grid-area: 1 / 3 / 8 / 9;
+        display: flex;
+        flex-direction: column;
+
+        #SETTINGS_HEADER {
+            background-color: var(--color_background_soft);
+            height: var(--size_toolbar_width);
+            box-shadow: var(--shadow);
+        }
+
+        .settings_category {
+            border-radius: var(--size_border_radius);
+            background-color: var(--color_background_soft);
+            margin-top: var(--size_margin);
+            padding: var(--size_padding);
+            display: flex;
+            flex-direction: row;
+        }
+
+        .category_title {
+            padding: var(--size_padding);
+            color: var(--color_foreground);
+            display: flex;
+            flex-direction: row;
+
+            .category_title_name {
+                margin-left: var(--size_margin);
+            }
+        }
     }
     #ASSISTANT_HISTORY {
         display: flex;

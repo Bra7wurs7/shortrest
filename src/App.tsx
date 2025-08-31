@@ -32,6 +32,7 @@ import { parseFileName } from "./functions/parseFileName.function";
 import { ParsedFileName } from "./types/parsedFileName.interface";
 import { BasicFile } from "./types/basicFile.interface";
 import { storeActiveFileName } from "./functions/storeActiveFileName.function";
+import { SettingsComponent } from "./components/settings.component";
 
 export const localStorageOpenFilesKey = "openFiles";
 export const localStorageActiveFileNameKey = "activeFile";
@@ -602,8 +603,7 @@ function App(): JSXElement {
       </div>
       <Switch>
         <Match when={appMode() === AppMode.Settings}>
-          <div id="SETTINGS_WINDOW"></div>
-          <div id="SETTINGS_CATEGORIES"></div>
+          {SettingsComponent()}
         </Match>
         <Match when={appMode() === AppMode.Assistant}>
           <div id="ASSISTANT_HISTORY">
