@@ -164,7 +164,7 @@
     }
     #LEFT_SIDEBAR {
         grid-area: 2 / 2 / 8 / 3;
-        background-color: var(--color_background_soft);
+        background-color: var(--color_background);
         display: flex;
         flex-direction: column;
         justify-content: space-between;
@@ -174,7 +174,6 @@
         #L_S_TOP {
             display: flex;
             flex-direction: column;
-            max-height: 50%;
 
             #L_S_OPENFILES {
                 overflow-y: scroll;
@@ -191,45 +190,68 @@
             }
         }
     }
-    #SETTINGS_WINDOW {
+    #APP_MODE_WINDOW {
         grid-area: 1 / 3 / 8 / 9;
         display: flex;
         flex-direction: column;
+        background-color: var(--color_background);
 
         #SETTINGS_HEADER {
             background-color: var(--color_background_soft);
             height: var(--size_toolbar_width);
             box-shadow: var(--shadow);
+            margin-bottom: var(--size_margin);
         }
 
         .settings_category {
-            border-radius: var(--size_border_radius);
+            border-bottom-left-radius: var(--size_border_radius);
             background-color: var(--color_background_soft);
-            margin-top: var(--size_margin);
-            padding: var(--size_padding);
             display: flex;
             flex-direction: row;
+            align-items: center;
+            border-bottom: var(--size_border) var(--color_border)
+                var(--style_border);
+            border-left: var(--size_border) var(--color_border)
+                var(--style_border);
+            box-sizing: border-box;
+            height: var(--size_toolbar_width);
         }
 
         .category_title {
-            padding: var(--size_padding);
             color: var(--color_foreground);
             display: flex;
             flex-direction: row;
+            justify-content: space-between;
+            flex-grow: 1;
+
+            .left {
+                display: flex;
+                flex-direction: row;
+            }
 
             .category_title_name {
                 margin-left: var(--size_margin);
             }
         }
+
+        .log {
+            background-color: var(--color_background);
+        }
     }
+    .encounter_log {
+        grid-area: 1 / 3 / 8 / 9;
+        background-color: var(--color_background);
+    }
+
     #ASSISTANT_HISTORY {
         display: flex;
         flex-direction: column;
         justify-content: end;
         grid-area: 1 / 3 / 7 / 8;
-        border: var(--size_border) var(--style_border) var(--color_border);
+        border: var(--size_border) var(--style_border) transparent;
         background-color: var(--color_background);
         padding: var(--size_padding);
+        color: var(--color_foreground);
 
         .message {
             box-sizing: border-box;
@@ -266,6 +288,7 @@
             }
         }
     }
+
     #ASSISTANT_PROMPT_INPUT {
         grid-area: 7 / 3 / 8 / 8;
         border: var(--size_border) var(--style_border) var(--color_border);
@@ -281,8 +304,43 @@
     }
     #ASSISTANT_TOOLBAR {
         grid-area: 1 / 8 / 8 / 9;
-        border: var(--size_border) var(--style_border) var(--color_border);
         background-color: var(--color_background);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+
+        .system_prompt {
+            resize: none;
+            background-color: var(--color_background);
+            border: var(--size_border) var(--style_border) var(--color_border);
+            color: var(--color_foreground_hard);
+            font-family: var(--sans);
+            padding: var(--size_padding);
+            margin: 0;
+            box-shadow: var(--shadow);
+            width: 100%;
+            box-sizing: border-box;
+            &:hover {
+                border-color: var(--color_border_light);
+            }
+            &:focus {
+                outline: none;
+                border-color: var(--color_foreground_soft);
+            }
+        }
+
+        .user_action {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            border: var(--size_border) var(--color_border) var(--style_border);
+            height: var(--size_toolbar_width);
+            box-sizing: border-box;
+            color: var(--color_foreground);
+            background-color: var(--color_background_soft);
+            margin-top: var(--size_margin);
+        }
     }
     #EDITOR_TEXTAREA {
         resize: none;
@@ -356,7 +414,7 @@
     box-sizing: border-box;
     width: 100%;
     height: var(--size_toolbar_width);
-    background-color: var(--color_background_soft);
+    background-color: var(--color_background);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -368,7 +426,7 @@
         border-color: var(--color_border_light);
     }
     &.active {
-        background-color: var(--color_border);
+        background-color: var(--color_background_soft);
     }
     &.context_menu {
         background-color: var(--color_background_hard);
@@ -441,12 +499,7 @@
     font-size: small;
     justify-content: start;
     align-content: center;
-    border-bottom: var(--size_border) var(--style_border)
-        var(--color_border_light);
-    border-left: var(--size_border) var(--style_border)
-        var(--color_background_soft);
-    border-right: var(--size_border) var(--style_border)
-        var(--color_background_soft);
+    border-bottom: var(--size_border) var(--style_border) transparent;
 
     padding-left: var(--size_padding);
     padding-right: var(--size_padding);
@@ -462,6 +515,7 @@
         background-color: var(--color_background);
         border-left-color: var(--color_border_light);
         border-right-color: var(--color_background);
+        border-bottom-color: var(--color_border);
     }
 }
 
@@ -471,12 +525,8 @@
     font-family: var(--sans);
     color: var(--color_border_light);
     font-size: small;
-    justify-content: end;
-    border-top: var(--size_border) var(--style_border) var(--color_border_light);
-    border-left: var(--size_border) var(--style_border)
-        var(--color_background_soft);
-    border-right: var(--size_border) var(--style_border)
-        var(--color_background_soft);
+    justify-content: start;
+    border-top: var(--size_border) var(--style_border) transparent;
 
     padding-left: var(--size_padding);
     padding-right: var(--size_padding);
@@ -492,6 +542,7 @@
         background-color: var(--color_background);
         border-left-color: var(--color_background);
         border-right-color: var(--color_border_light);
+        border-top-color: var(--color_border);
     }
 }
 

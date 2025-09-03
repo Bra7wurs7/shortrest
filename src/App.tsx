@@ -33,6 +33,10 @@ import { ParsedFileName } from "./types/parsedFileName.interface";
 import { BasicFile } from "./types/basicFile.interface";
 import { storeActiveFileName } from "./functions/storeActiveFileName.function";
 import { SettingsComponent } from "./components/settings.component";
+import { GameMaster } from "./components/gameMaster.component";
+import { ActiveEntity } from "./components/activeEntity.component";
+import { Chat } from "./components/chat.component";
+import { Ollama } from "ollama";
 
 export const localStorageOpenFilesKey = "openFiles";
 export const localStorageActiveFileNameKey = "activeFile";
@@ -73,6 +77,9 @@ function App(): JSXElement {
   const [hoveredDirectoryName, setHoveredDirectoryName] = createSignal<
     string | null
   >(null);
+  const [ollamaConnection, setOllamaConnection] = createSignal<Ollama | null>(
+    new Ollama(),
+  );
 
   // Memos
   const activeDirectoryFileNames = createMemo<Signal<string[]> | null>(() => {
@@ -142,7 +149,43 @@ function App(): JSXElement {
               "button_icon " + (appMode() === AppMode.Settings ? "active" : "")
             }
           >
-            <i class={"bx bx-cog"}></i>
+            <i class={"bx bxs-cog"}></i>
+          </button>
+          <button
+            onclick={() => {
+              setAppMode(AppMode.ActiveEntity);
+              localStorage.setItem(localStorageAppMode, AppMode.ActiveEntity);
+            }}
+            class={
+              "button_icon " +
+              (appMode() === AppMode.ActiveEntity ? "active" : "")
+            }
+          >
+            <i class={"bx bx-street-view"}></i>
+          </button>
+          <button
+            onclick={() => {
+              setAppMode(AppMode.GameMaster);
+              localStorage.setItem(localStorageAppMode, AppMode.GameMaster);
+            }}
+            class={
+              "button_icon " +
+              (appMode() === AppMode.GameMaster ? "active" : "")
+            }
+          >
+            <i class={"bx bx-world"}></i>
+          </button>
+
+          <button
+            onclick={() => {
+              setAppMode(AppMode.Editor);
+              localStorage.setItem(localStorageAppMode, AppMode.Editor);
+            }}
+            class={
+              "button_icon " + (appMode() === AppMode.Editor ? "active" : "")
+            }
+          >
+            <i class={"bx bx-file"}></i>
           </button>
           <button
             onclick={() => {
@@ -157,14 +200,14 @@ function App(): JSXElement {
           </button>
           <button
             onclick={() => {
-              setAppMode(AppMode.Editor);
-              localStorage.setItem(localStorageAppMode, AppMode.Editor);
+              setAppMode(AppMode.SiteMap);
+              localStorage.setItem(localStorageAppMode, AppMode.SiteMap);
             }}
             class={
-              "button_icon " + (appMode() === AppMode.Editor ? "active" : "")
+              "button_icon " + (appMode() === AppMode.SiteMap ? "active" : "")
             }
           >
-            <i class={"bx bx-file"}></i>
+            <i class={"bx bx-sitemap"}></i>
           </button>
           <button
             onclick={() => {
@@ -430,8 +473,8 @@ function App(): JSXElement {
           </div>
           <Show when={filteredParsedOpenFileNames().length > 0}>
             <div class="filelist_footer">
-              <span>Open Files</span>
-              <i class="bx bx-edit-alt"></i>
+              <i class="bx bx-desktop"></i>
+              <span>Desktop</span>
             </div>
           </Show>
         </div>
@@ -489,7 +532,7 @@ function App(): JSXElement {
                         <div class="filename">{parsedName.baseName}</div>
                         <div class="tags">
                           <For each={parsedName.tags}>
-                            {(tag: string) => <span>#{tag}</span>}
+                            {(tag: string) => <span>&nbsp;#{tag}</span>}
                           </For>
                         </div>
                       </button>
@@ -605,23 +648,13 @@ function App(): JSXElement {
         <Match when={appMode() === AppMode.Settings}>
           {SettingsComponent()}
         </Match>
+        <Match when={appMode() === AppMode.ActiveEntity}>
+          {ActiveEntity()}
+        </Match>
+        <Match when={appMode() === AppMode.GameMaster}>{GameMaster()}</Match>
+
         <Match when={appMode() === AppMode.Assistant}>
-          <div id="ASSISTANT_HISTORY">
-            <div class="message system">
-              You are a philosopher and a great mind. You also give excellent
-              financial advice.
-            </div>
-            <div class="message ours">
-              Hey AI! How's it going? I've got some spare money that I wanna
-              multiply. Do you think it would be smart to invest in Microsoft?
-            </div>
-            <div class="message theirs">
-              Only if you wanna strengthen an already too powerful and
-              apparently evil monopoly my bro!
-            </div>
-          </div>
-          <input id="ASSISTANT_PROMPT_INPUT"></input>
-          <div id="ASSISTANT_TOOLBAR"></div>
+          {Chat(ollamaConnection(), activeFile())}
         </Match>
         <Match when={appMode() === AppMode.Editor}>
           <textarea
