@@ -264,7 +264,7 @@
 
     #ASSISTANT_PROMPT_INPUT {
         grid-area: 7 / 3 / 8 / 8;
-        border: var(--size_border) var(--style_border) var(--color_border);
+        border: var(--size_border) var(--style_border) transparent;
         background-color: var(--color_background_soft);
         color: var(--color_foreground);
         &:hover {
@@ -286,7 +286,7 @@
             padding: var(--size_padding);
             border: var(--size_border) var(--style_border) var(--color_border);
             color: var(--color_foreground);
-            background-color: var(--color_background_soft);
+            background-color: var(--color_border);
             display: flex;
             flex-direction: row;
             align-items: center;
@@ -317,16 +317,38 @@
         }
 
         .user_action {
+            transition: var(--transition_background_color);
             display: flex;
             flex-direction: row;
             align-items: center;
             justify-content: space-between;
-            border: var(--size_border) var(--color_border) var(--style_border);
+            border: var(--size_border) transparent var(--style_border);
             height: var(--size_toolbar_width);
             box-sizing: border-box;
             color: var(--color_foreground);
             background-color: var(--color_background_soft);
             margin-top: var(--size_margin);
+            width: 100%;
+            box-shadow: var(--shadow);
+
+            &:hover {
+                border-color: var(--color_border_light);
+            }
+            &.active {
+                background-color: var(--color_background_soft);
+            }
+
+            &:focus {
+                outline: none;
+                border-color: var(--color_border_light);
+            }
+            &:active {
+                transition: background-color 0ms;
+                background-color: var(--color_foreground_soft);
+                color: var(--color_background_hard);
+                border: var(--size_border) var(--style_border)
+                    var(--color_foreground);
+            }
         }
     }
     #EDITOR_TEXTAREA {
