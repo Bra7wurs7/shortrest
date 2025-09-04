@@ -654,7 +654,7 @@ function App(): JSXElement {
         <Match when={appMode() === AppMode.GameMaster}>{GameMaster()}</Match>
 
         <Match when={appMode() === AppMode.Assistant}>
-          {Chat(ollamaConnection(), activeFile())}
+          {Chat(ollamaConnection(), activeFile(), openFiles)}
         </Match>
         <Match when={appMode() === AppMode.Editor}>
           <textarea
