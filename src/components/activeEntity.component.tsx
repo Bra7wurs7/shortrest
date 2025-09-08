@@ -239,7 +239,7 @@ function generateEffect(
   systemPrompt: Accessor<string>,
 ) {
   const request: ChatRequest & { stream: true } = {
-    model: "magistral",
+    model: "qwen3:4b",
     stream: true,
     messages: [
       {

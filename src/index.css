@@ -355,6 +355,7 @@
             overflow-x: hidden;
             margin-bottom: var(--size_margin);
             font-size: small;
+            min-height: max-content;
             &:hover {
                 border-color: var(--color_border_light);
             }
@@ -468,7 +469,7 @@
         }
 
         .crit {
-            margin-top: var(--size_margin);
+            margin-bottom: var(--size_margin);
             display: flex;
             flex-direction: row;
             justify-content: space-between;
@@ -492,9 +493,12 @@
             box-sizing: border-box;
             color: var(--color_foreground);
             background-color: var(--color_background_soft);
-            margin-top: var(--size_margin);
             width: 100%;
             box-shadow: var(--shadow);
+
+            &:not(:first-of-type) {
+                margin-top: var(--size_margin);
+            }
 
             &:hover {
                 border-color: var(--color_border_light);
@@ -520,6 +524,7 @@
             display: flex;
             flex-direction: column;
             overflow-y: scroll;
+            flex-grow: 1;
         }
     }
     #DONATE_MESSAGE {
