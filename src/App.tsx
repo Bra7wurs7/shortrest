@@ -37,6 +37,7 @@ import { GameMaster } from "./components/gameMaster.component";
 import { ActiveEntity } from "./components/activeEntity.component";
 import { Chat } from "./components/chat.component";
 import { Ollama } from "ollama";
+import { DonateComponent } from "./components/donate.component";
 
 export const localStorageOpenFilesKey = "openFiles";
 export const localStorageActiveFileNameKey = "activeFile";
@@ -44,6 +45,16 @@ export const localStorageActiveDirectoryName = "activeDirectory";
 export const localStorageAppMode = "appMode";
 
 function App(): JSXElement {
+  const appModes = [
+    { mode: AppMode.Settings, icon: "bx-cog" },
+    { mode: AppMode.ActiveEntity, icon: "bx-street-view" },
+    //{ mode: AppMode.GameMaster, icon: "bx-world" },
+    //{ mode: AppMode.Editor, icon: "bx-file" },
+    { mode: AppMode.Assistant, icon: "bxs-receipt" },
+    { mode: AppMode.SiteMap, icon: "bx-sitemap" },
+    { mode: AppMode.Donate, icon: "bx-donate-heart" },
+  ];
+
   // Signals
   const [appMode, setAppMode] = createSignal<AppMode>(
     localStorage.getItem(localStorageAppMode) as AppMode,
@@ -140,86 +151,23 @@ function App(): JSXElement {
     <div id="APP_CONTAINER" class="dark_theme">
       <div id="LEFTMOST_SIDEBAR">
         <div id="LM_S_ACTIONS">
-          <button
-            onclick={() => {
-              setAppMode(AppMode.Settings);
-              localStorage.setItem(localStorageAppMode, AppMode.Settings);
+          <For each={appModes}>
+            {(am, index) => {
+              return (
+                <button
+                  onclick={() => {
+                    setAppMode(am.mode);
+                    localStorage.setItem(localStorageAppMode, am.mode);
+                  }}
+                  class={
+                    "button_icon " + (appMode() === am.mode ? "active" : "")
+                  }
+                >
+                  <i class={"bx " + am.icon}></i>
+                </button>
+              );
             }}
-            class={
-              "button_icon " + (appMode() === AppMode.Settings ? "active" : "")
-            }
-          >
-            <i class={"bx bxs-cog"}></i>
-          </button>
-          <button
-            onclick={() => {
-              setAppMode(AppMode.ActiveEntity);
-              localStorage.setItem(localStorageAppMode, AppMode.ActiveEntity);
-            }}
-            class={
-              "button_icon " +
-              (appMode() === AppMode.ActiveEntity ? "active" : "")
-            }
-          >
-            <i class={"bx bx-street-view"}></i>
-          </button>
-          <button
-            onclick={() => {
-              setAppMode(AppMode.GameMaster);
-              localStorage.setItem(localStorageAppMode, AppMode.GameMaster);
-            }}
-            class={
-              "button_icon " +
-              (appMode() === AppMode.GameMaster ? "active" : "")
-            }
-          >
-            <i class={"bx bx-world"}></i>
-          </button>
-
-          <button
-            onclick={() => {
-              setAppMode(AppMode.Editor);
-              localStorage.setItem(localStorageAppMode, AppMode.Editor);
-            }}
-            class={
-              "button_icon " + (appMode() === AppMode.Editor ? "active" : "")
-            }
-          >
-            <i class={"bx bx-file"}></i>
-          </button>
-          <button
-            onclick={() => {
-              setAppMode(AppMode.Assistant);
-              localStorage.setItem(localStorageAppMode, AppMode.Assistant);
-            }}
-            class={
-              "button_icon " + (appMode() === AppMode.Assistant ? "active" : "")
-            }
-          >
-            <i class={"bx bx-conversation"}></i>
-          </button>
-          <button
-            onclick={() => {
-              setAppMode(AppMode.SiteMap);
-              localStorage.setItem(localStorageAppMode, AppMode.SiteMap);
-            }}
-            class={
-              "button_icon " + (appMode() === AppMode.SiteMap ? "active" : "")
-            }
-          >
-            <i class={"bx bx-sitemap"}></i>
-          </button>
-          <button
-            onclick={() => {
-              setAppMode(AppMode.Donate);
-              localStorage.setItem(localStorageAppMode, AppMode.Donate);
-            }}
-            class={
-              "button_icon " + (appMode() === AppMode.Donate ? "active" : "")
-            }
-          >
-            <i class={"bx bx-donate-heart"}></i>
-          </button>
+          </For>
         </div>
         <div id="LM_S_BOTTOM">
           <button
@@ -649,34 +597,24 @@ function App(): JSXElement {
           {SettingsComponent()}
         </Match>
         <Match when={appMode() === AppMode.ActiveEntity}>
-          {ActiveEntity()}
+          {ActiveEntity(
+            ollamaConnection(),
+            activeFile,
+            openFiles,
+            activeDirectoryFileNames,
+          )}
         </Match>
         <Match when={appMode() === AppMode.GameMaster}>{GameMaster()}</Match>
 
         <Match when={appMode() === AppMode.Assistant}>
-          {Chat(ollamaConnection(), activeFile(), openFiles)}
+          {Chat(
+            ollamaConnection(),
+            activeFile,
+            openFiles,
+            activeDirectoryFileNames,
+          )}
         </Match>
-        <Match when={appMode() === AppMode.Editor}>
-          <textarea
-            id="EDITOR_TEXTAREA"
-            value={
-              activeFile()?.content() ??
-              "Please open a file to start editing its contents"
-            }
-            onChange={(e) => {
-              onEditorChange(
-                e,
-                activeFile()?.content ?? null,
-                activeFile()?.setContent ?? null,
-                openFiles,
-              );
-            }}
-          ></textarea>
-          <div id="EDITOR_TOOLBAR"></div>
-        </Match>
-        <Match when={appMode() === AppMode.Donate}>
-          <div id="DONATE_MESSAGE"></div>
-        </Match>
+        <Match when={appMode() === AppMode.Donate}>{DonateComponent()}</Match>
       </Switch>
     </div>
   );
