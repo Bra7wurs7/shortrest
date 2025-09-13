@@ -33,7 +33,6 @@ import { ParsedFileName } from "./types/parsedFileName.interface";
 import { BasicFile } from "./types/basicFile.interface";
 import { storeActiveFileName } from "./functions/storeActiveFileName.function";
 import { SettingsComponent } from "./components/settings.component";
-import { GameMaster } from "./components/gameMaster.component";
 import { ActiveEntity } from "./components/activeEntity.component";
 import { Chat } from "./components/chat.component";
 import { Ollama } from "ollama";
@@ -47,11 +46,7 @@ export const localStorageAppMode = "appMode";
 function App(): JSXElement {
   const appModes = [
     { mode: AppMode.Settings, icon: "bx-cog" },
-    { mode: AppMode.ActiveEntity, icon: "bx-street-view" },
-    //{ mode: AppMode.GameMaster, icon: "bx-world" },
-    //{ mode: AppMode.Editor, icon: "bx-file" },
-    { mode: AppMode.Assistant, icon: "bxs-receipt" },
-    { mode: AppMode.SiteMap, icon: "bx-sitemap" },
+    { mode: AppMode.AiWriter, icon: "bxs-receipt" },
     { mode: AppMode.Donate, icon: "bx-donate-heart" },
   ];
 
@@ -93,12 +88,14 @@ function App(): JSXElement {
   );
 
   // Memos
-  const activeDirectoryFileNames = createMemo<Signal<string[]> | null>(() => {
+  const activeDirectoryParsedFileNames = createMemo<Signal<
+    ParsedFileName[]
+  > | null>(() => {
     const activeDirName = activeDirectoryName();
-    const signal: Signal<string[]> = createSignal<string[]>([]);
+    const signal: Signal<ParsedFileName[]> = createSignal<ParsedFileName[]>([]);
     if (activeDirName) {
       listFileNamesInDirectory(activeDirName).then((names) => {
-        signal[1](names);
+        signal[1](names.map((fn) => parseFileName(fn)));
       });
       return signal;
     }
@@ -112,13 +109,11 @@ function App(): JSXElement {
       .map((of) => parseFileName(of.name()));
   });
   const filteredParsedAllFileNames = createMemo<ParsedFileName[] | null>(() => {
-    const activeDirFileNames = activeDirectoryFileNames();
+    const activeDirFileNames = activeDirectoryParsedFileNames();
     if (activeDirFileNames) {
-      return activeDirFileNames[0]()
-        .filter((name: string) =>
-          name.toLowerCase().includes(inputValue().toLowerCase()),
-        )
-        .map((name) => parseFileName(name));
+      return activeDirFileNames[0]().filter((name: ParsedFileName) =>
+        name.baseName.includes(inputValue().toLowerCase()),
+      );
     }
     return null;
   });
@@ -360,7 +355,7 @@ function App(): JSXElement {
                                   openFiles,
                                   directoryNames,
                                   setDirectoryNames,
-                                  activeDirectoryFileNames,
+                                  activeDirectoryParsedFileNames,
                                   activeDirectoryName,
                                 );
                               }}
@@ -545,7 +540,7 @@ function App(): JSXElement {
                                   onClickTrashSavedFile(
                                     parsedName.name,
                                     activeDirectoryName,
-                                    activeDirectoryFileNames,
+                                    activeDirectoryParsedFileNames,
                                     directoryNames,
                                     setDirectoryNames,
                                     confirmAction,
@@ -571,7 +566,7 @@ function App(): JSXElement {
                                   onRenameSavedFile(
                                     parsedName.name,
                                     rightClickedSavedFileNewName(),
-                                    activeDirectoryFileNames,
+                                    activeDirectoryParsedFileNames,
                                     activeDirectoryName,
                                     directoryNames,
                                     setDirectoryNames,
@@ -596,22 +591,12 @@ function App(): JSXElement {
         <Match when={appMode() === AppMode.Settings}>
           {SettingsComponent()}
         </Match>
-        <Match when={appMode() === AppMode.ActiveEntity}>
-          {ActiveEntity(
-            ollamaConnection(),
-            activeFile,
-            openFiles,
-            activeDirectoryFileNames,
-          )}
-        </Match>
-        <Match when={appMode() === AppMode.GameMaster}>{GameMaster()}</Match>
-
-        <Match when={appMode() === AppMode.Assistant}>
+        <Match when={appMode() === AppMode.AiWriter}>
           {Chat(
             ollamaConnection(),
             activeFile,
             openFiles,
-            activeDirectoryFileNames,
+            activeDirectoryParsedFileNames,
           )}
         </Match>
         <Match when={appMode() === AppMode.Donate}>{DonateComponent()}</Match>
@@ -713,12 +698,12 @@ function onClickSaveOpenFile(
   openFiles: Accessor<ReactiveFile[]>,
   directoryNames: Accessor<string[]>,
   setDirectoryNames: Setter<string[]>,
-  activeDirectoryFileNames: Accessor<Signal<string[]> | null>,
+  activeDirectoryFileNames: Accessor<Signal<ParsedFileName[]> | null>,
   activeDirectoryName: Accessor<string | null>,
 ) {
   const openFile: ReactiveFile | null = openFiles()[index];
   const activeDirName: string | null = activeDirectoryName();
-  const activeDirFileNames: Signal<string[]> | null =
+  const activeDirFileNames: Signal<ParsedFileName[]> | null =
     activeDirectoryFileNames();
 
   if (openFile && activeDirName && activeDirFileNames) {
@@ -726,8 +711,15 @@ function onClickSaveOpenFile(
       name: openFile.name(),
       content: openFile.content(),
     }).then(() => {
-      if (!activeDirFileNames[0]().includes(openFile.name()))
-        activeDirFileNames[1]([...activeDirFileNames[0](), openFile.name()]);
+      if (
+        !activeDirFileNames[0]().find(
+          (adfn) => adfn.baseName === openFile.name(),
+        )
+      )
+        activeDirFileNames[1]([
+          ...activeDirFileNames[0](),
+          parseFileName(openFile.name()),
+        ]);
       onUpdateDirectory(directoryNames, setDirectoryNames).then();
     });
   }
@@ -737,7 +729,7 @@ function onClickSaveOpenFile(
 async function onClickTrashSavedFile(
   name: string,
   activeDirectoryName: Accessor<string | null>,
-  activeDirectoryFileNames: Accessor<Signal<string[]> | null>,
+  activeDirectoryParsedFileNames: Accessor<Signal<ParsedFileName[]> | null>,
   directoryNames: Accessor<string[]>,
   setDirectoryNames: Setter<string[]>,
   confirmAction: Accessor<ConfirmAction | null>,
@@ -745,7 +737,7 @@ async function onClickTrashSavedFile(
   setRightClickedSavedFile: Setter<string | null>,
 ) {
   const activeDirName = activeDirectoryName();
-  const activeDirFileNames = activeDirectoryFileNames();
+  const activeDirFileNames = activeDirectoryParsedFileNames();
 
   if (
     confirmAction() === ConfirmAction.TrashFile &&
@@ -753,7 +745,11 @@ async function onClickTrashSavedFile(
     activeDirFileNames !== null
   ) {
     await removeFileFromDirectory(activeDirName, name);
-    activeDirFileNames[1](await listFileNamesInDirectory(activeDirName));
+    activeDirFileNames[1](
+      (await listFileNamesInDirectory(activeDirName)).map((fn) =>
+        parseFileName(fn),
+      ),
+    );
     await onUpdateDirectory(directoryNames, setDirectoryNames);
     setConfirmAction(null);
     setRightClickedSavedFile(null);
@@ -1010,16 +1006,16 @@ function onRenameOpenFile(
 async function onRenameSavedFile(
   oldName: string | null,
   newName: string | null,
-  activeDirectoryFileNames: Accessor<Signal<string[]> | null>,
+  activeDirectorParsedFileNames: Accessor<Signal<ParsedFileName[]> | null>,
   activeDirectoryName: Accessor<string | null>,
   directoryNames: Accessor<string[]>,
   setDirectoryNames: Setter<string[]>,
 ) {
   const activeDirName = activeDirectoryName();
-  const activeDirFileNames = activeDirectoryFileNames();
+  const activeDirFileNames = activeDirectorParsedFileNames();
   const fileWithSameNameAlreadyExists =
     activeDirFileNames !== null
-      ? activeDirFileNames[0]().some((sf) => sf === newName)
+      ? activeDirFileNames[0]().some((sf) => sf.baseName === newName)
       : false;
 
   if (
@@ -1033,7 +1029,11 @@ async function onRenameSavedFile(
     const newFile: BasicFile = { name: newName, content: fileContent ?? "" };
     await writeFileToDirectory(activeDirName, newFile);
     await removeFileFromDirectory(activeDirName, oldName);
-    activeDirFileNames[1](await listFileNamesInDirectory(activeDirName));
+    activeDirFileNames[1](
+      (await listFileNamesInDirectory(activeDirName)).map((fn) =>
+        parseFileName(fn),
+      ),
+    );
   }
 }
 

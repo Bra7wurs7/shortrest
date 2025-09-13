@@ -3,6 +3,7 @@ import {
   Accessor,
   createMemo,
   createSignal,
+  For,
   JSXElement,
   Show,
   Signal,
@@ -22,7 +23,6 @@ export function ActiveEntity(
   ollama: Ollama | null,
   displayedReactiveFile: Accessor<ReactiveFile | null>,
   openFiles: Accessor<ReactiveFile[]>,
-  dirFileNames: Accessor<Signal<string[]> | null>,
 ): JSXElement {
   if (ollama === null) return <div>Configure Ollama first</div>;
   if (displayedReactiveFile === null) return <div>Open a file first</div>;
@@ -30,7 +30,6 @@ export function ActiveEntity(
   const [systemPrompt, setSystemPrompt] = createSignal<string>(
     localStorage.getItem(localStorageChatSystemPrompt) ?? "",
   );
-
   const [userPrompt, setUserPrompt] = createSignal<string>(
     localStorage.getItem(localStorageChatUserPrompt) ?? "",
   );
@@ -72,7 +71,7 @@ export function ActiveEntity(
 
   return [
     <textarea
-      id="ASSISTANT_HISTORY"
+      id="CHARACTER_SHEET_LOG"
       value={displayedReactiveFile()?.content() ?? ""}
       onkeyup={(e) => {
         displayedReactiveFile()?.setContent(e.currentTarget.value);
@@ -82,7 +81,7 @@ export function ActiveEntity(
       }}
     />,
     <input
-      id="ASSISTANT_PROMPT_INPUT"
+      id="CHARACTER_SHEET_PROMPT"
       value={userPrompt()}
       onkeyup={(e) => {
         onAssistantPromptInputKeyUp(
@@ -97,20 +96,28 @@ export function ActiveEntity(
         localStorage.setItem(localStorageChatUserPrompt, e.currentTarget.value);
       }}
     ></input>,
-    <div id="ASSISTANT_TOOLBAR">
-      <div id="A_T_TOP">
+    <div id="CHARACTER_SHEET_TOOLBAR">
+      <div id="CHARACTER_SHEET_TOOLBAR_TOP">
+        <button class={"character_name"}>
+          <div class="filename">{"Snaf"}</div>
+          <div class="tags">
+            <For each={["Koch"]}>
+              {(tag: string) => <span>&nbsp;#{tag}</span>}
+            </For>
+          </div>
+        </button>
         <div class="talents_grid">
           <div class="const grid_item">
             <div class="icon">
               <i class="bx bxs-heart"></i>
             </div>
-            <div class="mod">+1</div>
+            <div class="mod">+2</div>
           </div>
           <div class="str grid_item">
             <div class="icon">
               <i class="bx bxs-hand"></i>
             </div>
-            <div class="mod">+1</div>
+            <div class="mod">+0</div>
           </div>
           <div class="dex grid_item">
             <div class="icon">
@@ -122,84 +129,75 @@ export function ActiveEntity(
             <div class="icon">
               <i class="bx bxs-book"></i>
             </div>
-            <div class="mod">+1</div>
+            <div class="mod">+2</div>
           </div>
           <div class="rea grid_item">
             <div class="icon">
               <i class="bx bxs-brain"></i>
             </div>
-            <div class="mod">+1</div>
+            <div class="mod">+0</div>
           </div>
           <div class="confi grid_item">
             <div class="icon">
               <i class="bx bxs-hot"></i>
             </div>
-            <div class="mod">+1</div>
+            <div class="mod">+0</div>
           </div>
         </div>
-        <div class="skill">
-          <div>Swords</div>
-          <div>+1</div>
+
+        <div>
+          <div class="skill">
+            <div>Swords</div>
+            <div>+1</div>
+          </div>
+          <div class="skill">
+            <div>Poles</div>
+            <div>+2</div>
+          </div>
+          <div class="skill">
+            <div>Shields</div>
+            <div>+2</div>
+          </div>
+          <div class="skill">
+            <div>Cooking</div>
+            <div>+3</div>
+          </div>
+          <div class="skill">
+            <div>Intimidation</div>
+            <div>+1</div>
+          </div>
+          <div class="skill">
+            <div>Persuasion</div>
+            <div>+2</div>
+          </div>
+          <div class="skill">
+            <div>Biology</div>
+            <div>+1</div>
+          </div>
         </div>
-        <div class="skill">
-          <div>Poles</div>
-          <div>+2</div>
+
+        <div class="rules_buttons">
+          <button>Equipment</button>
+          <button>Conditions</button>
+          <button>Traits</button>
         </div>
-        <div class="skill">
-          <div>Shields</div>
-          <div>+2</div>
-        </div>
-        <div class="skill">
-          <div>Cooking</div>
-          <div>+3</div>
-        </div>
-        <div class="skill">
-          <div>Intimidation</div>
-          <div>+1</div>
-        </div>
-        <div class="skill">
-          <div>Persuasion</div>
-          <div>+2</div>
-        </div>
-        <div class="skill">
-          <div>Biology</div>
-          <div>+1</div>
+
+        <div class="rules_list">
+          <div class="rule">a</div>
+          <div class="rule">a</div>
+          <div class="rule">a</div>
+          <div class="rule">a</div>
         </div>
       </div>
       <div>
-        <div class="crit">
-          <i class="bx bx-health"></i>
-          <div>Condition</div>
-        </div>
-        <div class="crit">
-          <i class="bx bx-dna"></i>
-          <div>Trait</div>
-        </div>
-        <div class="crit">
-          <i class="bx bx-trending-up"></i>
-          <div>Possible Crit. Success</div>
-        </div>
-        <div class="crit">
-          <i class="bx bx-check-circle"></i>
-          <div>Success</div>
-        </div>
-        <div class="crit">
-          <i class="bx bx-x"></i>
-          <div>Failure</div>
-        </div>
-        <div class="crit">
-          <i class="bx bx-trending-down"></i>
-          <div>Possible Crit. Failure</div>
-        </div>
-
         <button class="user_action rounded_right">
-          Act
-          <i class="bx bxs-hand" />
+          Thought
+          <i class="bx bxs-network-chart" />
         </button>
 
         <button class="user_action rounded_right">
-          Think
-          <i class="bx bxs-brain" />
+          Action
+          <i class="bx bxs-hand" />
         </button>
 
         <div class="action_selection">

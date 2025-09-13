@@ -255,7 +255,7 @@
         }
     }
 
-    #ASSISTANT_HISTORY {
+    #AIWRITER_HISTORY {
         grid-area: 1 / 3 / 7 / 8;
         resize: none;
         background-color: var(--color_background);
@@ -274,7 +274,7 @@
         }
     }
 
-    #ASSISTANT_PROMPT_INPUT {
+    #AIWRITER_PROMPT_INPUT {
         grid-area: 7 / 3 / 8 / 8;
         border: var(--size_border) var(--style_border) transparent;
         background-color: var(--color_background_soft);
@@ -287,7 +287,7 @@
             border-color: var(--color_foreground_soft);
         }
     }
-    #ASSISTANT_TOOLBAR {
+    #AIWRITER_TOOLBAR {
         grid-area: 1 / 8 / 8 / 9;
         display: flex;
         flex-direction: column;
@@ -318,6 +318,18 @@
                 border-color: var(--color_border);
                 min-width: 50px;
 
+                /* Chrome, Safari, Edge, Opera */
+                &::-webkit-outer-spin-button,
+                &::-webkit-inner-spin-button {
+                    -webkit-appearance: none;
+                    margin: 0;
+                }
+
+                /* Firefox */
+                &[type="number"] {
+                    -moz-appearance: textfield;
+                }
+
                 &:hover {
                     border-color: var(--color_border_light);
                 }
@@ -337,6 +349,25 @@
                 &:focus {
                     outline: none;
                     border-color: var(--color_foreground);
+                }
+            }
+            button {
+                transition: var(--transition_background_color);
+                background-color: var(--color_background_soft);
+                border-color: var(--color_border);
+                color: var(--color_foreground);
+                width: 100%;
+
+                &:hover {
+                    border-color: var(--color_border_light);
+                }
+
+                &:active {
+                    transition: background-color 0ms;
+                    background-color: var(--color_foreground_soft);
+                    color: var(--color_background_hard);
+                    border: var(--size_border) var(--style_border)
+                        var(--color_foreground);
                 }
             }
         }
@@ -363,122 +394,6 @@
                 outline: none;
                 border-color: var(--color_foreground_soft);
             }
-        }
-
-        .action_options {
-            width: 100%;
-            padding: var(--size_padding);
-            border: var(--size_border) var(--color_border) var(--style_border);
-            color: var(--color_foreground);
-            background-color: var(--color_background_soft);
-            box-sizing: border-box;
-            height: var(--size_toolbar_width);
-            box-shadow: var(--shadow);
-
-            &:last-of-type {
-                border-top-right-radius: var(--size_border_radius_large);
-                border-bottom-right-radius: var(--size_border_radius_large);
-                margin-left: var(--size_margin);
-            }
-        }
-
-        .action_selection {
-            display: flex;
-            flex-direction: row;
-            margin-top: var(--size_margin);
-        }
-
-        .skill {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            padding-left: var(--size_padding);
-            padding-right: var(--size_padding);
-            justify-content: space-between;
-            margin-top: var(--size_margin);
-            border: var(--size_border) transparent var(--style_border);
-            background-color: var(--color_background);
-            border-radius: var(--size_border_radius_large);
-
-            box-sizing: border-box;
-            color: var(--color_foreground);
-        }
-
-        .talents_grid {
-            display: grid;
-            grid-gap: var(--size_margin);
-            grid-template-rows: repeat(2, 1fr);
-            grid-template-columns: repeat(3, 1fr);
-
-            width: 100%;
-            background-color: var(--color_background);
-
-            color: var(--color_background);
-
-            .grid_item {
-                display: flex;
-                flex-direction: row;
-                justify-content: space-between;
-                padding: var(--size_margin);
-                height: var(--size_toolbar_width);
-                box-sizing: border-box;
-                border: var(--size_border) var(--style_border) transparent;
-                .icon {
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: start;
-                }
-                .mod {
-                    display: flex;
-                    flex-direction: column;
-                    justify-content: end;
-                    font-weight: bold;
-                }
-            }
-
-            .const {
-                grid-area: 1 / 1 / 2 / 2;
-                border-color: var(--red);
-                color: var(--red);
-            }
-            .str {
-                grid-area: 1 / 2 / 2 / 3;
-                border-color: var(--orange);
-                color: var(--orange);
-            }
-            .dex {
-                grid-area: 1 / 3 / 2 / 4;
-                border-color: var(--yellow);
-                color: var(--yellow);
-            }
-            .kno {
-                grid-area: 2 / 1 / 3 / 2;
-                border-color: var(--green);
-                color: var(--green);
-            }
-            .rea {
-                grid-area: 2 / 2 / 3 / 3;
-                border-color: var(--blue);
-                color: var(--blue);
-            }
-            .confi {
-                grid-area: 2 / 3 / 3 / 4;
-                border-color: var(--purple);
-                color: var(--purple);
-            }
-        }
-
-        .crit {
-            margin-bottom: var(--size_margin);
-            display: flex;
-            flex-direction: row;
-            justify-content: space-between;
-            padding-left: var(--size_padding);
-            color: var(--color_foreground);
-            border: var(--size_border) transparent var(--style_border);
-            background-color: var(--color_background);
-            border-top-left-radius: var(--size_border_radius_large);
-            border-bottom-left-radius: var(--size_border_radius_large);
         }
 
         .user_action {
@@ -525,6 +440,199 @@
             flex-direction: column;
             overflow-y: scroll;
             flex-grow: 1;
+        }
+    }
+    #CHARACTER_SHEET {
+        .action_options {
+            width: 100%;
+            padding: var(--size_padding);
+            border: var(--size_border) var(--color_border) var(--style_border);
+            color: var(--color_foreground);
+            background-color: var(--color_background_soft);
+            box-sizing: border-box;
+            height: var(--size_toolbar_width);
+            box-shadow: var(--shadow);
+
+            &:last-of-type {
+                border-top-right-radius: var(--size_border_radius_large);
+                border-bottom-right-radius: var(--size_border_radius_large);
+                margin-left: var(--size_margin);
+            }
+        }
+
+        .action_selection {
+            display: flex;
+            flex-direction: row;
+            margin-top: var(--size_margin);
+        }
+
+        .skill {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            padding-left: var(--size_padding);
+            padding-right: var(--size_padding);
+            justify-content: space-between;
+            margin-top: var(--size_margin);
+            background-color: var(--color_background);
+            box-sizing: border-box;
+            color: var(--color_foreground);
+
+            border: var(--size_border) transparent var(--style_border);
+            border-left-color: var(--color_border);
+
+            &:last-of-type {
+                border-bottom-left-radius: var(--size_border_radius_large);
+                border-bottom-color: var(--color_border);
+            }
+        }
+
+        .rules_buttons {
+            display: flex;
+            flex-direction: row;
+            margin-top: var(--size_margin);
+            button {
+                width: 100%;
+                transition: var(--transition_background_color);
+                background-color: var(--color_background);
+                border-color: var(--color_border);
+                color: var(--color_foreground);
+                &:hover {
+                    border-color: var(--color_border_light);
+                }
+                &:active {
+                    transition: background-color 0ms;
+                    background-color: var(--color_foreground_soft);
+                    color: var(--color_background_hard);
+                    border: var(--size_border) var(--style_border)
+                        var(--color_foreground);
+                }
+                &:first-of-type {
+                    border-top-left-radius: var(--size_border_radius_large);
+                }
+                &:not(:last-of-type) {
+                    margin-right: var(--size_margin);
+                }
+            }
+        }
+
+        .rules_list {
+            display: flex;
+            flex-direction: column;
+            .rule {
+                background-color: var(--color_background);
+                margin-top: var(--size_margin);
+                padding-left: var(--size_padding);
+                padding-right: var(--size_padding);
+                color: var(--color_foreground);
+                border: var(--size_border) transparent var(--style_border);
+                border-left-color: var(--color_border);
+
+                &:last-of-type {
+                    border-bottom-left-radius: var(--size_border_radius_large);
+                    border-bottom-color: var(--color_border);
+                }
+            }
+        }
+
+        .character_name {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            color: var(--color_foreground);
+            border: var(--size_border) var(--color_border) var(--style_border);
+            margin-bottom: var(--size_margin);
+            padding-left: var(--size_padding);
+            padding-right: var(--size_padding);
+            background-color: var(--color_background);
+            overflow-x: hidden;
+            font-family: var(--sans);
+
+            .filename {
+            }
+
+            .tags {
+                color: var(--color_border_light);
+                overflow-x: scroll;
+            }
+        }
+
+        .talents_grid {
+            display: grid;
+            grid-gap: var(--size_margin);
+            grid-template-rows: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
+
+            width: 100%;
+
+            color: var(--color_background);
+
+            .grid_item {
+                display: flex;
+                flex-direction: row;
+                justify-content: space-between;
+                padding: var(--size_margin);
+                height: var(--size_toolbar_width);
+                box-sizing: border-box;
+                border: var(--size_border) var(--style_border) transparent;
+                background-color: var(--color_background);
+                .icon {
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: start;
+                }
+                .mod {
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: end;
+                    font-weight: bold;
+                    font-family: var(--mono);
+                }
+            }
+
+            .const {
+                grid-area: 1 / 1 / 2 / 2;
+                border-color: var(--red);
+                color: var(--red);
+            }
+            .str {
+                grid-area: 1 / 2 / 2 / 3;
+                border-color: var(--orange);
+                color: var(--orange);
+            }
+            .dex {
+                grid-area: 1 / 3 / 2 / 4;
+                border-color: var(--yellow);
+                color: var(--yellow);
+            }
+            .kno {
+                grid-area: 2 / 1 / 3 / 2;
+                border-color: var(--green);
+                color: var(--green);
+            }
+            .rea {
+                grid-area: 2 / 2 / 3 / 3;
+                border-color: var(--blue);
+                color: var(--blue);
+            }
+            .confi {
+                grid-area: 2 / 3 / 3 / 4;
+                border-color: var(--purple);
+                color: var(--purple);
+            }
+        }
+
+        .crit {
+            margin-bottom: var(--size_margin);
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            padding-left: var(--size_padding);
+            color: var(--color_foreground);
+            border: var(--size_border) transparent var(--style_border);
+            background-color: var(--color_background);
+            border-top-left-radius: var(--size_border_radius_large);
+            border-bottom-left-radius: var(--size_border_radius_large);
         }
     }
     #DONATE_MESSAGE {
