@@ -258,7 +258,7 @@
     #AIWRITER_HISTORY {
         grid-area: 1 / 3 / 7 / 8;
         resize: none;
-        background-color: var(--color_background);
+        background-color: var(--color_background_hard);
         border: var(--size_border) var(--style_border) transparent;
         color: var(--color_foreground_hard);
         font-family: var(--sans);
@@ -293,6 +293,7 @@
         flex-direction: column;
         justify-content: space-between;
         overflow-y: hidden;
+        background-color: var(--color_background);
 
         .prompt_header {
             padding: var(--size_padding);
@@ -393,6 +394,27 @@
             &:focus {
                 outline: none;
                 border-color: var(--color_foreground_soft);
+            }
+        }
+
+        .tags_list {
+            display: flex;
+            flex-direction: column;
+
+            .tag_tuple {
+                display: flex;
+                flex-direction: row;
+                background-color: var(--color_background);
+                border: var(--size_border) var(--style_border)
+                    var(--color_border);
+                color: var(--color_foreground_hard);
+                font-family: var(--sans);
+                padding: var(--size_padding);
+                margin-bottom: var(--size_margin);
+                &:last-of-type {
+                    border-bottom-left-radius: var(--size_border_radius);
+                    border-bottom-right-radius: var(--size_border_radius);
+                }
             }
         }
 

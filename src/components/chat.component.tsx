@@ -1,8 +1,15 @@
-import { ChatRequest, ChatResponse, Config, Ollama } from "ollama/dist/browser";
+import {
+  ChatRequest,
+  ChatResponse,
+  Config,
+  Message,
+  Ollama,
+} from "ollama/dist/browser";
 import {
   Accessor,
   createMemo,
   createSignal,
+  For,
   JSXElement,
   Setter,
   Show,
@@ -12,6 +19,8 @@ import { ReactiveFile } from "../types/reactiveFile.interface";
 import { storeOpenFiles } from "../functions/storeOpenFiles.function";
 import { TextUnits } from "../types/textUnits.enum";
 import { ParsedFileName } from "../types/parsedFileName.interface";
+import { BasicFile } from "../types/basicFile.interface";
+import { getFileContent } from "../functions/dbFilesInterface.functions";
 
 export const localStorageChatUserPrompt = "chatUserPrompt";
 export const localStorageChatSystemPrompt = "chatSystemPrompt";
@@ -25,6 +34,7 @@ export function Chat(
   displayedReactiveFile: Accessor<ReactiveFile | null>,
   openFiles: Accessor<ReactiveFile[]>,
   activeDirectoryParsedFileNames: Accessor<Signal<ParsedFileName[]> | null>,
+  activeDirectoryName: Accessor<string | null>,
 ): JSXElement {
   if (ollama === null) return <div>Configure Ollama first</div>;
   if (displayedReactiveFile === null) return <div>Open a file first</div>;
@@ -50,6 +60,43 @@ export function Chat(
       (localStorage.getItem(localStorageChatAssistentPromptUnit) ??
         TextUnits.Sentences) as TextUnits,
     );
+
+  const allDefinedTags = createMemo<string[][]>(() => {
+    const activeDirParsedFileNames = activeDirectoryParsedFileNames();
+
+    if (activeDirParsedFileNames) {
+      return (
+        activeDirParsedFileNames[0]()
+          .filter((fn) => !fn.baseName && fn.tags.length > 0)
+          .map((fn) => fn.tags) ?? []
+      );
+    }
+    return [];
+  });
+  const tagsAppearingInUserPrompt = createMemo<string[][]>(() => {
+    const prompt = userPrompt();
+    return allDefinedTags().filter((tag) =>
+      prompt.includes(`#${tag.join(" ")}`),
+    );
+  });
+  const referencedTagFileContents = createMemo<Signal<BasicFile[]>>(() => {
+    const appearingTags = tagsAppearingInUserPrompt();
+    const activeDirName = activeDirectoryName();
+    const referencedTagFilesSignal = createSignal<BasicFile[]>([]);
+    if (activeDirName !== null) {
+      const fileContentPromises = appearingTags.map(async (tag: string[]) => {
+        const fileName = tag.map((fn) => `#${fn}`).join(" ");
+        return {
+          name: fileName,
+          content: (await getFileContent(activeDirName, fileName)) ?? "",
+        };
+      });
+      Promise.all(fileContentPromises).then((files) =>
+        referencedTagFilesSignal[1](files),
+      );
+    }
+    return referencedTagFilesSignal;
+  });
 
   const reducedFileContent = createMemo(() => {
     const wholeFile = displayedReactiveFile()?.content() ?? "";
@@ -100,6 +147,7 @@ export function Chat(
           reducedFileContent,
           modelThoughts,
           setModelThoughts,
+          referencedTagFileContents,
         );
         setUserPrompt(e.currentTarget.value);
         localStorage.setItem(localStorageChatUserPrompt, e.currentTarget.value);
@@ -107,6 +155,27 @@ export function Chat(
     ></input>,
     <div id="AIWRITER_TOOLBAR">
       <div id="A_T_TOP">
+        <Show when={tagsAppearingInUserPrompt().length > 0}>
+          <div class="prompt_header rounded_top">
+            <i class="bx bx-hash"></i>
+            <span>Tags</span>
+          </div>
+          <div class="tags_list">
+            <For each={tagsAppearingInUserPrompt()}>
+              {(tuple) => {
+                return (
+                  <div class="tag_tuple">
+                    <For each={tuple}>
+                      {(tag) => {
+                        return <div class="tag">{tag}</div>;
+                      }}
+                    </For>
+                  </div>
+                );
+              }}
+            </For>
+          </div>
+        </Show>
         <div class="prompt_header rounded_top">
           <i class="bx bx-info-circle"></i>
           <span>System Prompt</span>
@@ -126,8 +195,8 @@ export function Chat(
         </textarea>
         <Show when={reducedFileContent()}>
           <div class="prompt_header rounded_top">
-            <i class="bx bxs-log-out-circle"></i>
-            <span>Assistant Context</span>
+            <i class="bx bxs-file"></i>
+            <span>File Context</span>
           </div>
           <div class="prompt_settings">
             <input
@@ -162,7 +231,7 @@ export function Chat(
         </Show>
         <Show when={modelThoughts()}>
           <div class="prompt_header rounded_top">
-            <i class="bx bx-folder"></i>
+            <i class="bx bx-network-chart"></i>
             <span>Thoughts</span>
           </div>
           <div class="prompt_settings">
@@ -196,7 +265,7 @@ export function Chat(
         </Show>
         <Show when={userPrompt()}>
           <div class="prompt_header rounded_top">
-            <i class="bx bxs-log-in-circle"></i>
+            <i class="bx bxs-user-voice"></i>
             <span>User Prompt</span>
           </div>
           <div class="prompt rounded_bottom">{userPrompt()}</div>
@@ -232,6 +301,7 @@ export function Chat(
               openFiles,
               reducedFileContent,
               modelThoughts,
+              referencedTagFileContents,
             );
           }}
         >
@@ -252,6 +322,7 @@ function onAssistantPromptInputKeyUp(
   reducedFileContent: Accessor<string>,
   modelThoughts: Accessor<string>,
   setModelThoughts: Setter<string>,
+  referencedTagFileContents: Accessor<Signal<BasicFile[]>>,
 ) {
   switch (e.key) {
     case "Enter":
@@ -268,6 +339,7 @@ function onAssistantPromptInputKeyUp(
         openFiles,
         reducedFileContent,
         modelThoughts,
+        referencedTagFileContents,
       );
       break;
   }
@@ -281,29 +353,47 @@ function generateAssistantResponse(
   openFiles: Accessor<ReactiveFile[]>,
   reducedFileContent: Accessor<string>,
   modelThoughts: Accessor<string>,
+  referencedTagFileContents: Accessor<Signal<BasicFile[]>>,
 ) {
+  const thoughts = modelThoughts();
+  const messages: Message[] = [];
+  const fileContent = reducedFileContent();
+  const tagFileContents = referencedTagFileContents()[0]();
+
+  if (tagFileContents.length > 0) {
+    messages.push({
+      role: "system",
+      content: tagFileContents.map((tfc) => tfc.content).join("\n"),
+    });
+  }
+  messages.push({
+    role: "system",
+    content: systemPrompt(),
+  });
+  if (thoughts) {
+    messages.push({
+      role: "assistant",
+      content: thoughts,
+    });
+  }
+  if (fileContent) {
+    messages.push({
+      role: "assistant",
+      content: fileContent,
+    });
+  }
+  if (userPrompt) {
+    messages.push({
+      role: "user",
+      content: userPrompt,
+    });
+  }
+
   const request: ChatRequest & { stream: true } = {
-    model: "dolphin-phi",
+    model: "mistral-small3.2",
     stream: true,
     //think: true,
-    messages: [
-      {
-        role: "system",
-        content: systemPrompt(),
-      },
-      {
-        role: "assistant",
-        content: reducedFileContent(),
-      },
-      {
-        role: "assistant",
-        content: reducedFileContent(),
-      },
-      {
-        role: "user",
-        content: userPrompt,
-      },
-    ],
+    messages,
   };
   ollama.chat(request).then(async (responseStream) => {
     try {
@@ -361,7 +451,6 @@ function generateAssistantThoughts(
       setModelThoughts("");
       let totalMessage = "";
       for await (const response of responseStream) {
-        console.log(response);
         totalMessage += response.message.content;
         setModelThoughts(
           (prevContent) => prevContent + response.message.content,

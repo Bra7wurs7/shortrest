@@ -31,5 +31,5 @@ export function parseFileName(name: string): ParsedFileName {
     }
   }
 
-  return { name, baseName, tags, ext };
+  return { fullName: name, baseName, tags, ext };
 }

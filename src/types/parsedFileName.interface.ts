@@ -1,5 +1,5 @@
 export interface ParsedFileName {
-  name: string;
+  fullName: string;
   baseName: string;
   tags: string[];
   ext: string;

@@ -270,24 +270,24 @@ function App(): JSXElement {
             <For each={filteredParsedOpenFileNames()}>
               {(parsedName: ParsedFileName, index: Accessor<number>) => (
                 <Switch>
-                  <Match when={rightClickedOpenFile() !== parsedName.name}>
+                  <Match when={rightClickedOpenFile() !== parsedName.fullName}>
                     <button
                       class={
                         "button_file " +
-                        (activeFileName() === parsedName.name
+                        (activeFileName() === parsedName.fullName
                           ? "active "
                           : "") +
-                        (rightClickedOpenFile() === parsedName.name
+                        (rightClickedOpenFile() === parsedName.fullName
                           ? "context_menu"
                           : "")
                       }
                       onclick={() => {
-                        setActiveFileName(parsedName.name);
-                        storeActiveFileName(parsedName.name);
+                        setActiveFileName(parsedName.fullName);
+                        storeActiveFileName(parsedName.fullName);
                       }}
                       oncontextmenu={(e: PointerEvent) => {
                         e.preventDefault();
-                        setRightClickedOpenFile(parsedName.name);
+                        setRightClickedOpenFile(parsedName.fullName);
                       }}
                     >
                       <div class="filename">{parsedName.baseName}</div>
@@ -298,7 +298,7 @@ function App(): JSXElement {
                       </div>
                     </button>
                   </Match>
-                  <Match when={rightClickedOpenFile() === parsedName.name}>
+                  <Match when={rightClickedOpenFile() === parsedName.fullName}>
                     <div
                       class="button_file_contextmenu"
                       onmouseleave={() => {
@@ -323,7 +323,7 @@ function App(): JSXElement {
                           );
                         }}
                       >
-                        {parsedName.name ?? "unnamed file"}
+                        {parsedName.fullName ?? "unnamed file"}
                       </div>
                       <div class="actions">
                         <Switch>
@@ -340,7 +340,7 @@ function App(): JSXElement {
                                 e.stopPropagation();
                                 onClickDownloadOpenFile(
                                   openFiles,
-                                  parsedName.name,
+                                  parsedName.fullName,
                                 );
                               }}
                             >
@@ -451,17 +451,19 @@ function App(): JSXElement {
               >
                 {(parsedName: ParsedFileName, index: Accessor<number>) => (
                   <Switch>
-                    <Match when={rightClickedSavedFile() !== parsedName.name}>
+                    <Match
+                      when={rightClickedSavedFile() !== parsedName.fullName}
+                    >
                       <button
                         class={
                           "button_file " +
-                          (rightClickedSavedFile() === parsedName.name
+                          (rightClickedSavedFile() === parsedName.fullName
                             ? "context_menu"
                             : "")
                         }
                         onclick={() => {
                           onClickSavedFile(
-                            parsedName.name,
+                            parsedName.fullName,
                             activeDirectoryName,
                             openFiles,
                             setOpenFiles,
@@ -469,7 +471,7 @@ function App(): JSXElement {
                         }}
                         oncontextmenu={(e: PointerEvent) => {
                           e.preventDefault();
-                          setRightClickedSavedFile(parsedName.name);
+                          setRightClickedSavedFile(parsedName.fullName);
                         }}
                       >
                         <div class="filename">{parsedName.baseName}</div>
@@ -480,7 +482,9 @@ function App(): JSXElement {
                         </div>
                       </button>
                     </Match>
-                    <Match when={rightClickedSavedFile() === parsedName.name}>
+                    <Match
+                      when={rightClickedSavedFile() === parsedName.fullName}
+                    >
                       <div
                         class="button_file_contextmenu"
                         onmouseleave={() => {
@@ -505,7 +509,7 @@ function App(): JSXElement {
                             );
                           }}
                         >
-                          {parsedName.name ?? "unnamed file"}
+                          {parsedName.fullName ?? "unnamed file"}
                         </div>
                         <div class="actions">
                           <Switch>
@@ -521,7 +525,7 @@ function App(): JSXElement {
                                 onclick={(e) => {
                                   onClickDownloadSavedFile(
                                     activeDirectoryName,
-                                    parsedName.name,
+                                    parsedName.fullName,
                                   );
                                   e.stopPropagation();
                                 }}
@@ -538,7 +542,7 @@ function App(): JSXElement {
                                 onclick={(e) => {
                                   e.stopPropagation();
                                   onClickTrashSavedFile(
-                                    parsedName.name,
+                                    parsedName.fullName,
                                     activeDirectoryName,
                                     activeDirectoryParsedFileNames,
                                     directoryNames,
@@ -564,7 +568,7 @@ function App(): JSXElement {
                                 onclick={(e) => {
                                   e.stopPropagation();
                                   onRenameSavedFile(
-                                    parsedName.name,
+                                    parsedName.fullName,
                                     rightClickedSavedFileNewName(),
                                     activeDirectoryParsedFileNames,
                                     activeDirectoryName,
@@ -597,6 +601,7 @@ function App(): JSXElement {
             activeFile,
             openFiles,
             activeDirectoryParsedFileNames,
+            activeDirectoryName,
           )}
         </Match>
         <Match when={appMode() === AppMode.Donate}>{DonateComponent()}</Match>
@@ -788,8 +793,8 @@ function onInputKeyUp(
         storeOpenFiles(openFiles);
       } else {
         if ((filtrdOpenFiles.length = 1)) {
-          setActiveFile(filtrdOpenFiles[0].name);
-          storeActiveFileName(filtrdOpenFiles[0].name);
+          setActiveFile(filtrdOpenFiles[0].fullName);
+          storeActiveFileName(filtrdOpenFiles[0].fullName);
           setInputValue("");
         } else if (
           filtrdAllFileNames !== null &&
@@ -797,10 +802,10 @@ function onInputKeyUp(
           (filtrdAllFileNames.length = 1 && (filtrdOpenFiles.length = 0))
         ) {
           const [name, setName] = createSignal<string>(
-            filtrdAllFileNames[0].name,
+            filtrdAllFileNames[0].fullName,
           );
           const [content, setContent] = createSignal<string>("");
-          getFileContent(activeDirName, filtrdAllFileNames[0].name).then(
+          getFileContent(activeDirName, filtrdAllFileNames[0].fullName).then(
             (content) => {
               if (content !== null) {
                 setContent(content);
