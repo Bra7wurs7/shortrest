@@ -29,7 +29,7 @@ export const localStorageChatAssistentPromptLength =
 export const localStorageChatAssistentPromptUnit = "chatAssistantPromptUnit";
 export const localStorageChatModelThoughts = "chatModelThoughts";
 
-export function Chat(
+export function AiWriter(
   ollama: Ollama | null,
   displayedReactiveFile: Accessor<ReactiveFile | null>,
   openFiles: Accessor<ReactiveFile[]>,

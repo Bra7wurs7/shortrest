@@ -34,9 +34,10 @@ import { BasicFile } from "./types/basicFile.interface";
 import { storeActiveFileName } from "./functions/storeActiveFileName.function";
 import { SettingsComponent } from "./components/settings.component";
 import { ActiveEntity } from "./components/activeEntity.component";
-import { Chat } from "./components/chat.component";
+import { AiWriter } from "./components/aiwriter.component";
 import { Ollama } from "ollama";
 import { DonateComponent } from "./components/donate.component";
+import { MdReader } from "./components/mdreader.component";
 
 export const localStorageOpenFilesKey = "openFiles";
 export const localStorageActiveFileNameKey = "activeFile";
@@ -47,6 +48,7 @@ function App(): JSXElement {
   const appModes = [
     { mode: AppMode.Settings, icon: "bx-cog" },
     { mode: AppMode.AiWriter, icon: "bxs-receipt" },
+    { mode: AppMode.MdReader, icon: "bx-book-reader" },
     { mode: AppMode.Donate, icon: "bx-donate-heart" },
   ];
 
@@ -596,13 +598,16 @@ function App(): JSXElement {
           {SettingsComponent()}
         </Match>
         <Match when={appMode() === AppMode.AiWriter}>
-          {Chat(
+          {AiWriter(
             ollamaConnection(),
             activeFile,
             openFiles,
             activeDirectoryParsedFileNames,
             activeDirectoryName,
           )}
+        </Match>
+        <Match when={appMode() === AppMode.MdReader}>
+          {MdReader(activeFile)}
         </Match>
         <Match when={appMode() === AppMode.Donate}>{DonateComponent()}</Match>
       </Switch>
