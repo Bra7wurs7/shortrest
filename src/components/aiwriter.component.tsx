@@ -227,7 +227,9 @@ export function AiWriter(
               <option value={TextUnits.All}>All</option>
             </select>
           </div>
-          <div class="prompt rounded_bottom">{reducedFileContent()}</div>
+          <div class="readonly_prompt rounded_bottom">
+            {reducedFileContent()}
+          </div>
         </Show>
         <Show when={modelThoughts()}>
           <div class="prompt_header rounded_top">

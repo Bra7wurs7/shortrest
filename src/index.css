@@ -256,14 +256,22 @@
     }
 
     #MARKDOWN_READER {
-        grid-area: 1 / 3 / 8 / 9;
+        grid-area: 1 / 3 / 8 / 8;
         color: var(--color_foreground);
         background-color: var(--color_background_soft);
         padding: var(--size_padding);
         overflow-y: scroll;
+        font-family: var(--serif);
 
         :first-child {
             margin-top: 0;
+        }
+
+        code {
+            font-family: var(--mono);
+            background-color: var(--color_background_hard);
+            border-radius: var(--size_border_radius);
+            border-top-left-radius: 0;
         }
 
         table {
@@ -430,6 +438,21 @@
                 outline: none;
                 border-color: var(--color_foreground_soft);
             }
+        }
+
+        .readonly_prompt {
+            display: flex;
+            flex-direction: row;
+            background-color: var(--color_background);
+            border: var(--size_border) var(--style_border) var(--color_border);
+            border-top: 0;
+            color: var(--color_foreground_hard);
+            font-family: var(--sans);
+            padding: var(--size_padding);
+            margin-bottom: var(--size_margin);
+            font-size: small;
+            border-bottom-left-radius: var(--size_border_radius);
+            border-bottom-right-radius: var(--size_border_radius);
         }
 
         .tags_list {
