@@ -295,7 +295,7 @@ function App(): JSXElement {
                       <div class="filename">{parsedName.baseName}</div>
                       <div class="tags">
                         <For each={parsedName.tags}>
-                          {(tag: string) => <span>&nbsp;#{tag}</span>}
+                          {(tag: string) => <span>&nbsp;{tag}</span>}
                         </For>
                       </div>
                     </button>
@@ -479,7 +479,7 @@ function App(): JSXElement {
                         <div class="filename">{parsedName.baseName}</div>
                         <div class="tags">
                           <For each={parsedName.tags}>
-                            {(tag: string) => <span>&nbsp;#{tag}</span>}
+                            {(tag: string) => <span>&nbsp;{tag}</span>}
                           </For>
                         </div>
                       </button>
@@ -640,22 +640,6 @@ function onClickSavedFile(
       setOpenFiles([...openFiles(), { name, setName, content, setContent }]);
       storeOpenFiles(openFiles);
     }
-  }
-}
-
-function onEditorChange(
-  event: Event & {
-    currentTarget: HTMLTextAreaElement;
-    target: HTMLTextAreaElement;
-  },
-  accessor: Accessor<string> | null,
-  setter: Setter<string> | null,
-  openFiles: Accessor<ReactiveFile[]>,
-) {
-  if (accessor && setter) {
-    const fileContent = accessor();
-    setter(event.target?.value);
-    storeOpenFiles(openFiles);
   }
 }
 

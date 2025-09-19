@@ -11,9 +11,11 @@ import {
   createSignal,
   For,
   JSXElement,
+  Match,
   Setter,
   Show,
   Signal,
+  Switch,
 } from "solid-js";
 import { ReactiveFile } from "../types/reactiveFile.interface";
 import { storeOpenFiles } from "../functions/storeOpenFiles.function";
@@ -28,6 +30,7 @@ export const localStorageChatAssistentPromptLength =
   "chatAssistantPromptLength";
 export const localStorageChatAssistentPromptUnit = "chatAssistantPromptUnit";
 export const localStorageChatModelThoughts = "chatModelThoughts";
+export const sessionStorageDisabledTags = "disabledTags";
 
 export function AiWriter(
   ollama: Ollama | null,
@@ -55,12 +58,18 @@ export function AiWriter(
     createSignal<number>(
       Number(localStorage.getItem(localStorageChatAssistentPromptLength)),
     );
+
   const [reducedFileContentUnit, setReducedFileContentUnit] =
     createSignal<TextUnits>(
       (localStorage.getItem(localStorageChatAssistentPromptUnit) ??
         TextUnits.Sentences) as TextUnits,
     );
 
+  const [disabledTags, setDisabledTags] = createSignal<string[]>(
+    JSON.parse(sessionStorage.getItem(sessionStorageDisabledTags) ?? "[]"),
+  );
+
+  // Memos
   const allDefinedTags = createMemo<string[][]>(() => {
     const activeDirParsedFileNames = activeDirectoryParsedFileNames();
 
@@ -73,19 +82,23 @@ export function AiWriter(
     }
     return [];
   });
-  const tagsAppearingInUserPrompt = createMemo<string[][]>(() => {
+  const referencedTags = createMemo<string[][]>(() => {
+    const fileName = displayedReactiveFile()?.name();
     const prompt = userPrompt();
-    return allDefinedTags().filter((tag) =>
-      prompt.includes(`#${tag.join(" ")}`),
+    return allDefinedTags().filter(
+      (tag) =>
+        (fileName?.includes(`${tag.join(" ")}`) &&
+          fileName !== `${tag.join(" ")}`) ||
+        prompt.includes(`${tag.join(" ")}`),
     );
   });
   const referencedTagFileContents = createMemo<Signal<BasicFile[]>>(() => {
-    const appearingTags = tagsAppearingInUserPrompt();
+    const appearingTags = referencedTags();
     const activeDirName = activeDirectoryName();
     const referencedTagFilesSignal = createSignal<BasicFile[]>([]);
     if (activeDirName !== null) {
       const fileContentPromises = appearingTags.map(async (tag: string[]) => {
-        const fileName = tag.map((fn) => `#${fn}`).join(" ");
+        const fileName = tag.map((fn) => `${fn}`).join(" ");
         return {
           name: fileName,
           content: (await getFileContent(activeDirName, fileName)) ?? "",
@@ -146,8 +159,8 @@ export function AiWriter(
           openFiles,
           reducedFileContent,
           modelThoughts,
-          setModelThoughts,
           referencedTagFileContents,
+          disabledTags,
         );
         setUserPrompt(e.currentTarget.value);
         localStorage.setItem(localStorageChatUserPrompt, e.currentTarget.value);
@@ -155,21 +168,45 @@ export function AiWriter(
     ></input>,
     <div id="AIWRITER_TOOLBAR">
       <div id="A_T_TOP">
-        <Show when={tagsAppearingInUserPrompt().length > 0}>
+        <Show when={referencedTags().length > 0}>
           <div class="prompt_header rounded_top">
             <i class="bx bx-hash"></i>
             <span>Tags</span>
           </div>
           <div class="tags_list">
-            <For each={tagsAppearingInUserPrompt()}>
+            <For each={referencedTags()}>
               {(tuple) => {
                 return (
-                  <div class="tag_tuple">
-                    <For each={tuple}>
-                      {(tag) => {
-                        return <div class="tag">{tag}</div>;
-                      }}
-                    </For>
+                  <div
+                    class={
+                      "tag_row " +
+                      (disabledTags().includes(`${tuple.join(" ")}`)
+                        ? "disabled"
+                        : "")
+                    }
+                    onclick={() => {
+                      onClickTagToggle(tuple, disabledTags, setDisabledTags);
+                    }}
+                  >
+                    <div>
+                      <For each={tuple}>
+                        {(tag) => {
+                          return <div class="tag">{tag}</div>;
+                        }}
+                      </For>
+                    </div>
+                    <Switch>
+                      <Match
+                        when={disabledTags().includes(`${tuple.join(" ")}`)}
+                      >
+                        <i class="bx bx-checkbox"></i>
+                      </Match>
+                      <Match
+                        when={!disabledTags().includes(`${tuple.join(" ")}`)}
+                      >
+                        <i class="bx bx-checkbox-checked"></i>
+                      </Match>
+                    </Switch>
                   </div>
                 );
               }}
@@ -304,6 +341,7 @@ export function AiWriter(
               reducedFileContent,
               modelThoughts,
               referencedTagFileContents,
+              disabledTags,
             );
           }}
         >
@@ -323,16 +361,11 @@ function onAssistantPromptInputKeyUp(
   openFiles: Accessor<ReactiveFile[]>,
   reducedFileContent: Accessor<string>,
   modelThoughts: Accessor<string>,
-  setModelThoughts: Setter<string>,
   referencedTagFileContents: Accessor<Signal<BasicFile[]>>,
+  disabledTags: Accessor<string[]>,
 ) {
   switch (e.key) {
     case "Enter":
-      displayedReactiveFile()?.setContent((prev) =>
-        prev
-          ? prev + "\n> " + e.currentTarget.value + "\n"
-          : "> " + e.currentTarget.value + "\n",
-      );
       generateAssistantResponse(
         e.currentTarget.value,
         ollama,
@@ -342,6 +375,7 @@ function onAssistantPromptInputKeyUp(
         reducedFileContent,
         modelThoughts,
         referencedTagFileContents,
+        disabledTags,
       );
       break;
   }
@@ -356,16 +390,21 @@ function generateAssistantResponse(
   reducedFileContent: Accessor<string>,
   modelThoughts: Accessor<string>,
   referencedTagFileContents: Accessor<Signal<BasicFile[]>>,
+  disabledTags: Accessor<string[]>,
 ) {
   const thoughts = modelThoughts();
   const messages: Message[] = [];
   const fileContent = reducedFileContent();
   const tagFileContents = referencedTagFileContents()[0]();
+  const dsbldTags = disabledTags();
 
   if (tagFileContents.length > 0) {
     messages.push({
       role: "system",
-      content: tagFileContents.map((tfc) => tfc.content).join("\n"),
+      content: tagFileContents
+        .filter((tfc) => !dsbldTags.includes(tfc.name))
+        .map((tfc) => tfc.content)
+        .join("\n"),
     });
   }
   messages.push({
@@ -468,4 +507,22 @@ function generateAssistantThoughts(
       console.error("Error processing chat response:", error);
     }
   });
+}
+
+function onClickTagToggle(
+  tuple: string[],
+  disabledTags: Accessor<string[]>,
+  setDisabledTags: Setter<string[]>,
+) {
+  const tag = `${tuple.join(" ")}`;
+  const dsbldTags = disabledTags();
+  if (dsbldTags.includes(tag)) {
+    setDisabledTags(dsbldTags.filter((t) => t !== tag));
+  } else {
+    setDisabledTags([tag, ...dsbldTags]);
+  }
+  sessionStorage.setItem(
+    sessionStorageDisabledTags,
+    JSON.stringify(disabledTags()),
+  );
 }
