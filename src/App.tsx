@@ -33,11 +33,11 @@ import { ParsedFileName } from "./types/parsedFileName.interface";
 import { BasicFile } from "./types/basicFile.interface";
 import { storeActiveFileName } from "./functions/storeActiveFileName.function";
 import { SettingsComponent } from "./components/settings.component";
-import { ActiveEntity } from "./components/activeEntity.component";
 import { AiWriter } from "./components/aiwriter.component";
 import { Ollama } from "ollama";
 import { DonateComponent } from "./components/donate.component";
 import { MdReader } from "./components/mdreader.component";
+import { OpenFileContentDifferentToSavedFileContent } from "./functions/openFileContentDifferentToSavedFileContent.function";
 
 export const localStorageOpenFilesKey = "openFiles";
 export const localStorageActiveFileNameKey = "activeFile";
@@ -292,7 +292,12 @@ function App(): JSXElement {
                         setRightClickedOpenFile(parsedName.fullName);
                       }}
                     >
-                      <div class="filename">{parsedName.baseName}</div>
+                      <div class="filename">
+                        {parsedName.baseName}
+                        <Show when={false}>
+                          <i class="bx bx-edit"></i>
+                        </Show>
+                      </div>
                       <div class="tags">
                         <For each={parsedName.tags}>
                           {(tag: string) => <span>&nbsp;{tag}</span>}
@@ -469,6 +474,7 @@ function App(): JSXElement {
                             activeDirectoryName,
                             openFiles,
                             setOpenFiles,
+                            setActiveFileName,
                           );
                         }}
                         oncontextmenu={(e: PointerEvent) => {
@@ -620,6 +626,7 @@ function onClickSavedFile(
   activeDirectoryName: Accessor<string | null>,
   openFiles: Accessor<ReactiveFile[]>,
   setOpenFiles: Setter<ReactiveFile[]>,
+  setActiveFileName: Setter<string | null>,
 ) {
   const fileIndexInOpenFiles = openFiles().findIndex(
     (f) => f.name() === fileName,
@@ -636,11 +643,20 @@ function onClickSavedFile(
         } else {
           throw new Error("file not found");
         }
+        storeOpenFiles(openFiles);
       });
-      setOpenFiles([...openFiles(), { name, setName, content, setContent }]);
-      storeOpenFiles(openFiles);
+      setOpenFiles([
+        ...openFiles(),
+        {
+          name,
+          setName,
+          content,
+          setContent,
+        },
+      ]);
     }
   }
+  setActiveFileName(fileName);
 }
 
 async function onClickCloseOpenFile(
@@ -699,17 +715,19 @@ function onClickSaveOpenFile(
   const activeDirName: string | null = activeDirectoryName();
   const activeDirFileNames: Signal<ParsedFileName[]> | null =
     activeDirectoryFileNames();
+  const fileAlreadyExists =
+    activeDirFileNames === null
+      ? false
+      : !!activeDirFileNames[0]().find(
+          (adfn) => adfn.fullName === openFile.name(),
+        );
 
   if (openFile && activeDirName && activeDirFileNames) {
     writeFileToDirectory(activeDirName, {
       name: openFile.name(),
       content: openFile.content(),
     }).then(() => {
-      if (
-        !activeDirFileNames[0]().find(
-          (adfn) => adfn.baseName === openFile.name(),
-        )
-      )
+      if (!fileAlreadyExists)
         activeDirFileNames[1]([
           ...activeDirFileNames[0](),
           parseFileName(openFile.name()),
@@ -775,6 +793,8 @@ function onInputKeyUp(
       ) {
         const [name, setName] = createSignal<string>(e.currentTarget.value);
         const [content, setContent] = createSignal<string>("");
+        const [contentDifferentFromSaved, setContentDifferentFromSaved] =
+          createSignal(false);
         setOpenFiles([...openFiles(), { name, setName, content, setContent }]);
         setActiveFile(name);
         storeActiveFileName(name());

@@ -13,7 +13,6 @@ export const localStorageChatModelThoughts = "chatModelThoughts";
 export function MdReader(
   displayedReactiveFile: Accessor<ReactiveFile | null>,
 ): JSXElement {
-  console.log();
   return [
     <div
       id="MARKDOWN_READER"
