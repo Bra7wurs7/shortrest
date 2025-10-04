@@ -2,7 +2,7 @@
 import { render } from "solid-js/web";
 
 import "./index.css";
-import "./assets/boxicons-2.1.4/css/boxicons.css";
+import "boxicons/css/boxicons.min.css";
 import App from "./App";
 
 const root = document.getElementById("root");

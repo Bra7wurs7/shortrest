@@ -195,17 +195,19 @@
             }
         }
     }
-    #APP_MODE_WINDOW {
-        grid-area: 1 / 3 / 8 / 9;
+    #SETTINGS_WINDOW {
+        grid-area: 1 / 3 / 8 / 8;
         display: flex;
         flex-direction: column;
         background-color: var(--color_background);
+        border-top-right-radius: var(--size_border_radius);
 
         #SETTINGS_HEADER {
             background-color: var(--color_background_soft);
             height: var(--size_toolbar_width);
             box-shadow: var(--shadow);
             margin-bottom: var(--size_margin);
+            border-top-right-radius: var(--size_border_radius);
         }
 
         .settings_category {
@@ -220,6 +222,36 @@
                 var(--style_border);
             box-sizing: border-box;
             height: var(--size_toolbar_width);
+            padding: var(--size_padding);
+
+            input {
+                border: var(--size_border) var(--style_border) transparent;
+                text-align: right;
+                width: 100px;
+                background-color: var(--color_background_soft);
+                color: var(--color_foreground);
+                &:hover {
+                    border-color: var(--color_border_light);
+                }
+                &:focus {
+                    outline: none;
+                    border-color: var(--color_foreground_soft);
+                }
+            }
+
+            select {
+                background-color: var(--color_background);
+                color: var(--color_foreground);
+                border-width: var(--size_border);
+                border-color: var(--color_border);
+                &:hover {
+                    border-color: var(--color_border_light);
+                }
+                &:focus {
+                    outline: none;
+                    border-color: var(--color_foreground);
+                }
+            }
         }
 
         .category_title {
@@ -264,7 +296,7 @@
         grid-area: 1 / 3 / 8 / 8;
         max-height: 100%;
         overflow: scroll;
-        font-family: var(--sans);
+        font-family: var(--serif);
         color: var(--color_foreground);
         line-height: 1.7;
         font-size: 16px;
@@ -662,6 +694,10 @@
             background-color: var(--color_background_soft);
             width: 100%;
             box-shadow: var(--shadow);
+
+            &.yellow_border {
+                border-color: var(--yellow-dim);
+            }
 
             &:not(:first-of-type) {
                 margin-top: var(--size_margin);
@@ -1100,4 +1136,10 @@
 
 .border_radius {
     border-radius: var(--size_toolbar_width);
+}
+
+.bx {
+    &.yellow_dim {
+        color: var(--yellow-dim);
+    }
 }

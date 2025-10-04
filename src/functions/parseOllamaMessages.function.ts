@@ -1,6 +1,5 @@
 import { Message, ToolCall } from "ollama";
 
-/** @author Sebastian Pöhlmann & Codestral:0898a8b286d5 */
 export function parseOllamaMessages(messagesJson: string): Message[] | string {
   let messages;
   try {

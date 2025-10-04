@@ -3,6 +3,7 @@ import {
   ChatResponse,
   Config,
   Message,
+  ModelResponse,
   Ollama,
 } from "ollama/dist/browser";
 import {
@@ -23,6 +24,7 @@ import { TextUnits } from "../types/textUnits.enum";
 import { ParsedFileName } from "../types/parsedFileName.interface";
 import { BasicFile } from "../types/basicFile.interface";
 import { getFileContent } from "../functions/dbFilesInterface.functions";
+import { AbortableAsyncIterator } from "ollama";
 
 export const localStorageChatUserPrompt = "chatUserPrompt";
 export const localStorageChatSystemPrompt = "chatSystemPrompt";
@@ -38,6 +40,7 @@ export function AiWriter(
   openFiles: Accessor<ReactiveFile[]>,
   activeDirectoryParsedFileNames: Accessor<Signal<ParsedFileName[]> | null>,
   activeDirectoryName: Accessor<string | null>,
+  ollamaModel: Accessor<ModelResponse | null>,
 ): JSXElement {
   if (ollama === null) return <div>Configure Ollama first</div>;
   if (displayedReactiveFile === null) return <div>Open a file first</div>;
@@ -53,6 +56,9 @@ export function AiWriter(
   const [modelThoughts, setModelThoughts] = createSignal<string>(
     localStorage.getItem(localStorageChatModelThoughts) ?? "",
   );
+
+  const [runningPrompt, setRunningPrompt] =
+    createSignal<AbortableAsyncIterator<ChatResponse> | null>(null);
 
   const [reducedFileContentLength, setReducedFileContentLength] =
     createSignal<number>(
@@ -161,6 +167,9 @@ export function AiWriter(
           modelThoughts,
           referencedTagFileContents,
           disabledTags,
+          ollamaModel,
+          runningPrompt,
+          setRunningPrompt,
         );
         setUserPrompt(e.currentTarget.value);
         localStorage.setItem(localStorageChatUserPrompt, e.currentTarget.value);
@@ -286,6 +295,11 @@ export function AiWriter(
                   reducedFileContent,
                   modelThoughts,
                   setModelThoughts,
+                  referencedTagFileContents,
+                  disabledTags,
+                  ollamaModel,
+                  runningPrompt,
+                  setRunningPrompt,
                 );
               }}
             >
@@ -311,6 +325,17 @@ export function AiWriter(
         </Show>
       </div>
       <div>
+        <Show when={runningPrompt() !== null}>
+          <button
+            class="user_action yellow_border rounded_right rounded_left"
+            onclick={() => {
+              runningPrompt()?.abort();
+            }}
+          >
+            Abort
+            <i class="bx bx-block yellow_dim" />
+          </button>
+        </Show>
         <button
           class="user_action rounded_right rounded_left"
           onclick={() => {
@@ -323,6 +348,11 @@ export function AiWriter(
               reducedFileContent,
               modelThoughts,
               setModelThoughts,
+              referencedTagFileContents,
+              disabledTags,
+              ollamaModel,
+              runningPrompt,
+              setRunningPrompt,
             );
           }}
         >
@@ -342,6 +372,9 @@ export function AiWriter(
               modelThoughts,
               referencedTagFileContents,
               disabledTags,
+              ollamaModel,
+              runningPrompt,
+              setRunningPrompt,
             );
           }}
         >
@@ -363,6 +396,9 @@ function onAssistantPromptInputKeyUp(
   modelThoughts: Accessor<string>,
   referencedTagFileContents: Accessor<Signal<BasicFile[]>>,
   disabledTags: Accessor<string[]>,
+  ollamaModel: Accessor<ModelResponse | null>,
+  runningPrompt: Accessor<AbortableAsyncIterator<ChatResponse> | null>,
+  setRunningPrompt: Setter<AbortableAsyncIterator<ChatResponse> | null>,
 ) {
   switch (e.key) {
     case "Enter":
@@ -376,6 +412,9 @@ function onAssistantPromptInputKeyUp(
         modelThoughts,
         referencedTagFileContents,
         disabledTags,
+        ollamaModel,
+        runningPrompt,
+        setRunningPrompt,
       );
       break;
   }
@@ -391,12 +430,20 @@ function generateAssistantResponse(
   modelThoughts: Accessor<string>,
   referencedTagFileContents: Accessor<Signal<BasicFile[]>>,
   disabledTags: Accessor<string[]>,
+  ollamaModel: Accessor<ModelResponse | null>,
+  runningPrompt: Accessor<AbortableAsyncIterator<ChatResponse> | null>,
+  setRunningPrompt: Setter<AbortableAsyncIterator<ChatResponse> | null>,
 ) {
   const thoughts = modelThoughts();
   const messages: Message[] = [];
   const fileContent = reducedFileContent();
   const tagFileContents = referencedTagFileContents()[0]();
   const dsbldTags = disabledTags();
+  const llmModel = ollamaModel();
+
+  if (llmModel === undefined || llmModel?.model === undefined) {
+    return;
+  }
 
   if (tagFileContents.length > 0) {
     messages.push({
@@ -431,12 +478,13 @@ function generateAssistantResponse(
   }
 
   const request: ChatRequest & { stream: true } = {
-    model: "mistral-small3.2",
+    model: llmModel.model,
     stream: true,
-    //think: true,
+    think: false,
     messages,
   };
   ollama.chat(request).then(async (responseStream) => {
+    setRunningPrompt(responseStream);
     try {
       for await (const response of responseStream) {
         displayedReactiveFile()?.setContent(
@@ -444,9 +492,11 @@ function generateAssistantResponse(
         );
         if (response.done) {
           storeOpenFiles(openFiles);
+          setRunningPrompt(null);
         }
       }
     } catch (error) {
+      setRunningPrompt(null);
       console.error("Error processing chat response:", error);
     }
   });
@@ -461,33 +511,66 @@ function generateAssistantThoughts(
   reducedFileContent: Accessor<string>,
   modelThoughts: Accessor<string>,
   setModelThoughts: Setter<string>,
+  referencedTagFileContents: Accessor<Signal<BasicFile[]>>,
+  disabledTags: Accessor<string[]>,
+  ollamaModel: Accessor<ModelResponse | null>,
+  runningPrompt: Accessor<AbortableAsyncIterator<ChatResponse> | null>,
+  setRunningPrompt: Setter<AbortableAsyncIterator<ChatResponse> | null>,
 ) {
+  const messages: Message[] = [];
+  const thoughts = modelThoughts();
+  const fileContent = reducedFileContent();
+  const tagFileContents = referencedTagFileContents()[0]();
+  const dsbldTags = disabledTags();
+  const llmModel = ollamaModel();
+
+  if (llmModel === undefined || llmModel?.model === undefined) {
+    return;
+  }
+
+  if (tagFileContents.length > 0) {
+    messages.push({
+      role: "system",
+      content: tagFileContents
+        .filter((tfc) => !dsbldTags.includes(tfc.name))
+        .map((tfc) => tfc.content)
+        .join("\n"),
+    });
+  }
+  messages.push({
+    role: "system",
+    content: systemPrompt(),
+  });
+  if (thoughts) {
+    messages.push({
+      role: "assistant",
+      content: thoughts,
+    });
+  }
+  if (fileContent) {
+    messages.push({
+      role: "assistant",
+      content: fileContent,
+    });
+  }
+  if (userPrompt) {
+    messages.push({
+      role: "user",
+      content: userPrompt,
+    });
+  }
+
   const request: ChatRequest & { stream: true } = {
-    model: "dolphin-phi",
+    model: llmModel.model,
     stream: true,
-    messages: [
-      {
-        role: "system",
-        content: systemPrompt(),
-      },
-      {
-        role: "assistant",
-        content: modelThoughts(),
-      },
-      {
-        role: "assistant",
-        content: reducedFileContent(),
-      },
-      {
-        role: "user",
-        content: userPrompt,
-      },
-    ],
+    //think: true,
+    messages,
     options: {
       stop: ["</think>"],
     },
   };
   ollama.chat(request).then(async (responseStream) => {
+    setRunningPrompt(responseStream);
     try {
       setModelThoughts("");
       let totalMessage = "";
@@ -501,9 +584,11 @@ function generateAssistantThoughts(
             setModelThoughts((prevContent) => prevContent + "</think>");
           }
           storeOpenFiles(openFiles);
+          setRunningPrompt(null);
         }
       }
     } catch (error) {
+      setRunningPrompt(null);
       console.error("Error processing chat response:", error);
     }
   });

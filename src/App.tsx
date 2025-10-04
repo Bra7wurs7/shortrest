@@ -1,5 +1,6 @@
 import {
   Accessor,
+  createEffect,
   createMemo,
   createSignal,
   For,
@@ -8,6 +9,7 @@ import {
   Show,
   Signal,
   Switch,
+  untrack,
   type JSXElement,
 } from "solid-js";
 import { AppMode } from "./types/appMode.enum";
@@ -34,7 +36,7 @@ import { BasicFile } from "./types/basicFile.interface";
 import { storeActiveFileName } from "./functions/storeActiveFileName.function";
 import { SettingsComponent } from "./components/settings.component";
 import { AiWriter } from "./components/aiwriter.component";
-import { Ollama } from "ollama";
+import { ModelResponse, Ollama } from "ollama";
 import { DonateComponent } from "./components/donate.component";
 import { MdReader } from "./components/mdreader.component";
 import { OpenFileContentDifferentToSavedFileContent } from "./functions/openFileContentDifferentToSavedFileContent.function";
@@ -43,6 +45,8 @@ export const localStorageOpenFilesKey = "openFiles";
 export const localStorageActiveFileNameKey = "activeFile";
 export const localStorageActiveDirectoryName = "activeDirectory";
 export const localStorageAppMode = "appMode";
+export const localStorageOllamaModel = "ollamaModel";
+export const localStorageOllamaUrl = "ollamaUrl";
 
 function App(): JSXElement {
   const appModes = [
@@ -87,6 +91,15 @@ function App(): JSXElement {
   >(null);
   const [ollamaConnection, setOllamaConnection] = createSignal<Ollama | null>(
     new Ollama(),
+  );
+  const [ollamaUrl, setOllamaUrl] = createSignal<string>(
+    localStorage.getItem(localStorageOllamaUrl) || "127.0.0.1:11434",
+  );
+  const [ollamaModels, setOllamaModels] = createSignal<ModelResponse[] | null>(
+    null,
+  );
+  const [ollamaModel, setOllamaModel] = createSignal<ModelResponse | null>(
+    null,
   );
 
   // Memos
@@ -137,6 +150,46 @@ function App(): JSXElement {
       return null;
     },
   );
+
+  // Effects
+  createEffect(() => {
+    setOllamaConnection(new Ollama({ host: ollamaUrl() }));
+  });
+  createEffect(() => {
+    ollamaConnection()
+      ?.list()
+      .then((m) => {
+        setOllamaModels(m.models);
+      })
+      .catch((e) => {
+        setOllamaModels(null);
+      });
+  });
+  createEffect(() => {
+    const llmModel = ollamaModel();
+    if (llmModel !== null) {
+      localStorage.setItem(localStorageOllamaModel, llmModel.model);
+    }
+  });
+  createEffect(() => {
+    localStorage.setItem(localStorageOllamaUrl, ollamaUrl());
+  });
+  /* Set this.ollamaModel to the model whose name is stored in localstorage  */
+  createEffect(() => {
+    const llmModel = untrack(ollamaModel);
+    const allLlmModels = ollamaModels();
+    if (allLlmModels && allLlmModels.length > 0 && llmModel === null) {
+      const localStorageModelName = localStorage.getItem(
+        localStorageOllamaModel,
+      );
+      const model = allLlmModels.find((m) => m.model === localStorageModelName);
+      if (model !== undefined) {
+        setOllamaModel(model);
+      } else {
+        setOllamaModel(allLlmModels[0] ?? null);
+      }
+    }
+  });
 
   // Initialization
   listAllDirectories().then((names) => {
@@ -601,7 +654,16 @@ function App(): JSXElement {
       </div>
       <Switch>
         <Match when={appMode() === AppMode.Settings}>
-          {SettingsComponent()}
+          {SettingsComponent(
+            ollamaConnection,
+            setOllamaConnection,
+            ollamaModel,
+            setOllamaModel,
+            ollamaModels,
+            setOllamaModels,
+            ollamaUrl,
+            setOllamaUrl,
+          )}
         </Match>
         <Match when={appMode() === AppMode.AiWriter}>
           {AiWriter(
@@ -610,6 +672,7 @@ function App(): JSXElement {
             openFiles,
             activeDirectoryParsedFileNames,
             activeDirectoryName,
+            ollamaModel,
           )}
         </Match>
         <Match when={appMode() === AppMode.MdReader}>
