@@ -35,10 +35,10 @@ import { ParsedFileName } from "./types/parsedFileName.interface";
 import { BasicFile } from "./types/basicFile.interface";
 import { storeActiveFileName } from "./functions/storeActiveFileName.function";
 import { SettingsComponent } from "./components/settings.component";
-import { AiWriter } from "./components/aiwriter.component";
+import { AiWriter } from "./components/aiWriter.component";
 import { ModelResponse, Ollama } from "ollama";
 import { DonateComponent } from "./components/donate.component";
-import { MdReader } from "./components/mdreader.component";
+import { MdReader } from "./components/mdReader.component";
 import { OpenFileContentDifferentToSavedFileContent } from "./functions/openFileContentDifferentToSavedFileContent.function";
 
 export const localStorageOpenFilesKey = "openFiles";
@@ -476,8 +476,8 @@ function App(): JSXElement {
           </div>
           <Show when={filteredParsedOpenFileNames().length > 0}>
             <div class="filelist_footer">
-              <i class="bx bx-desktop"></i>
-              <span>Desktop</span>
+              <i class="bx bx-clipboard"></i>
+              <span>Clipboard</span>
             </div>
           </Show>
         </div>
@@ -666,6 +666,16 @@ function App(): JSXElement {
           )}
         </Match>
         <Match when={appMode() === AppMode.AiWriter}>
+          <textarea
+            id="BASIC_TEXT_EDITOR"
+            value={activeFile()?.content() ?? ""}
+            onkeyup={(e) => {
+              activeFile()?.setContent(e.currentTarget.value);
+            }}
+            onchange={(e) => {
+              storeOpenFiles(openFiles);
+            }}
+          />
           {AiWriter(
             ollamaConnection(),
             activeFile,
@@ -677,6 +687,14 @@ function App(): JSXElement {
         </Match>
         <Match when={appMode() === AppMode.MdReader}>
           {MdReader(activeFile)}
+          {AiWriter(
+            ollamaConnection(),
+            activeFile,
+            openFiles,
+            activeDirectoryParsedFileNames,
+            activeDirectoryName,
+            ollamaModel,
+          )}
         </Match>
         <Match when={appMode() === AppMode.Donate}>{DonateComponent()}</Match>
       </Switch>

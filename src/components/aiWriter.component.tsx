@@ -143,16 +143,7 @@ export function AiWriter(
   });
 
   return [
-    <textarea
-      id="AIWRITER_HISTORY"
-      value={displayedReactiveFile()?.content() ?? ""}
-      onkeyup={(e) => {
-        displayedReactiveFile()?.setContent(e.currentTarget.value);
-      }}
-      onchange={(e) => {
-        storeOpenFiles(openFiles);
-      }}
-    />,
+    ,
     <input
       id="AIWRITER_PROMPT_INPUT"
       value={userPrompt()}
@@ -179,8 +170,13 @@ export function AiWriter(
       <div id="A_T_TOP">
         <Show when={referencedTags().length > 0}>
           <div class="prompt_header rounded_top">
-            <i class="bx bx-hash"></i>
-            <span>Tags</span>
+            <div class="left">
+              <i class="bx bx-hash"></i>
+              <span>Tags</span>
+            </div>
+            <div class="right">
+              <i class="bx bx-check-square"></i>
+            </div>
           </div>
           <div class="tags_list">
             <For each={referencedTags()}>
@@ -223,8 +219,13 @@ export function AiWriter(
           </div>
         </Show>
         <div class="prompt_header rounded_top">
-          <i class="bx bx-info-circle"></i>
-          <span>System Prompt</span>
+          <div class="left">
+            <i class="bx bx-info-circle"></i>
+            <span>System Prompt</span>
+          </div>
+          <div class="right">
+            <i class="bx bx-check-square"></i>
+          </div>
         </div>
         <textarea
           class="prompt rounded_bottom"
@@ -241,8 +242,13 @@ export function AiWriter(
         </textarea>
         <Show when={reducedFileContent()}>
           <div class="prompt_header rounded_top">
-            <i class="bx bxs-file"></i>
-            <span>File Context</span>
+            <div>
+              <i class="bx bxs-file"></i>
+              <span>File Context</span>
+            </div>
+            <div class="right">
+              <i class="bx bx-check-square"></i>
+            </div>
           </div>
           <div class="prompt_settings">
             <input
@@ -279,9 +285,15 @@ export function AiWriter(
         </Show>
         <Show when={modelThoughts()}>
           <div class="prompt_header rounded_top">
-            <i class="bx bx-network-chart"></i>
-            <span>Thoughts</span>
+            <div class="left">
+              <i class="bx bx-network-chart"></i>
+              <span>Thoughts</span>
+            </div>
+            <div class="right">
+              <i class="bx bx-check-square"></i>
+            </div>
           </div>
+
           <div class="prompt_settings">
             <button
               class=""
@@ -318,8 +330,13 @@ export function AiWriter(
         </Show>
         <Show when={userPrompt()}>
           <div class="prompt_header rounded_top">
-            <i class="bx bxs-user-voice"></i>
-            <span>User Prompt</span>
+            <div class="left">
+              <i class="bx bxs-user-voice"></i>
+              <span>User Prompt</span>
+            </div>
+            <div class="right">
+              <i class="bx bx-check-square"></i>
+            </div>
           </div>
           <div class="prompt rounded_bottom">{userPrompt()}</div>
         </Show>
