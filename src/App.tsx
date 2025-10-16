@@ -51,7 +51,7 @@ export const localStorageOllamaUrl = "ollamaUrl";
 function App(): JSXElement {
   const appModes = [
     { mode: AppMode.Settings, icon: "bx-cog" },
-    { mode: AppMode.AiWriter, icon: "bxs-receipt" },
+    { mode: AppMode.AiWriter, icon: "bx-code" },
     { mode: AppMode.MdReader, icon: "bx-book-reader" },
     { mode: AppMode.Donate, icon: "bx-donate-heart" },
   ];

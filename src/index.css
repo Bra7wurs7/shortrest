@@ -649,8 +649,8 @@
             padding: var(--size_padding);
             margin-bottom: var(--size_margin);
             font-size: small;
-            border-bottom-left-radius: var(--size_border_radius);
-            border-bottom-right-radius: var(--size_border_radius);
+            border-bottom-left-radius: var(--size_border_radius_large);
+            border-bottom-right-radius: var(--size_border_radius_large);
         }
 
         .tags_list {
