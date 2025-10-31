@@ -50,10 +50,10 @@ export const localStorageOllamaUrl = "ollamaUrl";
 
 function App(): JSXElement {
   const appModes = [
-    { mode: AppMode.Settings, icon: "bx-cog" },
     { mode: AppMode.AiWriter, icon: "bx-code" },
     { mode: AppMode.MdReader, icon: "bx-book-reader" },
     { mode: AppMode.Donate, icon: "bx-donate-heart" },
+    { mode: AppMode.Settings, icon: "bx-cog" },
   ];
 
   // Signals
@@ -64,6 +64,8 @@ function App(): JSXElement {
   const [activeDirectoryName, setActiveDirectoryName] = createSignal<
     string | null
   >(localStorage.getItem(localStorageActiveDirectoryName));
+  const [clipboard, setClipboard] =
+    createSignal<ReactiveFile[]>(loadOpenFiles());
   const [openFiles, setOpenFiles] =
     createSignal<ReactiveFile[]>(loadOpenFiles());
   const [activeFileName, setActiveFileName] = createSignal<string | null>(
@@ -159,6 +161,7 @@ function App(): JSXElement {
     ollamaConnection()
       ?.list()
       .then((m) => {
+        console.log(m);
         setOllamaModels(m.models);
       })
       .catch((e) => {
@@ -200,25 +203,7 @@ function App(): JSXElement {
   return (
     <div id="APP_CONTAINER" class="dark_theme">
       <div id="LEFTMOST_SIDEBAR">
-        <div id="LM_S_ACTIONS">
-          <For each={appModes}>
-            {(am, index) => {
-              return (
-                <button
-                  onclick={() => {
-                    setAppMode(am.mode);
-                    localStorage.setItem(localStorageAppMode, am.mode);
-                  }}
-                  class={
-                    "button_icon " + (appMode() === am.mode ? "active" : "")
-                  }
-                >
-                  <i class={"bx " + am.icon}></i>
-                </button>
-              );
-            }}
-          </For>
-        </div>
+        <div id="LM_S_ACTIONS"></div>
         <div id="LM_S_BOTTOM">
           <button
             class={"button_icon"}
@@ -345,7 +330,7 @@ function App(): JSXElement {
                         setRightClickedOpenFile(parsedName.fullName);
                       }}
                     >
-                      <div class="filename">
+                      <div class="filename bg">
                         {parsedName.baseName}
                         <Show when={false}>
                           <i class="bx bx-edit"></i>
@@ -371,7 +356,7 @@ function App(): JSXElement {
                       }}
                     >
                       <div
-                        class="filename"
+                        class="filename text_overflow_fade bg"
                         contenteditable={true}
                         onclick={(e) => {
                           e.stopPropagation();
@@ -535,7 +520,9 @@ function App(): JSXElement {
                           setRightClickedSavedFile(parsedName.fullName);
                         }}
                       >
-                        <div class="filename">{parsedName.baseName}</div>
+                        <div class="filename text_overflow_fade bg">
+                          {parsedName.baseName}
+                        </div>
                         <div class="tags">
                           <For each={parsedName.tags}>
                             {(tag: string) => <span>&nbsp;{tag}</span>}
@@ -652,6 +639,32 @@ function App(): JSXElement {
           </Show>
         </div>
       </div>
+      <Show when={true}>
+        <div id="HEADER_TOOLBAR">
+          <div class="l">
+            <button class="button_icon"></button>
+          </div>
+          <div class="right">
+            <For each={appModes}>
+              {(am) => {
+                return (
+                  <button
+                    onclick={() => {
+                      setAppMode(am.mode);
+                      localStorage.setItem(localStorageAppMode, am.mode);
+                    }}
+                    class={
+                      "button_icon " + (appMode() === am.mode ? "active" : "")
+                    }
+                  >
+                    <i class={"bx " + am.icon}></i>
+                  </button>
+                );
+              }}
+            </For>
+          </div>
+        </div>
+      </Show>
       <Switch>
         <Match when={appMode() === AppMode.Settings}>
           {SettingsComponent(

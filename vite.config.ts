@@ -6,9 +6,13 @@ export default defineConfig({
   plugins: [
     solidPlugin(),
     nodePolyfills({
-      include: ["fs", "path", "stream"],
+      include: ["fs", "path", "stream", "buffer", "events"],
       overrides: {
         fs: "memfs",
+      },
+      globals: {
+        Buffer: true,
+        process: true,
       },
     }),
   ],

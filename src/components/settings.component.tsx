@@ -15,7 +15,6 @@ export function SettingsComponent(
 ): JSXElement {
   return (
     <div id="SETTINGS_WINDOW">
-      <div id="SETTINGS_HEADER"></div>
       <div class="settings_category">
         <div class="category_title">
           <div class="left">

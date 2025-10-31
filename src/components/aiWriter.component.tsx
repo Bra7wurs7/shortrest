@@ -377,7 +377,7 @@ export function AiWriter(
           <i class="bx bx-network-chart" />
         </button>
         <button
-          class="user_action rounded_right"
+          class="user_action rounded_right rounded_left"
           onclick={() => {
             generateAssistantResponse(
               userPrompt(),
