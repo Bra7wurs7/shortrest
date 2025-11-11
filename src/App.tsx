@@ -190,7 +190,7 @@ function App(): JSXElement {
       }
     }
   });
-  // Whenever activeFileName changes
+  // Whenever activeFileName or clipboard changes
   createEffect(() => {
     const actvFileName = activeFileName();
     const actvDirectoryName = untrack(activeDirectoryName);
@@ -204,8 +204,16 @@ function App(): JSXElement {
     if (foundInClipboard) {
       setActiveFile(foundInClipboard);
     } else {
-      const newReactiveFileNameSignal = createSignal(actvFileName);
+      const newReactiveFileNameSignal = createSignal<string>(
+        actvFileName ?? "Unnamed File",
+      );
       const newReactiveFileContentSignal = createSignal("");
+      setActiveFile({
+        name: newReactiveFileNameSignal[0],
+        setName: newReactiveFileNameSignal[1],
+        content: newReactiveFileContentSignal[0],
+        setContent: newReactiveFileContentSignal[1],
+      });
       if (actvDirectoryName !== null && actvFileName !== null) {
         getFileContent(actvDirectoryName, actvFileName).then(
           (existingFileContent) => {
@@ -215,6 +223,17 @@ function App(): JSXElement {
           },
         );
       }
+    }
+  });
+  createEffect(() => {
+    const activeFileContent = activeFile()?.content();
+    const activeFileName = activeFile()?.name();
+    const activeDirectory = activeDirectoryName();
+    if (activeDirectory && activeFileContent && activeFileName) {
+      writeFileToDirectory(activeDirectory, {
+        name: activeFileName,
+        content: activeFileContent,
+      });
     }
   });
 
