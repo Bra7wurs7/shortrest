@@ -8,18 +8,12 @@ use rust_embed::RustEmbed;
 use std::net::SocketAddr;
 use tokio::net::TcpListener;
 
-// This struct is used by rust-embed to discover and embed the files.
-// The `folder` attribute points to the directory relative to your Cargo.toml
-// that you want to embed.
 #[derive(RustEmbed)]
 #[folder = "dist/"]
 struct Assets;
 
-// The main entry point of our application.
-// `tokio::main` is a macro that sets up the asynchronous runtime.
 #[tokio::main]
 async fn main() {
-    // Try binding to port 7777
     let addr = SocketAddr::from(([127, 0, 0, 1], 7777));
 
     match TcpListener::bind(&addr).await {
@@ -27,17 +21,14 @@ async fn main() {
             println!("✅ Server started successfully!");
             println!("   Listening on http://{}", addr);
 
-            // Create the Axum router that defines our application's routes.
             let app = Router::new().fallback(static_handler);
 
-            // Open the default web browser to our server's address.
             let server_url = format!("http://{}", addr);
             if let Err(e) = webbrowser::open(&server_url) {
                 eprintln!("🔥 Failed to open web browser: {}", e);
                 eprintln!("   Please navigate to {} manually.", server_url);
             }
 
-            // Run the server with our Axum application.
             axum::serve(listener, app).await.unwrap();
         }
         Err(e) => {
@@ -52,30 +43,18 @@ async fn main() {
                 eprintln!("❌ Server failed to start: {:?}", e);
             }
 
-            // Exit gracefully
             std::process::exit(0);
         }
     }
 }
 
-/// Fallback handler for serving static files or the main `index.html`.
-/// It takes a `Uri` extractor, which Axum provides with the request's URI.
 async fn static_handler(uri: Uri) -> impl IntoResponse {
-    // Get the path from the URI and remove the leading slash.
     let path = uri.path().trim_start_matches('/');
-
-    // If the path is empty, it means the request was for the root (`/`).
-    // In that case, we serve `index.html`. Otherwise, we use the path.
     let final_path = if path.is_empty() { "index.html" } else { path };
 
-    // Use rust-embed to get the requested file.
     match Assets::get(final_path) {
         Some(content) => {
-            // The file was found, so we serve it.
             let body = Body::from(content.data);
-            // We use `mime_guess` to determine the correct Content-Type header.
-            // This is crucial for the browser to correctly interpret the file
-            // (e.g., as HTML, CSS, JavaScript).
             let mime_type = mime_guess::from_path(final_path).first_or_octet_stream();
 
             Response::builder()
@@ -83,29 +62,18 @@ async fn static_handler(uri: Uri) -> impl IntoResponse {
                 .body(body)
                 .unwrap()
         }
-        None => {
-            // The file was not found in the embedded assets.
-            // This is the crucial part for Single Page Applications (SPAs) like SolidJS.
-            // If the user refreshes on a client-side route (e.g., /about), the server
-            // won't find a file named "about". In this case, we must serve `index.html`
-            // and let the client-side router handle it.
-            match Assets::get("index.html") {
-                Some(content) => {
-                    let body = Body::from(content.data);
-                    Response::builder()
-                        .header(header::CONTENT_TYPE, "text/html")
-                        .body(body)
-                        .unwrap()
-                }
-                None => {
-                    // This is a fallback for the fallback. If `index.html` is also missing,
-                    // something is very wrong with the embedded assets.
-                    Response::builder()
-                        .status(StatusCode::NOT_FOUND)
-                        .body(Body::from("404: Not Found - index.html is missing!"))
-                        .unwrap()
-                }
+        None => match Assets::get("index.html") {
+            Some(content) => {
+                let body = Body::from(content.data);
+                Response::builder()
+                    .header(header::CONTENT_TYPE, "text/html")
+                    .body(body)
+                    .unwrap()
             }
-        }
+            None => Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .body(Body::from("404: Not Found - index.html is missing!"))
+                .unwrap(),
+        },
     }
 }

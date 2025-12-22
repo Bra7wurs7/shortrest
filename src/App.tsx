@@ -14,18 +14,17 @@ import {
 } from "solid-js";
 import { AppMode } from "./types/appMode.enum";
 import { ReactiveFile } from "./types/reactiveFile.interface";
-import { loadOpenFiles } from "./functions/loadOpenFiles.function";
-import { storeOpenFiles } from "./functions/storeOpenFiles.function";
+import { storeClipboard, loadClipboard } from "./functions/clipboard.service";
 import {
-  addDirectory,
+  idbAddDirectory,
   countFilesInDirectory,
-  getFileContent,
-  listAllDirectories,
-  listFileNamesInDirectory,
-  removeDirectory,
-  removeFileFromDirectory,
-  writeFileToDirectory,
-} from "./functions/dbFilesInterface.functions";
+  idbGetFile,
+  idbListDirectories,
+  idbGetDirectory,
+  idbDeleteDirectory,
+  idbDeleteFile,
+  idbSetFile,
+} from "./functions/idbFiles.service";
 import { v4 as uuidv4 } from "uuid";
 import { saveAs } from "file-saver";
 import JSZip from "jszip";
@@ -66,7 +65,7 @@ function App(): JSXElement {
   >(localStorage.getItem(localStorageActiveDirectoryName));
   // Changes to any file (be that the empty unnamed file) are saved to the clipboard to be saved to the IDB later
   const [clipboard, setClipboard] =
-    createSignal<ReactiveFile[]>(loadOpenFiles());
+    createSignal<ReactiveFile[]>(loadClipboard());
   const [activeFileName, setActiveFileName] = createSignal<string | null>(
     localStorage.getItem(localStorageActiveFileNameKey),
   );
@@ -111,7 +110,7 @@ function App(): JSXElement {
     const activeDirName = activeDirectoryName();
     const signal: Signal<ParsedFileName[]> = createSignal<ParsedFileName[]>([]);
     if (activeDirName) {
-      listFileNamesInDirectory(activeDirName).then((names) => {
+      idbGetDirectory(activeDirName).then((names) => {
         signal[1](names.map((fn) => parseFileName(fn)));
       });
       return signal;
@@ -141,7 +140,7 @@ function App(): JSXElement {
         [],
       );
       if (hoveredDirName) {
-        listFileNamesInDirectory(hoveredDirName).then((names) => {
+        idbGetDirectory(hoveredDirName).then((names) => {
           signal[1](names.map((name) => parseFileName(name)));
         });
         return signal;
@@ -215,7 +214,7 @@ function App(): JSXElement {
         setContent: newReactiveFileContentSignal[1],
       });
       if (actvDirectoryName !== null && actvFileName !== null) {
-        getFileContent(actvDirectoryName, actvFileName).then(
+        idbGetFile(actvDirectoryName, actvFileName).then(
           (existingFileContent) => {
             if (existingFileContent !== null) {
               newReactiveFileContentSignal[1](existingFileContent);
@@ -230,7 +229,7 @@ function App(): JSXElement {
     const activeFileName = activeFile()?.name();
     const activeDirectory = activeDirectoryName();
     if (activeDirectory && activeFileContent && activeFileName) {
-      writeFileToDirectory(activeDirectory, {
+      idbSetFile(activeDirectory, {
         name: activeFileName,
         content: activeFileContent,
       });
@@ -238,7 +237,7 @@ function App(): JSXElement {
   });
 
   // Initialization
-  listAllDirectories().then((names) => {
+  idbListDirectories().then((names) => {
     setDirectoryNames(names);
     onUpdateDirectory(directoryNames, setDirectoryNames).then();
   });
@@ -246,7 +245,24 @@ function App(): JSXElement {
   return (
     <div id="APP_CONTAINER" class="dark_theme">
       <div id="LEFTMOST_SIDEBAR">
-        <div id="LM_S_ACTIONS"></div>
+        <div id="LM_S_ACTIONS">
+          <button
+            class={"button_icon"}
+            onclick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <i class="bx bx-cog"></i>
+          </button>
+          <button
+            class={"button_icon"}
+            onclick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            <i class="bx bx-clipboard"></i>
+          </button>
+        </div>
         <div id="LM_S_BOTTOM">
           <button
             class={"button_icon"}
@@ -724,7 +740,7 @@ function App(): JSXElement {
               activeFile()?.setContent(e.currentTarget.value);
             }}
             onchange={(e) => {
-              storeOpenFiles(clipboard);
+              storeClipboard(clipboard);
             }}
           />
           {AiWriter(
@@ -769,7 +785,7 @@ async function onClickCloseOpenFile(
   if (openFile) {
     const savedFileContent =
       activeDirName !== null
-        ? await getFileContent(activeDirName, openFile.name())
+        ? await idbGetFile(activeDirName, openFile.name())
         : null;
 
     const changesExist =
@@ -793,7 +809,7 @@ async function onClickCloseOpenFile(
       setRightClickedOpenFile(null);
     }
 
-    storeOpenFiles(openFiles);
+    storeClipboard(openFiles);
   }
 }
 
@@ -817,7 +833,7 @@ function onClickSaveOpenFile(
         );
 
   if (openFile && activeDirName && activeDirFileNames) {
-    writeFileToDirectory(activeDirName, {
+    idbSetFile(activeDirName, {
       name: openFile.name(),
       content: openFile.content(),
     }).then(() => {
@@ -850,11 +866,9 @@ async function onClickTrashSavedFile(
     activeDirName !== null &&
     activeDirFileNames !== null
   ) {
-    await removeFileFromDirectory(activeDirName, name);
+    await idbDeleteFile(activeDirName, name);
     activeDirFileNames[1](
-      (await listFileNamesInDirectory(activeDirName)).map((fn) =>
-        parseFileName(fn),
-      ),
+      (await idbGetDirectory(activeDirName)).map((fn) => parseFileName(fn)),
     );
     await onUpdateDirectory(directoryNames, setDirectoryNames);
     setConfirmAction(null);
@@ -893,7 +907,7 @@ function onInputKeyUp(
         setActiveFile(name);
         storeActiveFileName(name());
         setInputValue("");
-        storeOpenFiles(openFiles);
+        storeClipboard(openFiles);
       } else {
         if ((filtrdOpenFiles.length = 1)) {
           setActiveFile(filtrdOpenFiles[0].fullName);
@@ -908,7 +922,7 @@ function onInputKeyUp(
             filtrdAllFileNames[0].fullName,
           );
           const [content, setContent] = createSignal<string>("");
-          getFileContent(activeDirName, filtrdAllFileNames[0].fullName).then(
+          idbGetFile(activeDirName, filtrdAllFileNames[0].fullName).then(
             (content) => {
               if (content !== null) {
                 setContent(content);
@@ -943,16 +957,16 @@ async function onUpdateDirectory(
   for (const dns of directoryNamesAndSize) {
     if (dns.count === 0) {
       if (foundEmptyDirectory) {
-        await removeDirectory(dns.name);
+        await idbDeleteDirectory(dns.name);
       } else {
         foundEmptyDirectory = dns.name;
       }
     }
   }
   if (foundEmptyDirectory === null) {
-    await addDirectory(uuidv4());
+    await idbAddDirectory(uuidv4());
   }
-  setDirectoryNames(await listAllDirectories());
+  setDirectoryNames(await idbListDirectories());
 }
 
 function onClickDownloadSavedFile(
@@ -962,7 +976,7 @@ function onClickDownloadSavedFile(
   const activeDirName = activeDirectoryName();
 
   if (activeDirName) {
-    getFileContent(activeDirName, name)
+    idbGetFile(activeDirName, name)
       .then((content) => {
         if (content !== null) {
           const blob = new Blob([content], { type: "text/plain" });
@@ -1014,7 +1028,7 @@ function onClickUploadDirectory(
 
     // Create a new directory in the IDB
     const directoryName = uuidv4();
-    await addDirectory(directoryName);
+    await idbAddDirectory(directoryName);
 
     // Upload each file to the new directory
     for (let i = 0; i < files.length; i++) {
@@ -1024,7 +1038,7 @@ function onClickUploadDirectory(
       reader.readAsText(file);
       reader.onload = async () => {
         const content = reader.result as string;
-        await writeFileToDirectory(directoryName, {
+        await idbSetFile(directoryName, {
           name: file.name,
           content,
         });
@@ -1039,7 +1053,7 @@ function onClickUploadDirectory(
 
 function onClickDownloadDirectory(name: string) {
   // Get all file names in the directory
-  listFileNamesInDirectory(name)
+  idbGetDirectory(name)
     .then((fileNames) => {
       if (fileNames.length === 0) {
         console.warn(`No files found in directory ${name}`);
@@ -1049,7 +1063,7 @@ function onClickDownloadDirectory(name: string) {
       // Create a ZIP archive with all files from the directory
       const zip = new JSZip();
       const promises = fileNames.map((fileName) => {
-        return getFileContent(name, fileName)
+        return idbGetFile(name, fileName)
           .then((content) => {
             if (content !== null) {
               zip.file(fileName, content);
@@ -1108,7 +1122,7 @@ function onRenameOpenFile(
   if (fileToRename !== undefined && newName !== null) {
     fileToRename.setName(newName);
   }
-  storeOpenFiles(openFiles);
+  storeClipboard(openFiles);
 }
 
 async function onRenameSavedFile(
@@ -1133,14 +1147,12 @@ async function onRenameSavedFile(
     !fileWithSameNameAlreadyExists &&
     activeDirFileNames !== null
   ) {
-    const fileContent = await getFileContent(activeDirName, oldName);
+    const fileContent = await idbGetFile(activeDirName, oldName);
     const newFile: BasicFile = { name: newName, content: fileContent ?? "" };
-    await writeFileToDirectory(activeDirName, newFile);
-    await removeFileFromDirectory(activeDirName, oldName);
+    await idbSetFile(activeDirName, newFile);
+    await idbDeleteFile(activeDirName, oldName);
     activeDirFileNames[1](
-      (await listFileNamesInDirectory(activeDirName)).map((fn) =>
-        parseFileName(fn),
-      ),
+      (await idbGetDirectory(activeDirName)).map((fn) => parseFileName(fn)),
     );
   }
 }

@@ -19,11 +19,11 @@ import {
   Switch,
 } from "solid-js";
 import { ReactiveFile } from "../types/reactiveFile.interface";
-import { storeOpenFiles } from "../functions/storeOpenFiles.function";
+import { storeClipboard } from "../functions/clipboard.service";
 import { TextUnits } from "../types/textUnits.enum";
 import { ParsedFileName } from "../types/parsedFileName.interface";
 import { BasicFile } from "../types/basicFile.interface";
-import { getFileContent } from "../functions/dbFilesInterface.functions";
+import { idbGetFile } from "../functions/idbFiles.service";
 import { AbortableAsyncIterator } from "ollama";
 
 export const localStorageChatUserPrompt = "chatUserPrompt";
@@ -107,7 +107,7 @@ export function AiWriter(
         const fileName = tag.map((fn) => `${fn}`).join(" ");
         return {
           name: fileName,
-          content: (await getFileContent(activeDirName, fileName)) ?? "",
+          content: (await idbGetFile(activeDirName, fileName)) ?? "",
         };
       });
       Promise.all(fileContentPromises).then((files) =>
@@ -148,20 +148,24 @@ export function AiWriter(
       id="AIWRITER_PROMPT_INPUT"
       value={userPrompt()}
       onkeyup={(e) => {
-        onAssistantPromptInputKeyUp(
-          e,
-          ollama,
-          displayedReactiveFile,
-          systemPrompt,
-          openFiles,
-          reducedFileContent,
-          modelThoughts,
-          referencedTagFileContents,
-          disabledTags,
-          ollamaModel,
-          runningPrompt,
-          setRunningPrompt,
-        );
+        switch (e.key) {
+          case "Enter":
+            generateAssistantResponse(
+              e.currentTarget.value,
+              ollama,
+              displayedReactiveFile,
+              systemPrompt,
+              openFiles,
+              reducedFileContent,
+              modelThoughts,
+              referencedTagFileContents,
+              disabledTags,
+              ollamaModel,
+              runningPrompt,
+              setRunningPrompt,
+            );
+            break;
+        }
         setUserPrompt(e.currentTarget.value);
         localStorage.setItem(localStorageChatUserPrompt, e.currentTarget.value);
       }}
@@ -403,40 +407,6 @@ export function AiWriter(
   ];
 }
 
-function onAssistantPromptInputKeyUp(
-  e: KeyboardEvent & { currentTarget: HTMLInputElement; target: Element },
-  ollama: Ollama,
-  displayedReactiveFile: Accessor<ReactiveFile | null>,
-  systemPrompt: Accessor<string>,
-  openFiles: Accessor<ReactiveFile[]>,
-  reducedFileContent: Accessor<string>,
-  modelThoughts: Accessor<string>,
-  referencedTagFileContents: Accessor<Signal<BasicFile[]>>,
-  disabledTags: Accessor<string[]>,
-  ollamaModel: Accessor<ModelResponse | null>,
-  runningPrompt: Accessor<AbortableAsyncIterator<ChatResponse> | null>,
-  setRunningPrompt: Setter<AbortableAsyncIterator<ChatResponse> | null>,
-) {
-  switch (e.key) {
-    case "Enter":
-      generateAssistantResponse(
-        e.currentTarget.value,
-        ollama,
-        displayedReactiveFile,
-        systemPrompt,
-        openFiles,
-        reducedFileContent,
-        modelThoughts,
-        referencedTagFileContents,
-        disabledTags,
-        ollamaModel,
-        runningPrompt,
-        setRunningPrompt,
-      );
-      break;
-  }
-}
-
 function generateAssistantResponse(
   userPrompt: string,
   ollama: Ollama,
@@ -508,7 +478,7 @@ function generateAssistantResponse(
           (prevContent) => prevContent + response.message.content,
         );
         if (response.done) {
-          storeOpenFiles(openFiles);
+          storeClipboard(openFiles);
           setRunningPrompt(null);
         }
       }
@@ -600,7 +570,7 @@ function generateAssistantThoughts(
           if (totalMessage.startsWith("<think>")) {
             setModelThoughts((prevContent) => prevContent + "</think>");
           }
-          storeOpenFiles(openFiles);
+          storeClipboard(openFiles);
           setRunningPrompt(null);
         }
       }

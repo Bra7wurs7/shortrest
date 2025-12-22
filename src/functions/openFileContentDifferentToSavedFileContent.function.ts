@@ -1,6 +1,6 @@
 import { Accessor, createSignal } from "solid-js";
 import { ReactiveFile } from "../types/reactiveFile.interface";
-import { getFileContent } from "./dbFilesInterface.functions";
+import { idbGetFile } from "./idbFiles.service";
 
 /** Returns true when the file content of the open file with the given name is different from the content of the file stored in the IDB */
 export async function OpenFileContentDifferentToSavedFileContent(
@@ -16,7 +16,7 @@ export async function OpenFileContentDifferentToSavedFileContent(
   }
 
   const currentContent = openFile.content();
-  const savedContent = await getFileContent(
+  const savedContent = await idbGetFile(
     activeDirectoryName() ?? "",
     openFileName,
   );

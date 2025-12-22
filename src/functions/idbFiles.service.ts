@@ -16,7 +16,7 @@ const dbPromise = openDB("shortrest", 1, {
 });
 
 // List all directories stored in the IDB, with empty directories at the start
-export async function listAllDirectories(): Promise<string[]> {
+export async function idbListDirectories(): Promise<string[]> {
   const db = await dbPromise;
   const dirs = await db.getAll("directories");
 
@@ -45,7 +45,7 @@ export async function listAllDirectories(): Promise<string[]> {
 }
 
 // Add a new directory to the database (if it doesn't already exist)
-export async function addDirectory(dirName: string): Promise<void> {
+export async function idbAddDirectory(dirName: string): Promise<void> {
   const db = await dbPromise;
 
   // Check if the directory exists, if not, create it
@@ -57,9 +57,7 @@ export async function addDirectory(dirName: string): Promise<void> {
 }
 
 // List the names of all files contained inside the directory with the given name
-export async function listFileNamesInDirectory(
-  dirName: string,
-): Promise<string[]> {
+export async function idbGetDirectory(dirName: string): Promise<string[]> {
   const db = await dbPromise;
   const transaction = db.transaction(["files"], "readonly");
   const store = transaction.objectStore("files");
@@ -69,7 +67,7 @@ export async function listFileNamesInDirectory(
 }
 
 // Get the content of a file from a directory
-export async function getFileContent(
+export async function idbGetFile(
   dirName: string,
   fileName: string,
 ): Promise<string | null> {
@@ -79,7 +77,7 @@ export async function getFileContent(
 }
 
 // Write (overwrite) a file to a directory
-export async function writeFileToDirectory(
+export async function idbSetFile(
   dirName: string,
   file: BasicFile,
 ): Promise<void> {
@@ -101,7 +99,7 @@ export async function writeFileToDirectory(
 }
 
 // Remove a file from a directory
-export async function removeFileFromDirectory(
+export async function idbDeleteFile(
   dirName: string,
   fileName: string,
 ): Promise<void> {
@@ -110,7 +108,7 @@ export async function removeFileFromDirectory(
 }
 
 // Remove a whole directory (and all its files)
-export async function removeDirectory(dirName: string): Promise<void> {
+export async function idbDeleteDirectory(dirName: string): Promise<void> {
   const db = await dbPromise;
 
   // First delete all files in the directory

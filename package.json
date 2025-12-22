@@ -17,23 +17,23 @@
   "devDependencies": {
     "license-checker": "^25.0.1",
     "typescript": "^5.9.3",
-    "vite": "^6.3.6",
-    "vite-plugin-solid": "^2.11.9",
+    "vite": "^6.4.1",
+    "vite-plugin-solid": "^2.11.10",
     "vite-plugin-node-polyfills": "^0.24.0"
   },
   "dependencies": {
     "@types/file-saver": "^2.0.7",
     "boxicons": "^2.1.4",
     "buffer": "^6.0.3",
-    "dayjs": "^1.11.18",
+    "dayjs": "^1.11.19",
     "file-saver": "^2.0.5",
     "idb": "^8.0.3",
     "jszip": "^3.10.1",
-    "memfs": "^4.48.1",
+    "memfs": "^4.51.1",
     "micromark": "^4.0.2",
     "micromark-extension-gfm": "^3.0.0",
-    "ollama": "^0.6.0",
-    "solid-js": "^1.9.9",
+    "ollama": "^0.6.3",
+    "solid-js": "^1.9.10",
     "uuid": "^11.1.0"
   }
 }
