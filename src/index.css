@@ -543,6 +543,7 @@
             }
             .right {
                 display: flex;
+                cursor: pointer;
             }
 
             .bx {
@@ -636,6 +637,10 @@
                 outline: none;
                 border-color: var(--color_foreground_soft);
             }
+            &.disabled {
+                background-color: var(--color_border);
+                color: var(--color_border_light);
+            }
         }
 
         .readonly_prompt {
@@ -651,6 +656,10 @@
             font-size: small;
             border-bottom-left-radius: var(--size_border_radius_large);
             border-bottom-right-radius: var(--size_border_radius_large);
+            &.disabled {
+                background-color: var(--color_border);
+                color: var(--color_border_light);
+            }
         }
 
         .tags_list {

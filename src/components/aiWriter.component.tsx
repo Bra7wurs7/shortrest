@@ -35,6 +35,12 @@ export const localStorageChatAssistentPromptUnit = "chatAssistantPromptUnit";
 export const localStorageChatModelThoughts = "chatModelThoughts";
 export const sessionStorageDisabledTags = "disabledTags";
 export const sessionStorageDisabledFiles = "disabledFiles";
+export const sessionStorageDisabledSysPrompt = "disabledSysPrompt";
+export const sessionStorageDisabledAllTags = "disabledAllTags";
+export const sessionStorageDisabledFileContext = "disabledFileContext";
+export const sessionStorageDisabledAllFiles = "disabledAllFiles";
+export const sessionStorageDisabledThoughts = "disabledThoughts";
+export const sessionStorageDisabledUserPrompt = "disabledUserPrompt";
 
 export function AiWriter(
   ollama: Ollama | null,
@@ -80,6 +86,78 @@ export function AiWriter(
   const [disabledFiles, setDisabledFiles] = createSignal<string[]>(
     JSON.parse(sessionStorage.getItem(sessionStorageDisabledFiles) ?? "[]"),
   );
+
+  const [disabledSystemPrompt, setDisabledSystemPrompt] = createSignal<boolean>(
+    JSON.parse(
+      sessionStorage.getItem(sessionStorageDisabledSysPrompt) ?? "false",
+    ),
+  );
+  createEffect(() => {
+    sessionStorage.setItem(
+      sessionStorageDisabledSysPrompt,
+      JSON.stringify(disabledSystemPrompt()),
+    );
+  });
+
+  const [disabledAllTags, setDisabledAllTags] = createSignal<boolean>(
+    JSON.parse(
+      sessionStorage.getItem(sessionStorageDisabledAllTags) ?? "false",
+    ),
+  );
+  createEffect(() => {
+    sessionStorage.setItem(
+      sessionStorageDisabledAllTags,
+      JSON.stringify(disabledAllTags()),
+    );
+  });
+
+  const [disabledFileContext, setDisabledFileContext] = createSignal<boolean>(
+    JSON.parse(
+      sessionStorage.getItem(sessionStorageDisabledFileContext) ?? "false",
+    ),
+  );
+  createEffect(() => {
+    sessionStorage.setItem(
+      sessionStorageDisabledFileContext,
+      JSON.stringify(disabledFileContext()),
+    );
+  });
+
+  const [disabledAllFiles, setDisabledAllFiles] = createSignal<boolean>(
+    JSON.parse(
+      sessionStorage.getItem(sessionStorageDisabledAllFiles) ?? "false",
+    ),
+  );
+  createEffect(() => {
+    sessionStorage.setItem(
+      sessionStorageDisabledAllFiles,
+      JSON.stringify(disabledAllFiles()),
+    );
+  });
+
+  const [disabledThoughts, setDisabledThoughts] = createSignal<boolean>(
+    JSON.parse(
+      sessionStorage.getItem(sessionStorageDisabledThoughts) ?? "false",
+    ),
+  );
+  createEffect(() => {
+    sessionStorage.setItem(
+      sessionStorageDisabledThoughts,
+      JSON.stringify(disabledThoughts()),
+    );
+  });
+
+  const [disabledUserPrompt, setDisabledUserPrompt] = createSignal<boolean>(
+    JSON.parse(
+      sessionStorage.getItem(sessionStorageDisabledUserPrompt) ?? "false",
+    ),
+  );
+  createEffect(() => {
+    sessionStorage.setItem(
+      sessionStorageDisabledUserPrompt,
+      JSON.stringify(disabledUserPrompt()),
+    );
+  });
 
   // Memos
   const allDefinedTags = createMemo<string[][]>(() => {
@@ -211,6 +289,11 @@ export function AiWriter(
           setUserPrompt,
           referencedFilesContents,
           disabledFiles,
+          disabledAllFiles,
+          disabledAllTags,
+          disabledFileContext,
+          disabledSystemPrompt,
+          disabledThoughts,
         );
       }}
     ></input>,
@@ -222,8 +305,18 @@ export function AiWriter(
               <i class="bx bx-hash"></i>
               <span>Tags</span>
             </div>
-            <div class="right">
-              <i class="bx bx-check-square"></i>
+            <div
+              class="right"
+              onclick={() => setDisabledAllTags(!disabledAllTags())}
+            >
+              <Switch>
+                <Match when={disabledAllTags()}>
+                  <i class="bx bx-square"></i>
+                </Match>
+                <Match when={!disabledAllTags()}>
+                  <i class="bx bx-check-square"></i>
+                </Match>
+              </Switch>
             </div>
           </div>
           <div class="tags_list">
@@ -272,8 +365,18 @@ export function AiWriter(
               <i class="bx bx-bracket"></i>
               <span>Referenzen</span>
             </div>
-            <div class="right">
-              <i class="bx bx-check-square"></i>
+            <div
+              class="right"
+              onclick={() => setDisabledAllFiles(!disabledAllFiles())}
+            >
+              <Switch>
+                <Match when={disabledAllFiles()}>
+                  <i class="bx bx-square"></i>
+                </Match>
+                <Match when={!disabledAllFiles()}>
+                  <i class="bx bx-check-square"></i>
+                </Match>
+              </Switch>
             </div>
           </div>
           <div class="tags_list">
@@ -309,12 +412,25 @@ export function AiWriter(
             <i class="bx bx-info-circle"></i>
             <span>System Prompt</span>
           </div>
-          <div class="right">
-            <i class="bx bx-check-square"></i>
+          <div
+            class="right"
+            onclick={() => setDisabledSystemPrompt(!disabledSystemPrompt())}
+          >
+            <Switch>
+              <Match when={disabledSystemPrompt()}>
+                <i class="bx bx-square"></i>
+              </Match>
+              <Match when={!disabledSystemPrompt()}>
+                <i class="bx bx-check-square"></i>
+              </Match>
+            </Switch>
           </div>
         </div>
         <textarea
-          class="prompt rounded_bottom"
+          class={
+            "prompt rounded_bottom" +
+            (disabledSystemPrompt() ? " disabled" : "")
+          }
           rows={10}
           onchange={(e) => {
             setSystemPrompt(e.currentTarget.value);
@@ -332,8 +448,18 @@ export function AiWriter(
               <i class="bx bxs-file"></i>
               <span>File Context</span>
             </div>
-            <div class="right">
-              <i class="bx bx-check-square"></i>
+            <div
+              class="right"
+              onclick={() => setDisabledFileContext(!disabledFileContext())}
+            >
+              <Switch>
+                <Match when={disabledFileContext()}>
+                  <i class="bx bx-square"></i>
+                </Match>
+                <Match when={!disabledFileContext()}>
+                  <i class="bx bx-check-square"></i>
+                </Match>
+              </Switch>
             </div>
           </div>
           <div class="prompt_settings">
@@ -365,7 +491,12 @@ export function AiWriter(
               <option value={TextUnits.All}>All</option>
             </select>
           </div>
-          <div class="readonly_prompt rounded_bottom">
+          <div
+            class={
+              "readonly_prompt rounded_bottom" +
+              (disabledFileContext() ? " disabled" : "")
+            }
+          >
             {reducedFileContent()}
           </div>
         </Show>
@@ -375,8 +506,18 @@ export function AiWriter(
               <i class="bx bx-network-chart"></i>
               <span>Thoughts</span>
             </div>
-            <div class="right">
-              <i class="bx bx-check-square"></i>
+            <div
+              class="right"
+              onclick={() => setDisabledThoughts(!disabledThoughts())}
+            >
+              <Switch>
+                <Match when={disabledThoughts()}>
+                  <i class="bx bx-square"></i>
+                </Match>
+                <Match when={!disabledThoughts()}>
+                  <i class="bx bx-check-square"></i>
+                </Match>
+              </Switch>
             </div>
           </div>
 
@@ -400,6 +541,11 @@ export function AiWriter(
                   setRunningPrompt,
                   referencedFilesContents,
                   disabledFiles,
+                  disabledAllFiles,
+                  disabledAllTags,
+                  disabledFileContext,
+                  disabledSystemPrompt,
+                  disabledThoughts,
                 );
               }}
             >
@@ -414,7 +560,13 @@ export function AiWriter(
               Forget
             </button>
           </div>
-          <div class="prompt rounded_bottom">{modelThoughts()}</div>
+          <div
+            class={
+              "prompt rounded_bottom" + (disabledThoughts() ? " disabled" : "")
+            }
+          >
+            {modelThoughts()}
+          </div>
         </Show>
         <Show when={userPrompt()}>
           <div class="prompt_header rounded_top">
@@ -422,11 +574,28 @@ export function AiWriter(
               <i class="bx bxs-user-voice"></i>
               <span>User Prompt</span>
             </div>
-            <div class="right">
-              <i class="bx bx-check-square"></i>
+            <div
+              class="right"
+              onclick={() => setDisabledUserPrompt(!disabledUserPrompt())}
+            >
+              <Switch>
+                <Match when={disabledUserPrompt()}>
+                  <i class="bx bx-square"></i>
+                </Match>
+                <Match when={!disabledUserPrompt()}>
+                  <i class="bx bx-check-square"></i>
+                </Match>
+              </Switch>
             </div>
           </div>
-          <div class="prompt rounded_bottom">{userPrompt()}</div>
+          <div
+            class={
+              "prompt rounded_bottom" +
+              (disabledUserPrompt() ? " disabled" : "")
+            }
+          >
+            {userPrompt()}
+          </div>
         </Show>
       </div>
       <div>
@@ -460,6 +629,11 @@ export function AiWriter(
               setRunningPrompt,
               referencedFilesContents,
               disabledFiles,
+              disabledAllFiles,
+              disabledAllTags,
+              disabledFileContext,
+              disabledSystemPrompt,
+              disabledThoughts,
             );
           }}
         >
@@ -484,6 +658,11 @@ export function AiWriter(
               setRunningPrompt,
               referencedFilesContents,
               disabledFiles,
+              disabledAllFiles,
+              disabledAllTags,
+              disabledFileContext,
+              disabledSystemPrompt,
+              disabledThoughts,
             );
           }}
         >
@@ -511,6 +690,11 @@ function onAssistantPromptInputKeyUp(
   setUserPrompt: Setter<string>,
   referencedFilesContent: Accessor<BasicFile[]>,
   disabledFiles: Accessor<string[]>,
+  disabledAllFiles: Accessor<boolean>,
+  disabledAllTags: Accessor<boolean>,
+  disabledFileContext: Accessor<boolean>,
+  disabledSystemPrompt: Accessor<boolean>,
+  disabledThoughts: Accessor<boolean>,
 ) {
   switch (e.key) {
     case "Enter":
@@ -529,6 +713,11 @@ function onAssistantPromptInputKeyUp(
         setRunningPrompt,
         referencedFilesContent,
         disabledFiles,
+        disabledAllFiles,
+        disabledAllTags,
+        disabledFileContext,
+        disabledSystemPrompt,
+        disabledThoughts,
       );
       break;
   }
@@ -551,6 +740,11 @@ function generateAssistantResponse(
   setRunningPrompt: Setter<AbortableAsyncIterator<ChatResponse> | null>,
   referencedFilesContent: Accessor<BasicFile[]>,
   disabledFiles: Accessor<string[]>,
+  disabledAllFiles: Accessor<boolean>,
+  disabledAllTags: Accessor<boolean>,
+  disabledFileContext: Accessor<boolean>,
+  disabledSysPrompt: Accessor<boolean>,
+  disabledThoughts: Accessor<boolean>,
 ) {
   const thoughts = modelThoughts();
   const messages: Message[] = [];
@@ -565,7 +759,7 @@ function generateAssistantResponse(
     return;
   }
 
-  if (tagFileContents.length > 0) {
+  if (tagFileContents.length > 0 && !disabledAllTags()) {
     messages.push({
       role: "system",
       content: tagFileContents
@@ -574,7 +768,7 @@ function generateAssistantResponse(
         .join("\n"),
     });
   }
-  if (fileContents.length > 0) {
+  if (fileContents.length > 0 && !disabledAllFiles()) {
     messages.push({
       role: "system",
       content: fileContents
@@ -583,17 +777,20 @@ function generateAssistantResponse(
         .join("\n"),
     });
   }
-  messages.push({
-    role: "system",
-    content: systemPrompt(),
-  });
-  if (thoughts) {
+  if (!disabledSysPrompt()) {
+    messages.push({
+      role: "system",
+      content: systemPrompt(),
+    });
+  }
+
+  if (thoughts && !disabledThoughts()) {
     messages.push({
       role: "assistant",
       content: thoughts,
     });
   }
-  if (fileContent) {
+  if (fileContent && !disabledFileContext()) {
     messages.push({
       role: "assistant",
       content: fileContent,
@@ -647,49 +844,55 @@ function generateAssistantThoughts(
   setRunningPrompt: Setter<AbortableAsyncIterator<ChatResponse> | null>,
   referencedFilesContent: Accessor<BasicFile[]>,
   disabledFiles: Accessor<string[]>,
+  disabledAllFiles: Accessor<boolean>,
+  disabledAllTags: Accessor<boolean>,
+  disabledFileContext: Accessor<boolean>,
+  disabledSystemPrompt: Accessor<boolean>,
+  disabledThoughts: Accessor<boolean>,
 ) {
   const messages: Message[] = [];
   const thoughts = modelThoughts();
   const fileContent = reducedFileContent();
   const tagFileContents = referencedTagFileContents();
   const fileContents = referencedFilesContent();
-  const dsbldFiles = disabledFiles();
-  const dsbldTags = disabledTags();
   const llmModel = ollamaModel();
 
   if (llmModel === undefined || llmModel?.model === undefined) {
     return;
   }
 
-  if (tagFileContents.length > 0) {
+  if (tagFileContents.length > 0 && !disabledAllTags()) {
     messages.push({
       role: "system",
       content: tagFileContents
-        .filter((tfc) => !dsbldTags.includes(tfc.name))
+        .filter((tfc) => !disabledTags().includes(tfc.name))
         .map((tfc) => tfc.content)
         .join("\n"),
     });
   }
-  if (fileContents.length > 0) {
+  if (fileContents.length > 0 && !disabledAllFiles()) {
     messages.push({
       role: "system",
       content: fileContents
-        .filter((fc) => !dsbldFiles.includes(fc.name))
+        .filter((fc) => !disabledFiles().includes(fc.name))
         .map((fc) => fc.content)
         .join("\n"),
     });
   }
-  messages.push({
-    role: "system",
-    content: systemPrompt(),
-  });
-  if (thoughts) {
+  if (!disabledSystemPrompt()) {
+    messages.push({
+      role: "system",
+      content: systemPrompt(),
+    });
+  }
+
+  if (thoughts && !disabledThoughts()) {
     messages.push({
       role: "assistant",
       content: thoughts,
     });
   }
-  if (fileContent) {
+  if (fileContent && !disabledFileContext()) {
     messages.push({
       role: "assistant",
       content: fileContent,
