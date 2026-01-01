@@ -8,6 +8,7 @@ import {
 } from "ollama/dist/browser";
 import {
   Accessor,
+  createEffect,
   createMemo,
   createSignal,
   For,
@@ -33,6 +34,7 @@ export const localStorageChatAssistentPromptLength =
 export const localStorageChatAssistentPromptUnit = "chatAssistantPromptUnit";
 export const localStorageChatModelThoughts = "chatModelThoughts";
 export const sessionStorageDisabledTags = "disabledTags";
+export const sessionStorageDisabledFiles = "disabledFiles";
 
 export function AiWriter(
   ollama: Ollama | null,
@@ -75,6 +77,10 @@ export function AiWriter(
     JSON.parse(sessionStorage.getItem(sessionStorageDisabledTags) ?? "[]"),
   );
 
+  const [disabledFiles, setDisabledFiles] = createSignal<string[]>(
+    JSON.parse(sessionStorage.getItem(sessionStorageDisabledFiles) ?? "[]"),
+  );
+
   // Memos
   const allDefinedTags = createMemo<string[][]>(() => {
     const activeDirParsedFileNames = activeDirectoryParsedFileNames();
@@ -88,6 +94,44 @@ export function AiWriter(
     }
     return [];
   });
+
+  const referencedFiles = createMemo<string[]>(() => {
+    const prompt = userPrompt();
+    const fileNames = activeDirectoryParsedFileNames()?.[0]();
+    const matches = prompt.match(/\[(.*?)\]/g);
+    if (matches && fileNames) {
+      return matches
+        .map((m) => m.replace(/^\s*\[|\]\s*$/g, ""))
+        .filter((m) => fileNames.find((fn) => fn.fullName === m));
+    } else {
+      return [];
+    }
+  });
+
+  const [referencedFilesContents, setReferencedFilesContents] = createSignal<
+    BasicFile[]
+  >([]);
+
+  /** Set referencedFilesContents based on referencedFiles() */
+  createEffect(() => {
+    const fileNames = referencedFiles();
+    const activeDirName = activeDirectoryName();
+
+    if (activeDirName && fileNames.length > 0) {
+      const fileContentPromises = fileNames.map(async (fileName: string) => {
+        return {
+          name: fileName,
+          content: (await getFileContent(activeDirName, fileName)) ?? "",
+        };
+      });
+      Promise.all(fileContentPromises).then((files) => {
+        setReferencedFilesContents(files);
+      });
+    } else {
+      setReferencedFilesContents([]);
+    }
+  });
+
   const referencedTags = createMemo<string[][]>(() => {
     const fileName = displayedReactiveFile()?.name();
     const prompt = userPrompt();
@@ -98,11 +142,15 @@ export function AiWriter(
         prompt.includes(`${tag.join(" ")}`),
     );
   });
-  const referencedTagFileContents = createMemo<Signal<BasicFile[]>>(() => {
+
+  const [referencedTagFileContents, setReferencedTagFileContents] =
+    createSignal<BasicFile[]>([]);
+
+  /** Set referencedTagFileContents based on referencedTags() */
+  createEffect(() => {
     const appearingTags = referencedTags();
     const activeDirName = activeDirectoryName();
-    const referencedTagFilesSignal = createSignal<BasicFile[]>([]);
-    if (activeDirName !== null) {
+    if (activeDirName !== null && appearingTags.length > 0) {
       const fileContentPromises = appearingTags.map(async (tag: string[]) => {
         const fileName = tag.map((fn) => `${fn}`).join(" ");
         return {
@@ -110,11 +158,10 @@ export function AiWriter(
           content: (await getFileContent(activeDirName, fileName)) ?? "",
         };
       });
-      Promise.all(fileContentPromises).then((files) =>
-        referencedTagFilesSignal[1](files),
-      );
+      Promise.all(fileContentPromises).then((files) => {
+        setReferencedTagFileContents(files);
+      });
     }
-    return referencedTagFilesSignal;
   });
 
   const reducedFileContent = createMemo(() => {
@@ -161,9 +208,10 @@ export function AiWriter(
           ollamaModel,
           runningPrompt,
           setRunningPrompt,
+          setUserPrompt,
+          referencedFilesContents,
+          disabledFiles,
         );
-        setUserPrompt(e.currentTarget.value);
-        localStorage.setItem(localStorageChatUserPrompt, e.currentTarget.value);
       }}
     ></input>,
     <div id="AIWRITER_TOOLBAR">
@@ -196,7 +244,7 @@ export function AiWriter(
                     <div>
                       <For each={tuple}>
                         {(tag) => {
-                          return <div class="tag">{tag}</div>;
+                          return <div>{tag}</div>;
                         }}
                       </For>
                     </div>
@@ -209,6 +257,44 @@ export function AiWriter(
                       <Match
                         when={!disabledTags().includes(`${tuple.join(" ")}`)}
                       >
+                        <i class="bx bx-checkbox-checked"></i>
+                      </Match>
+                    </Switch>
+                  </div>
+                );
+              }}
+            </For>
+          </div>
+        </Show>
+        <Show when={referencedFiles().length > 0}>
+          <div class="prompt_header rounded_top">
+            <div class="left">
+              <i class="bx bx-bracket"></i>
+              <span>Referenzen</span>
+            </div>
+            <div class="right">
+              <i class="bx bx-check-square"></i>
+            </div>
+          </div>
+          <div class="tags_list">
+            <For each={referencedFiles()}>
+              {(name) => {
+                return (
+                  <div
+                    class={
+                      "tag_row " +
+                      (disabledFiles().includes(`${name}`) ? "disabled" : "")
+                    }
+                    onclick={() => {
+                      onClickFileToggle(name, disabledFiles, setDisabledFiles);
+                    }}
+                  >
+                    <div>{name}</div>
+                    <Switch>
+                      <Match when={disabledFiles().includes(`${name}`)}>
+                        <i class="bx bx-checkbox"></i>
+                      </Match>
+                      <Match when={!disabledFiles().includes(`${name}`)}>
                         <i class="bx bx-checkbox-checked"></i>
                       </Match>
                     </Switch>
@@ -312,6 +398,8 @@ export function AiWriter(
                   ollamaModel,
                   runningPrompt,
                   setRunningPrompt,
+                  referencedFilesContents,
+                  disabledFiles,
                 );
               }}
             >
@@ -370,6 +458,8 @@ export function AiWriter(
               ollamaModel,
               runningPrompt,
               setRunningPrompt,
+              referencedFilesContents,
+              disabledFiles,
             );
           }}
         >
@@ -392,6 +482,8 @@ export function AiWriter(
               ollamaModel,
               runningPrompt,
               setRunningPrompt,
+              referencedFilesContents,
+              disabledFiles,
             );
           }}
         >
@@ -411,11 +503,14 @@ function onAssistantPromptInputKeyUp(
   openFiles: Accessor<ReactiveFile[]>,
   reducedFileContent: Accessor<string>,
   modelThoughts: Accessor<string>,
-  referencedTagFileContents: Accessor<Signal<BasicFile[]>>,
+  referencedTagFileContents: Accessor<BasicFile[]>,
   disabledTags: Accessor<string[]>,
   ollamaModel: Accessor<ModelResponse | null>,
   runningPrompt: Accessor<AbortableAsyncIterator<ChatResponse> | null>,
   setRunningPrompt: Setter<AbortableAsyncIterator<ChatResponse> | null>,
+  setUserPrompt: Setter<string>,
+  referencedFilesContent: Accessor<BasicFile[]>,
+  disabledFiles: Accessor<string[]>,
 ) {
   switch (e.key) {
     case "Enter":
@@ -432,9 +527,13 @@ function onAssistantPromptInputKeyUp(
         ollamaModel,
         runningPrompt,
         setRunningPrompt,
+        referencedFilesContent,
+        disabledFiles,
       );
       break;
   }
+  setUserPrompt(e.currentTarget.value);
+  localStorage.setItem(localStorageChatUserPrompt, e.currentTarget.value);
 }
 
 function generateAssistantResponse(
@@ -445,17 +544,21 @@ function generateAssistantResponse(
   openFiles: Accessor<ReactiveFile[]>,
   reducedFileContent: Accessor<string>,
   modelThoughts: Accessor<string>,
-  referencedTagFileContents: Accessor<Signal<BasicFile[]>>,
+  referencedTagFileContents: Accessor<BasicFile[]>,
   disabledTags: Accessor<string[]>,
   ollamaModel: Accessor<ModelResponse | null>,
   runningPrompt: Accessor<AbortableAsyncIterator<ChatResponse> | null>,
   setRunningPrompt: Setter<AbortableAsyncIterator<ChatResponse> | null>,
+  referencedFilesContent: Accessor<BasicFile[]>,
+  disabledFiles: Accessor<string[]>,
 ) {
   const thoughts = modelThoughts();
   const messages: Message[] = [];
   const fileContent = reducedFileContent();
-  const tagFileContents = referencedTagFileContents()[0]();
+  const tagFileContents = referencedTagFileContents();
   const dsbldTags = disabledTags();
+  const fileContents = referencedFilesContent();
+  const dsbldFiles = disabledFiles();
   const llmModel = ollamaModel();
 
   if (llmModel === undefined || llmModel?.model === undefined) {
@@ -468,6 +571,15 @@ function generateAssistantResponse(
       content: tagFileContents
         .filter((tfc) => !dsbldTags.includes(tfc.name))
         .map((tfc) => tfc.content)
+        .join("\n"),
+    });
+  }
+  if (fileContents.length > 0) {
+    messages.push({
+      role: "system",
+      content: fileContents
+        .filter((fc) => !dsbldFiles.includes(fc.name))
+        .map((fc) => fc.content)
         .join("\n"),
     });
   }
@@ -528,16 +640,20 @@ function generateAssistantThoughts(
   reducedFileContent: Accessor<string>,
   modelThoughts: Accessor<string>,
   setModelThoughts: Setter<string>,
-  referencedTagFileContents: Accessor<Signal<BasicFile[]>>,
+  referencedTagFileContents: Accessor<BasicFile[]>,
   disabledTags: Accessor<string[]>,
   ollamaModel: Accessor<ModelResponse | null>,
   runningPrompt: Accessor<AbortableAsyncIterator<ChatResponse> | null>,
   setRunningPrompt: Setter<AbortableAsyncIterator<ChatResponse> | null>,
+  referencedFilesContent: Accessor<BasicFile[]>,
+  disabledFiles: Accessor<string[]>,
 ) {
   const messages: Message[] = [];
   const thoughts = modelThoughts();
   const fileContent = reducedFileContent();
-  const tagFileContents = referencedTagFileContents()[0]();
+  const tagFileContents = referencedTagFileContents();
+  const fileContents = referencedFilesContent();
+  const dsbldFiles = disabledFiles();
   const dsbldTags = disabledTags();
   const llmModel = ollamaModel();
 
@@ -551,6 +667,15 @@ function generateAssistantThoughts(
       content: tagFileContents
         .filter((tfc) => !dsbldTags.includes(tfc.name))
         .map((tfc) => tfc.content)
+        .join("\n"),
+    });
+  }
+  if (fileContents.length > 0) {
+    messages.push({
+      role: "system",
+      content: fileContents
+        .filter((fc) => !dsbldFiles.includes(fc.name))
+        .map((fc) => fc.content)
         .join("\n"),
     });
   }
@@ -626,5 +751,23 @@ function onClickTagToggle(
   sessionStorage.setItem(
     sessionStorageDisabledTags,
     JSON.stringify(disabledTags()),
+  );
+}
+
+function onClickFileToggle(
+  name: string,
+  disabledNames: Accessor<string[]>,
+  setDisabledNames: Setter<string[]>,
+) {
+  const nm = `${name}`;
+  const dsbldTags = disabledNames();
+  if (dsbldTags.includes(name)) {
+    setDisabledNames(dsbldTags.filter((t) => t !== name));
+  } else {
+    setDisabledNames([name, ...dsbldTags]);
+  }
+  sessionStorage.setItem(
+    sessionStorageDisabledFiles,
+    JSON.stringify(disabledNames()),
   );
 }
