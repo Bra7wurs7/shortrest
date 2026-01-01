@@ -161,7 +161,6 @@ function App(): JSXElement {
     ollamaConnection()
       ?.list()
       .then((m) => {
-        console.log(m);
         setOllamaModels(m.models);
       })
       .catch((e) => {
