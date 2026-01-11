@@ -46,7 +46,7 @@ export function AiWriter(
   ollama: Ollama | null,
   displayedReactiveFile: Accessor<ReactiveFile | null>,
   openFiles: Accessor<ReactiveFile[]>,
-  activeDirectoryParsedFileNames: Accessor<Signal<ParsedFileName[]> | null>,
+  activeDirectoryParsedFileNames: Accessor<ParsedFileName[] | null>,
   activeDirectoryName: Accessor<string | null>,
   ollamaModel: Accessor<ModelResponse | null>,
 ): JSXElement {
@@ -165,7 +165,7 @@ export function AiWriter(
 
     if (activeDirParsedFileNames) {
       return (
-        activeDirParsedFileNames[0]()
+        activeDirParsedFileNames
           .filter((fn) => !fn.baseName && fn.tags.length > 0)
           .map((fn) => fn.tags) ?? []
       );
@@ -175,7 +175,7 @@ export function AiWriter(
 
   const referencedFiles = createMemo<string[]>(() => {
     const prompt = userPrompt();
-    const fileNames = activeDirectoryParsedFileNames()?.[0]();
+    const fileNames = activeDirectoryParsedFileNames();
     const matches = prompt.match(/\[(.*?)\]/g);
     if (matches && fileNames) {
       return matches
@@ -268,39 +268,10 @@ export function AiWriter(
   });
 
   return [
-    ,
-    <input
-      id="AIWRITER_PROMPT_INPUT"
-      value={userPrompt()}
-      onkeyup={(e) => {
-        onAssistantPromptInputKeyUp(
-          e,
-          ollama,
-          displayedReactiveFile,
-          systemPrompt,
-          openFiles,
-          reducedFileContent,
-          modelThoughts,
-          referencedTagFileContents,
-          disabledTags,
-          ollamaModel,
-          runningPrompt,
-          setRunningPrompt,
-          setUserPrompt,
-          referencedFilesContents,
-          disabledFiles,
-          disabledAllFiles,
-          disabledAllTags,
-          disabledFileContext,
-          disabledSystemPrompt,
-          disabledThoughts,
-        );
-      }}
-    ></input>,
-    <div id="AIWRITER_TOOLBAR">
-      <div id="A_T_TOP">
+    <div id="AIWRITER_SIDEBAR">
+      <div id="A_S_TOP">
         <Show when={referencedTags().length > 0}>
-          <div class="prompt_header rounded_top">
+          <div class="prompt_header">
             <div class="left">
               <i class="bx bx-hash"></i>
               <span>Tags</span>
@@ -360,7 +331,7 @@ export function AiWriter(
           </div>
         </Show>
         <Show when={referencedFiles().length > 0}>
-          <div class="prompt_header rounded_top">
+          <div class="prompt_header">
             <div class="left">
               <i class="bx bx-bracket"></i>
               <span>Referenzen</span>
@@ -407,7 +378,7 @@ export function AiWriter(
             </For>
           </div>
         </Show>
-        <div class="prompt_header rounded_top">
+        <div class="prompt_header">
           <div class="left">
             <i class="bx bx-info-circle"></i>
             <span>System Prompt</span>
@@ -427,10 +398,7 @@ export function AiWriter(
           </div>
         </div>
         <textarea
-          class={
-            "prompt rounded_bottom" +
-            (disabledSystemPrompt() ? " disabled" : "")
-          }
+          class={"prompt" + (disabledSystemPrompt() ? " disabled" : "")}
           rows={10}
           onchange={(e) => {
             setSystemPrompt(e.currentTarget.value);
@@ -443,7 +411,7 @@ export function AiWriter(
           {systemPrompt()}
         </textarea>
         <Show when={reducedFileContent()}>
-          <div class="prompt_header rounded_top">
+          <div class="prompt_header">
             <div>
               <i class="bx bxs-file"></i>
               <span>File Context</span>
@@ -493,15 +461,14 @@ export function AiWriter(
           </div>
           <div
             class={
-              "readonly_prompt rounded_bottom" +
-              (disabledFileContext() ? " disabled" : "")
+              "readonly_prompt" + (disabledFileContext() ? " disabled" : "")
             }
           >
             {reducedFileContent()}
           </div>
         </Show>
         <Show when={modelThoughts()}>
-          <div class="prompt_header rounded_top">
+          <div class="prompt_header">
             <div class="left">
               <i class="bx bx-network-chart"></i>
               <span>Thoughts</span>
@@ -560,16 +527,12 @@ export function AiWriter(
               Forget
             </button>
           </div>
-          <div
-            class={
-              "prompt rounded_bottom" + (disabledThoughts() ? " disabled" : "")
-            }
-          >
+          <div class={"prompt" + (disabledThoughts() ? " disabled" : "")}>
             {modelThoughts()}
           </div>
         </Show>
         <Show when={userPrompt()}>
-          <div class="prompt_header rounded_top">
+          <div class="prompt_header">
             <div class="left">
               <i class="bx bxs-user-voice"></i>
               <span>User Prompt</span>
@@ -588,12 +551,7 @@ export function AiWriter(
               </Switch>
             </div>
           </div>
-          <div
-            class={
-              "prompt rounded_bottom" +
-              (disabledUserPrompt() ? " disabled" : "")
-            }
-          >
+          <div class={"prompt" + (disabledUserPrompt() ? " disabled" : "")}>
             {userPrompt()}
           </div>
         </Show>
@@ -601,7 +559,7 @@ export function AiWriter(
       <div>
         <Show when={runningPrompt() !== null}>
           <button
-            class="user_action yellow_border rounded_right rounded_left"
+            class="user_action yellow_border"
             onclick={() => {
               runningPrompt()?.abort();
             }}
@@ -611,7 +569,7 @@ export function AiWriter(
           </button>
         </Show>
         <button
-          class="user_action rounded_right rounded_left"
+          class="user_action"
           onclick={() => {
             generateAssistantThoughts(
               userPrompt(),
@@ -641,7 +599,7 @@ export function AiWriter(
           <i class="bx bx-network-chart" />
         </button>
         <button
-          class="user_action rounded_right rounded_left"
+          class="user_action"
           onclick={() => {
             generateAssistantResponse(
               userPrompt(),

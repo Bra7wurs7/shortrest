@@ -52,7 +52,6 @@ function App(): JSXElement {
   const appModes = [
     { mode: AppMode.AiWriter, icon: "bx-code" },
     { mode: AppMode.MdReader, icon: "bx-book-reader" },
-    { mode: AppMode.Donate, icon: "bx-donate-heart" },
     { mode: AppMode.Settings, icon: "bx-cog" },
   ];
 
@@ -104,20 +103,31 @@ function App(): JSXElement {
     null,
   );
 
-  // Memos
-  const activeDirectoryParsedFileNames = createMemo<Signal<
-    ParsedFileName[]
-  > | null>(() => {
+  const [activeDirectoryParsedFileNames, setActiveDirectoryParsedFileNames] =
+    createSignal<ParsedFileName[] | null>(null);
+  createEffect(() => {
     const activeDirName = activeDirectoryName();
-    const signal: Signal<ParsedFileName[]> = createSignal<ParsedFileName[]>([]);
     if (activeDirName) {
       listFileNamesInDirectory(activeDirName).then((names) => {
-        signal[1](names.map((fn) => parseFileName(fn)));
+        setActiveDirectoryParsedFileNames(names.map((fn) => parseFileName(fn)));
       });
-      return signal;
     }
-    return null;
   });
+
+  const [hoveredDirectoryFileNames, setHoveredDirectoryFileNames] =
+    createSignal<ParsedFileName[] | null>(null);
+  createEffect(() => {
+    const hoveredDirName = hoveredDirectoryName();
+    if (hoveredDirName) {
+      listFileNamesInDirectory(hoveredDirName).then((names) => {
+        setHoveredDirectoryFileNames(names.map((name) => parseFileName(name)));
+      });
+    } else {
+      setHoveredDirectoryFileNames(null);
+    }
+  });
+
+  // Memos
   const filteredParsedOpenFileNames = createMemo<ParsedFileName[]>(() => {
     return openFiles()
       .filter((of) =>
@@ -128,7 +138,7 @@ function App(): JSXElement {
   const filteredParsedAllFileNames = createMemo<ParsedFileName[] | null>(() => {
     const activeDirFileNames = activeDirectoryParsedFileNames();
     if (activeDirFileNames) {
-      return activeDirFileNames[0]().filter((name: ParsedFileName) =>
+      return activeDirFileNames.filter((name: ParsedFileName) =>
         name.baseName.includes(inputValue().toLowerCase()),
       );
     }
@@ -136,21 +146,6 @@ function App(): JSXElement {
   });
   const activeFile = createMemo<ReactiveFile | null>(
     () => openFiles().find((of) => of.name() === activeFileName()) ?? null,
-  );
-  const hoveredDirectoryFileNames = createMemo<Signal<ParsedFileName[]> | null>(
-    () => {
-      const hoveredDirName = hoveredDirectoryName();
-      const signal: Signal<ParsedFileName[]> = createSignal<ParsedFileName[]>(
-        [],
-      );
-      if (hoveredDirName) {
-        listFileNamesInDirectory(hoveredDirName).then((names) => {
-          signal[1](names.map((name) => parseFileName(name)));
-        });
-        return signal;
-      }
-      return null;
-    },
   );
 
   // Effects
@@ -201,92 +196,6 @@ function App(): JSXElement {
 
   return (
     <div id="APP_CONTAINER" class="dark_theme">
-      <div id="LEFTMOST_SIDEBAR">
-        <div id="LM_S_ACTIONS"></div>
-        <div id="LM_S_BOTTOM">
-          <button
-            class={"button_icon"}
-            onclick={(e) => {
-              e.stopPropagation();
-              onClickUploadDirectory(directoryNames, setDirectoryNames);
-            }}
-          >
-            <i class="bx bx-upload"></i>
-          </button>
-          <div id="LM_S_DIRECTORIES">
-            <For each={directoryNames()}>
-              {(name: string, index: Accessor<number>) => (
-                <Switch>
-                  <Match when={rightClickedDirectory() !== name}>
-                    <button
-                      class={
-                        "button_icon " +
-                        (name === activeDirectoryName() ? "active" : "")
-                      }
-                      onclick={() => {
-                        setActiveDirectoryName(name);
-                        localStorage.setItem(
-                          localStorageActiveDirectoryName,
-                          name,
-                        );
-                      }}
-                      oncontextmenu={(e: PointerEvent) => {
-                        e.preventDefault();
-                        setRightClickedDirectory(name);
-                      }}
-                      onmouseenter={() => {
-                        setHoveredDirectoryName(name);
-                      }}
-                      onmouseleave={() => {
-                        setHoveredDirectoryName(null);
-                      }}
-                    >
-                      <Show
-                        when={name === activeDirectoryName() && index() === 0}
-                      >
-                        <i class="bx bx-folder-open"></i>
-                      </Show>
-                      <Show
-                        when={name === activeDirectoryName() && index() > 0}
-                      >
-                        <i class="bx bxs-folder-open"></i>
-                      </Show>
-                      <Show
-                        when={!(name === activeDirectoryName()) && index() > 0}
-                      >
-                        <i class="bx bxs-folder"></i>
-                      </Show>
-                      <Show
-                        when={
-                          !(name === activeDirectoryName()) && index() === 0
-                        }
-                      >
-                        <i class="bx bx-folder-plus"></i>
-                      </Show>
-                    </button>
-                  </Match>
-                  <Match when={rightClickedDirectory() === name}>
-                    <button
-                      class={
-                        "button_icon " +
-                        (name === activeDirectoryName() ? "active" : "")
-                      }
-                      onclick={() => {
-                        onClickDownloadDirectory(name);
-                      }}
-                      onmouseleave={() => {
-                        setRightClickedDirectory("");
-                      }}
-                    >
-                      <i class="bx bxs-download"></i>
-                    </button>
-                  </Match>
-                </Switch>
-              )}
-            </For>
-          </div>
-        </div>
-      </div>
       <input
         id="LEFT_INPUT"
         value={inputValue()}
@@ -303,223 +212,141 @@ function App(): JSXElement {
           );
         }}
       ></input>
-      <div id="LEFT_SIDEBAR">
-        <div id="L_S_TOP">
-          <div id="L_S_OPENFILES">
-            <For each={filteredParsedOpenFileNames()}>
-              {(parsedName: ParsedFileName, index: Accessor<number>) => (
-                <Switch>
-                  <Match when={rightClickedOpenFile() !== parsedName.fullName}>
-                    <button
-                      class={
-                        "button_file " +
-                        (activeFileName() === parsedName.fullName
-                          ? "active "
-                          : "") +
-                        (rightClickedOpenFile() === parsedName.fullName
-                          ? "context_menu"
-                          : "")
-                      }
-                      onclick={() => {
-                        setActiveFileName(parsedName.fullName);
-                        storeActiveFileName(parsedName.fullName);
-                      }}
-                      oncontextmenu={(e: PointerEvent) => {
-                        e.preventDefault();
-                        setRightClickedOpenFile(parsedName.fullName);
-                      }}
-                    >
-                      <div class="filename bg">
-                        {parsedName.baseName}
-                        <Show when={false}>
-                          <i class="bx bx-edit"></i>
-                        </Show>
-                      </div>
-                      <div class="tags">
-                        <For each={parsedName.tags}>
-                          {(tag: string) => <span>&nbsp;{tag}</span>}
-                        </For>
-                      </div>
-                    </button>
-                  </Match>
-                  <Match when={rightClickedOpenFile() === parsedName.fullName}>
-                    <div
-                      class="button_file_contextmenu"
-                      onmouseleave={() => {
-                        setRightClickedOpenFile(null);
-                        setRightClickedOpenFileNewName(null);
-                        setConfirmAction(null);
-                      }}
-                      onClick={() => {
-                        setRightClickedOpenFile(null);
-                      }}
-                    >
-                      <div
-                        class="filename text_overflow_fade bg"
-                        contenteditable={true}
-                        onclick={(e) => {
-                          e.stopPropagation();
-                        }}
-                        oninput={(e) => {
-                          onInputExistingFileName(
-                            e,
-                            setRightClickedOpenFileNewName,
-                          );
-                        }}
-                      >
-                        {parsedName.fullName ?? "unnamed file"}
-                      </div>
-                      <div class="actions">
-                        <Switch>
-                          <Match
-                            when={
-                              rightClickedOpenFileNewName() === null ||
-                              rightClickedOpenFile() ===
-                                rightClickedOpenFileNewName()
-                            }
-                          >
-                            <button
-                              class={"button_icon"}
-                              onclick={(e) => {
-                                e.stopPropagation();
-                                onClickDownloadOpenFile(
-                                  openFiles,
-                                  parsedName.fullName,
-                                );
-                              }}
-                            >
-                              <i class="bx bxs-download"></i>
-                            </button>
-                            <button
-                              class={"button_icon"}
-                              onclick={(e) => {
-                                e.stopImmediatePropagation();
-                                onClickSaveOpenFile(
-                                  index(),
-                                  openFiles,
-                                  directoryNames,
-                                  setDirectoryNames,
-                                  activeDirectoryParsedFileNames,
-                                  activeDirectoryName,
-                                );
-                              }}
-                            >
-                              <i class="bx bx-save"></i>
-                            </button>
-                            <button
-                              class={
-                                "button_icon " +
-                                (confirmAction() ===
-                                ConfirmAction.DiscardChanges
-                                  ? "orange"
-                                  : "")
-                              }
-                              onclick={(e) => {
-                                e.stopImmediatePropagation();
-                                onClickCloseOpenFile(
-                                  index(),
-                                  openFiles,
-                                  activeDirectoryName,
-                                  setOpenFiles,
-                                  confirmAction,
-                                  setConfirmAction,
-                                  setRightClickedOpenFile,
-                                ).then();
-                              }}
-                            >
-                              <i class="bx bx-x-circle"></i>
-                            </button>
-                          </Match>
-                          <Match
-                            when={
-                              rightClickedOpenFile() !==
-                              rightClickedOpenFileNewName()
-                            }
-                          >
-                            <button
-                              class={"button_icon"}
-                              onclick={(e) => {
-                                e.stopPropagation();
-                                onRenameOpenFile(
-                                  rightClickedOpenFile(),
-                                  rightClickedOpenFileNewName(),
-                                  openFiles,
-                                );
-                              }}
-                            >
-                              <i class="bx bx-check"></i>
-                            </button>
-                          </Match>
-                        </Switch>
-                      </div>
-                    </div>
-                  </Match>
-                </Switch>
-              )}
-            </For>
-          </div>
-          <Show when={filteredParsedOpenFileNames().length > 0}>
-            <div class="filelist_footer">
-              <i class="bx bx-clipboard"></i>
-              <span>Clipboard</span>
-            </div>
-          </Show>
-        </div>
-        <div id="L_S_BOTTOM">
-          <Show
-            when={
-              hoveredDirectoryFileNames()
-                ? hoveredDirectoryFileNames()![0]().length > 0
-                : filteredParsedAllFileNames() &&
-                  filteredParsedAllFileNames()!.length > 0
-            }
-          >
-            <div class="filelist_header">
-              <i class="bx bx-folder"></i>
-              <span>Directory</span>
-            </div>
-          </Show>
-          <Show
-            when={
-              hoveredDirectoryFileNames() ||
-              filteredParsedAllFileNames() !== null
-            }
-          >
-            <div id="L_S_B_ALLFILES">
-              <For
-                each={
-                  hoveredDirectoryFileNames()
-                    ? hoveredDirectoryFileNames()![0]()
-                    : filteredParsedAllFileNames()
-                }
-              >
-                {(parsedName: ParsedFileName, index: Accessor<number>) => (
+      <div id="LEFT_SIDE">
+        <div id="LEFT_TOOLBAR">
+          <div id="LM_S_ACTIONS"></div>
+          <div id="LM_S_BOTTOM">
+            <button
+              class={"button_icon"}
+              onclick={(e) => {
+                e.stopPropagation();
+                onClickUploadDirectory(directoryNames, setDirectoryNames);
+              }}
+            >
+              <i class="bx bx-upload"></i>
+            </button>
+            <div id="LM_S_DIRECTORIES">
+              <For each={directoryNames()}>
+                {(name: string, index: Accessor<number>) => (
                   <Switch>
-                    <Match
-                      when={rightClickedSavedFile() !== parsedName.fullName}
-                    >
+                    <Match when={rightClickedDirectory() !== name}>
                       <button
                         class={
-                          "button_file " +
-                          (rightClickedSavedFile() === parsedName.fullName
-                            ? "context_menu"
-                            : "")
+                          "button_icon " +
+                          (name === activeDirectoryName() ? "active" : "")
                         }
                         onclick={() => {
-                          onClickSavedFile(
-                            parsedName.fullName,
-                            activeDirectoryName,
-                            openFiles,
-                            setOpenFiles,
-                            setActiveFileName,
+                          setActiveDirectoryName(name);
+                          localStorage.setItem(
+                            localStorageActiveDirectoryName,
+                            name,
                           );
                         }}
                         oncontextmenu={(e: PointerEvent) => {
                           e.preventDefault();
-                          setRightClickedSavedFile(parsedName.fullName);
+                          setRightClickedDirectory(name);
+                        }}
+                        onmouseenter={() => {
+                          setHoveredDirectoryName(name);
+                        }}
+                        onmouseleave={() => {
+                          console.log("AAAH!");
+                          setHoveredDirectoryName(null);
                         }}
                       >
-                        <div class="filename text_overflow_fade bg">
+                        <Show
+                          when={name === activeDirectoryName() && index() === 0}
+                        >
+                          <i class="bx bx-folder-open"></i>
+                        </Show>
+                        <Show
+                          when={name === activeDirectoryName() && index() > 0}
+                        >
+                          <i class="bx bxs-folder-open"></i>
+                        </Show>
+                        <Show
+                          when={
+                            !(name === activeDirectoryName()) && index() > 0
+                          }
+                        >
+                          <i class="bx bxs-folder"></i>
+                        </Show>
+                        <Show
+                          when={
+                            !(name === activeDirectoryName()) && index() === 0
+                          }
+                        >
+                          <i class="bx bx-folder-plus"></i>
+                        </Show>
+                      </button>
+                    </Match>
+                    <Match when={rightClickedDirectory() === name}>
+                      <button
+                        class={
+                          "button_icon " +
+                          (name === activeDirectoryName() ? "active" : "")
+                        }
+                        onclick={() => {
+                          onClickDownloadDirectory(name);
+                        }}
+                        onmouseleave={() => {
+                          setRightClickedDirectory("");
+                        }}
+                      >
+                        <i class="bx bxs-download"></i>
+                      </button>
+                    </Match>
+                  </Switch>
+                )}
+              </For>
+            </div>
+          </div>
+        </div>
+        <div
+          id="LEFT_SIDEBAR"
+          class={
+            hoveredDirectoryFileNames() !== null &&
+            hoveredDirectoryName() !== activeDirectoryName()
+              ? "showing_hovered_directory"
+              : ""
+          }
+        >
+          <div id="L_S_TOP">
+            <div id="L_S_OPENFILES">
+              <For each={filteredParsedOpenFileNames()}>
+                {(parsedName: ParsedFileName, index: Accessor<number>) => (
+                  <Switch>
+                    <Match
+                      when={rightClickedOpenFile() !== parsedName.fullName}
+                    >
+                      <button
+                        class={
+                          "button_file " +
+                          (activeFileName() === parsedName.fullName
+                            ? "active "
+                            : "") +
+                          (rightClickedOpenFile() === parsedName.fullName
+                            ? "context_menu"
+                            : "")
+                        }
+                        onclick={() => {
+                          setActiveFileName(parsedName.fullName);
+                          storeActiveFileName(parsedName.fullName);
+                        }}
+                        oncontextmenu={(e: PointerEvent) => {
+                          e.preventDefault();
+                          setRightClickedOpenFile(parsedName.fullName);
+                        }}
+                      >
+                        <div class="filename bg">
+                          <Switch>
+                            <Match when={parsedName.baseName}>
+                              <i class="bx bxs-file"></i>
+                            </Match>
+                            <Match when={parsedName.baseName === ""}>
+                              <i class="bx bxs-tag-alt"></i>
+                            </Match>
+                          </Switch>
                           {parsedName.baseName}
                         </div>
                         <div class="tags">
@@ -530,21 +357,21 @@ function App(): JSXElement {
                       </button>
                     </Match>
                     <Match
-                      when={rightClickedSavedFile() === parsedName.fullName}
+                      when={rightClickedOpenFile() === parsedName.fullName}
                     >
                       <div
                         class="button_file_contextmenu"
                         onmouseleave={() => {
-                          setRightClickedSavedFile(null);
-                          setRightClickedSavedFileNewName(null);
+                          setRightClickedOpenFile(null);
+                          setRightClickedOpenFileNewName(null);
                           setConfirmAction(null);
                         }}
                         onClick={() => {
-                          setRightClickedSavedFile(null);
+                          setRightClickedOpenFile(null);
                         }}
                       >
                         <div
-                          class="filename"
+                          class="filename text_overflow_fade bg"
                           contenteditable={true}
                           onclick={(e) => {
                             e.stopPropagation();
@@ -552,7 +379,7 @@ function App(): JSXElement {
                           oninput={(e) => {
                             onInputExistingFileName(
                               e,
-                              setRightClickedSavedFileNewName,
+                              setRightClickedOpenFileNewName,
                             );
                           }}
                         >
@@ -562,65 +389,78 @@ function App(): JSXElement {
                           <Switch>
                             <Match
                               when={
-                                rightClickedSavedFileNewName() === null ||
-                                rightClickedSavedFileNewName() ===
-                                  rightClickedSavedFile()
+                                rightClickedOpenFileNewName() === null ||
+                                rightClickedOpenFile() ===
+                                  rightClickedOpenFileNewName()
                               }
                             >
                               <button
                                 class={"button_icon"}
                                 onclick={(e) => {
-                                  onClickDownloadSavedFile(
-                                    activeDirectoryName,
+                                  e.stopPropagation();
+                                  onClickDownloadOpenFile(
+                                    openFiles,
                                     parsedName.fullName,
                                   );
-                                  e.stopPropagation();
                                 }}
                               >
                                 <i class="bx bxs-download"></i>
                               </button>
                               <button
+                                class={"button_icon"}
+                                onclick={(e) => {
+                                  e.stopImmediatePropagation();
+                                  onClickSaveOpenFile(
+                                    index(),
+                                    openFiles,
+                                    directoryNames,
+                                    setDirectoryNames,
+                                    activeDirectoryParsedFileNames,
+                                    setActiveDirectoryParsedFileNames,
+                                    activeDirectoryName,
+                                  );
+                                }}
+                              >
+                                <i class="bx bx-save"></i>
+                              </button>
+                              <button
                                 class={
                                   "button_icon " +
-                                  (confirmAction() === ConfirmAction.TrashFile
-                                    ? "red"
+                                  (confirmAction() ===
+                                  ConfirmAction.DiscardChanges
+                                    ? "orange"
                                     : "")
                                 }
                                 onclick={(e) => {
-                                  e.stopPropagation();
-                                  onClickTrashSavedFile(
-                                    parsedName.fullName,
+                                  e.stopImmediatePropagation();
+                                  onClickCloseOpenFile(
+                                    index(),
+                                    openFiles,
                                     activeDirectoryName,
-                                    activeDirectoryParsedFileNames,
-                                    directoryNames,
-                                    setDirectoryNames,
+                                    setOpenFiles,
                                     confirmAction,
                                     setConfirmAction,
-                                    setRightClickedSavedFile,
+                                    setRightClickedOpenFile,
                                   ).then();
                                 }}
                               >
-                                <i class="bx bxs-trash-alt"></i>
+                                <i class="bx bx-x-circle"></i>
                               </button>
                             </Match>
                             <Match
                               when={
-                                rightClickedSavedFileNewName() !== null &&
-                                rightClickedSavedFileNewName() !==
-                                  rightClickedSavedFile()
+                                rightClickedOpenFile() !==
+                                rightClickedOpenFileNewName()
                               }
                             >
                               <button
                                 class={"button_icon"}
                                 onclick={(e) => {
                                   e.stopPropagation();
-                                  onRenameSavedFile(
-                                    parsedName.fullName,
-                                    rightClickedSavedFileNewName(),
-                                    activeDirectoryParsedFileNames,
-                                    activeDirectoryName,
-                                    directoryNames,
-                                    setDirectoryNames,
+                                  onRenameOpenFile(
+                                    rightClickedOpenFile(),
+                                    rightClickedOpenFileNewName(),
+                                    openFiles,
                                   );
                                 }}
                               >
@@ -635,36 +475,213 @@ function App(): JSXElement {
                 )}
               </For>
             </div>
-          </Show>
+            <Show when={filteredParsedOpenFileNames().length > 0}>
+              <div class="filelist_footer">
+                <i class="bx bx-clipboard"></i>
+                <span>Clipboard</span>
+              </div>
+            </Show>
+          </div>
+          <div id="L_S_BOTTOM">
+            <Show
+              when={
+                hoveredDirectoryFileNames()
+                  ? hoveredDirectoryFileNames()!.length > 0
+                  : filteredParsedAllFileNames() &&
+                    filteredParsedAllFileNames()!.length > 0
+              }
+            >
+              <div class="filelist_header">
+                <i class="bx bx-folder"></i>
+                <span>Directory</span>
+              </div>
+            </Show>
+            <Show
+              when={
+                hoveredDirectoryFileNames() ||
+                filteredParsedAllFileNames() !== null
+              }
+            >
+              <div id="L_S_B_ALLFILES">
+                <For
+                  each={
+                    hoveredDirectoryFileNames()
+                      ? hoveredDirectoryFileNames()
+                      : filteredParsedAllFileNames()
+                  }
+                >
+                  {(parsedName: ParsedFileName, index: Accessor<number>) => (
+                    <Switch>
+                      <Match
+                        when={rightClickedSavedFile() !== parsedName.fullName}
+                      >
+                        <button
+                          class={
+                            "button_file " +
+                            (rightClickedSavedFile() === parsedName.fullName
+                              ? "context_menu"
+                              : "")
+                          }
+                          onclick={() => {
+                            onClickSavedFile(
+                              parsedName.fullName,
+                              activeDirectoryName,
+                              openFiles,
+                              setOpenFiles,
+                              setActiveFileName,
+                            );
+                          }}
+                          oncontextmenu={(e: PointerEvent) => {
+                            e.preventDefault();
+                            setRightClickedSavedFile(parsedName.fullName);
+                          }}
+                        >
+                          <div class="filename text_overflow_fade bg">
+                            <Switch>
+                              <Match when={parsedName.baseName}>
+                                <i class="bx bxs-file"></i>
+                              </Match>
+                              <Match when={parsedName.baseName === ""}>
+                                <i class="bx bxs-tag-alt"></i>
+                              </Match>
+                            </Switch>
+                            {parsedName.baseName}
+                          </div>
+                          <div class="tags">
+                            <For each={parsedName.tags}>
+                              {(tag: string) => <span>&nbsp;{tag}</span>}
+                            </For>
+                          </div>
+                        </button>
+                      </Match>
+                      <Match
+                        when={rightClickedSavedFile() === parsedName.fullName}
+                      >
+                        <div
+                          class="button_file_contextmenu"
+                          onmouseleave={() => {
+                            setRightClickedSavedFile(null);
+                            setRightClickedSavedFileNewName(null);
+                            setConfirmAction(null);
+                          }}
+                          onClick={() => {
+                            setRightClickedSavedFile(null);
+                          }}
+                        >
+                          <div
+                            class="filename"
+                            contenteditable={true}
+                            onclick={(e) => {
+                              e.stopPropagation();
+                            }}
+                            oninput={(e) => {
+                              onInputExistingFileName(
+                                e,
+                                setRightClickedSavedFileNewName,
+                              );
+                            }}
+                          >
+                            {parsedName.fullName ?? "unnamed file"}
+                          </div>
+                          <div class="actions">
+                            <Switch>
+                              <Match
+                                when={
+                                  rightClickedSavedFileNewName() === null ||
+                                  rightClickedSavedFileNewName() ===
+                                    rightClickedSavedFile()
+                                }
+                              >
+                                <button
+                                  class={"button_icon"}
+                                  onclick={(e) => {
+                                    onClickDownloadSavedFile(
+                                      activeDirectoryName,
+                                      parsedName.fullName,
+                                    );
+                                    e.stopPropagation();
+                                  }}
+                                >
+                                  <i class="bx bxs-download"></i>
+                                </button>
+                                <button
+                                  class={
+                                    "button_icon " +
+                                    (confirmAction() === ConfirmAction.TrashFile
+                                      ? "red"
+                                      : "")
+                                  }
+                                  onclick={(e) => {
+                                    e.stopPropagation();
+                                    onClickTrashSavedFile(
+                                      parsedName.fullName,
+                                      activeDirectoryName,
+                                      activeDirectoryParsedFileNames,
+                                      setActiveDirectoryParsedFileNames,
+                                      directoryNames,
+                                      setDirectoryNames,
+                                      confirmAction,
+                                      setConfirmAction,
+                                      setRightClickedSavedFile,
+                                    ).then();
+                                  }}
+                                >
+                                  <i class="bx bxs-trash-alt"></i>
+                                </button>
+                              </Match>
+                              <Match
+                                when={
+                                  rightClickedSavedFileNewName() !== null &&
+                                  rightClickedSavedFileNewName() !==
+                                    rightClickedSavedFile()
+                                }
+                              >
+                                <button
+                                  class={"button_icon"}
+                                  onclick={(e) => {
+                                    e.stopPropagation();
+                                    onRenameSavedFile(
+                                      parsedName.fullName,
+                                      rightClickedSavedFileNewName(),
+                                      activeDirectoryParsedFileNames,
+                                      setActiveDirectoryParsedFileNames,
+                                      activeDirectoryName,
+                                      directoryNames,
+                                      setDirectoryNames,
+                                    );
+                                  }}
+                                >
+                                  <i class="bx bx-check"></i>
+                                </button>
+                              </Match>
+                            </Switch>
+                          </div>
+                        </div>
+                      </Match>
+                    </Switch>
+                  )}
+                </For>
+              </div>
+            </Show>
+          </div>
         </div>
       </div>
-      <Show when={true}>
-        <div id="HEADER_TOOLBAR">
-          <div class="l">
-            <button class="button_icon"></button>
-          </div>
-          <div class="right">
-            <For each={appModes}>
-              {(am) => {
-                return (
-                  <button
-                    onclick={() => {
-                      setAppMode(am.mode);
-                      localStorage.setItem(localStorageAppMode, am.mode);
-                    }}
-                    class={
-                      "button_icon " + (appMode() === am.mode ? "active" : "")
-                    }
-                  >
-                    <i class={"bx " + am.icon}></i>
-                  </button>
-                );
-              }}
-            </For>
-          </div>
-        </div>
-      </Show>
       <Switch>
+        <Match when={appMode() === AppMode.AiWriter}>
+          <textarea
+            id="BASIC_TEXT_EDITOR"
+            value={activeFile()?.content() ?? ""}
+            onkeyup={(e) => {
+              activeFile()?.setContent(e.currentTarget.value);
+            }}
+            onchange={(e) => {
+              storeOpenFiles(openFiles);
+            }}
+          />
+        </Match>
+        <Match when={appMode() === AppMode.MdReader}>
+          {MdReader(activeFile)}
+        </Match>
         <Match when={appMode() === AppMode.Settings}>
           {SettingsComponent(
             ollamaConnection,
@@ -677,39 +694,53 @@ function App(): JSXElement {
             setOllamaUrl,
           )}
         </Match>
-        <Match when={appMode() === AppMode.AiWriter}>
-          <textarea
-            id="BASIC_TEXT_EDITOR"
-            value={activeFile()?.content() ?? ""}
-            onkeyup={(e) => {
-              activeFile()?.setContent(e.currentTarget.value);
-            }}
-            onchange={(e) => {
-              storeOpenFiles(openFiles);
-            }}
-          />
-          {AiWriter(
-            ollamaConnection(),
-            activeFile,
-            openFiles,
-            activeDirectoryParsedFileNames,
-            activeDirectoryName,
-            ollamaModel,
-          )}
-        </Match>
-        <Match when={appMode() === AppMode.MdReader}>
-          {MdReader(activeFile)}
-          {AiWriter(
-            ollamaConnection(),
-            activeFile,
-            openFiles,
-            activeDirectoryParsedFileNames,
-            activeDirectoryName,
-            ollamaModel,
-          )}
-        </Match>
-        <Match when={appMode() === AppMode.Donate}>{DonateComponent()}</Match>
       </Switch>
+      <Switch>
+        <Match
+          when={
+            appMode() === AppMode.AiWriter || appMode() === AppMode.MdReader
+          }
+        >
+          <input id="CENTRAL_PROMPT_INPUT"></input>
+        </Match>
+      </Switch>
+      <div id="RIGHT_SIDE">
+        <Switch>
+          <Match
+            when={
+              appMode() === AppMode.AiWriter || appMode() === AppMode.MdReader
+            }
+          >
+            {AiWriter(
+              ollamaConnection(),
+              activeFile,
+              openFiles,
+              activeDirectoryParsedFileNames,
+              activeDirectoryName,
+              ollamaModel,
+            )}
+          </Match>
+        </Switch>
+        <div id="RIGHT_TOOLBAR">
+          <For each={appModes}>
+            {(am) => {
+              return (
+                <button
+                  onclick={() => {
+                    setAppMode(am.mode);
+                    localStorage.setItem(localStorageAppMode, am.mode);
+                  }}
+                  class={
+                    "button_icon " + (appMode() === am.mode ? "active" : "")
+                  }
+                >
+                  <i class={"bx " + am.icon}></i>
+                </button>
+              );
+            }}
+          </For>
+        </div>
+      </div>
     </div>
   );
 }
@@ -801,19 +832,18 @@ function onClickSaveOpenFile(
   openFiles: Accessor<ReactiveFile[]>,
   directoryNames: Accessor<string[]>,
   setDirectoryNames: Setter<string[]>,
-  activeDirectoryFileNames: Accessor<Signal<ParsedFileName[]> | null>,
+  activeDirectoryFileNames: Accessor<ParsedFileName[] | null>,
+  setActiveDirectoryFileNames: Setter<ParsedFileName[] | null>,
   activeDirectoryName: Accessor<string | null>,
 ) {
   const openFile: ReactiveFile | null = openFiles()[index];
   const activeDirName: string | null = activeDirectoryName();
-  const activeDirFileNames: Signal<ParsedFileName[]> | null =
+  const activeDirFileNames: ParsedFileName[] | null =
     activeDirectoryFileNames();
   const fileAlreadyExists =
     activeDirFileNames === null
       ? false
-      : !!activeDirFileNames[0]().find(
-          (adfn) => adfn.fullName === openFile.name(),
-        );
+      : !!activeDirFileNames.find((adfn) => adfn.fullName === openFile.name());
 
   if (openFile && activeDirName && activeDirFileNames) {
     writeFileToDirectory(activeDirName, {
@@ -821,8 +851,8 @@ function onClickSaveOpenFile(
       content: openFile.content(),
     }).then(() => {
       if (!fileAlreadyExists)
-        activeDirFileNames[1]([
-          ...activeDirFileNames[0](),
+        setActiveDirectoryFileNames([
+          ...activeDirFileNames,
           parseFileName(openFile.name()),
         ]);
       onUpdateDirectory(directoryNames, setDirectoryNames).then();
@@ -834,7 +864,8 @@ function onClickSaveOpenFile(
 async function onClickTrashSavedFile(
   name: string,
   activeDirectoryName: Accessor<string | null>,
-  activeDirectoryParsedFileNames: Accessor<Signal<ParsedFileName[]> | null>,
+  activeDirectoryParsedFileNames: Accessor<ParsedFileName[] | null>,
+  setActiveDirectoryParsedFileNames: Setter<ParsedFileName[] | null>,
   directoryNames: Accessor<string[]>,
   setDirectoryNames: Setter<string[]>,
   confirmAction: Accessor<ConfirmAction | null>,
@@ -850,7 +881,7 @@ async function onClickTrashSavedFile(
     activeDirFileNames !== null
   ) {
     await removeFileFromDirectory(activeDirName, name);
-    activeDirFileNames[1](
+    setActiveDirectoryParsedFileNames(
       (await listFileNamesInDirectory(activeDirName)).map((fn) =>
         parseFileName(fn),
       ),
@@ -1113,7 +1144,8 @@ function onRenameOpenFile(
 async function onRenameSavedFile(
   oldName: string | null,
   newName: string | null,
-  activeDirectorParsedFileNames: Accessor<Signal<ParsedFileName[]> | null>,
+  activeDirectorParsedFileNames: Accessor<ParsedFileName[] | null>,
+  setActiveDirectorParsedFileNames: Setter<ParsedFileName[] | null>,
   activeDirectoryName: Accessor<string | null>,
   directoryNames: Accessor<string[]>,
   setDirectoryNames: Setter<string[]>,
@@ -1122,7 +1154,7 @@ async function onRenameSavedFile(
   const activeDirFileNames = activeDirectorParsedFileNames();
   const fileWithSameNameAlreadyExists =
     activeDirFileNames !== null
-      ? activeDirFileNames[0]().some((sf) => sf.baseName === newName)
+      ? activeDirFileNames.some((sf) => sf.baseName === newName)
       : false;
 
   if (
@@ -1136,7 +1168,7 @@ async function onRenameSavedFile(
     const newFile: BasicFile = { name: newName, content: fileContent ?? "" };
     await writeFileToDirectory(activeDirName, newFile);
     await removeFileFromDirectory(activeDirName, oldName);
-    activeDirFileNames[1](
+    setActiveDirectorParsedFileNames(
       (await listFileNamesInDirectory(activeDirName)).map((fn) =>
         parseFileName(fn),
       ),
