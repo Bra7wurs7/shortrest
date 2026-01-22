@@ -7,7 +7,6 @@ import {
   Match,
   Setter,
   Show,
-  Signal,
   Switch,
   untrack,
   type JSXElement,
@@ -38,6 +37,10 @@ import { SettingsComponent } from "./components/settings.component";
 import { AiWriter } from "./components/aiWriter.component";
 import { ModelResponse, Ollama } from "ollama";
 import { MdReader } from "./components/mdReader.component";
+import { PromptProvider, usePromptContext } from "./contexts/promptContext";
+import { buildMessages } from "./functions/llm/buildMessages.function";
+import { streamToFile } from "./functions/llm/streamToFile.function";
+import { streamToSignal } from "./functions/llm/streamToSignal.function";
 
 export const localStorageOpenFilesKey = "openFiles";
 export const localStorageActiveFileNameKey = "activeFile";
@@ -47,6 +50,16 @@ export const localStorageOllamaModel = "ollamaModel";
 export const localStorageOllamaUrl = "ollamaUrl";
 
 function App(): JSXElement {
+  return (
+    <PromptProvider>
+      <AppContent />
+    </PromptProvider>
+  );
+}
+
+function AppContent(): JSXElement {
+  const promptCtx = usePromptContext();
+
   const appModes = [
     { mode: AppMode.AiWriter, icon: "bx-code" },
     { mode: AppMode.MdReader, icon: "bx-book-reader" },
@@ -61,8 +74,6 @@ function App(): JSXElement {
   const [activeDirectoryName, setActiveDirectoryName] = createSignal<
     string | null
   >(localStorage.getItem(localStorageActiveDirectoryName));
-  const [clipboard, setClipboard] =
-    createSignal<ReactiveFile[]>(loadOpenFiles());
   const [openFiles, setOpenFiles] =
     createSignal<ReactiveFile[]>(loadOpenFiles());
   const [activeFileName, setActiveFileName] = createSignal<string | null>(
@@ -124,6 +135,14 @@ function App(): JSXElement {
       setHoveredDirectoryFileNames(null);
     }
   });
+
+  // Signals to hold derived data from AiWriter component
+  const [reducedFileContent, setReducedFileContent] = createSignal<string>("");
+  const [referencedFilesContents, setReferencedFilesContents] = createSignal<
+    BasicFile[]
+  >([]);
+  const [referencedTagFileContents, setReferencedTagFileContents] =
+    createSignal<BasicFile[]>([]);
 
   // Memos
   const filteredParsedOpenFileNames = createMemo<ParsedFileName[]>(() => {
@@ -204,6 +223,87 @@ function App(): JSXElement {
     });
   });
 
+  // LLM prompt handlers
+  async function handlePromptSubmit() {
+    const file = activeFile();
+    const ollama = ollamaConnection();
+    const model = ollamaModel();
+
+    if (!file || !ollama || !model) {
+      console.warn("Cannot submit prompt: missing file, ollama, or model");
+      return;
+    }
+
+    const messages = buildMessages({
+      systemPrompt: promptCtx.systemPrompt(),
+      userPrompt: promptCtx.userPrompt(),
+      fileContent: reducedFileContent(),
+      modelThoughts: promptCtx.modelThoughts(),
+      tagFileContents: referencedTagFileContents(),
+      referencedFileContents: referencedFilesContents(),
+      disabledTags: promptCtx.disabledTags(),
+      disabledFiles: promptCtx.disabledFiles(),
+      disabledAllTags: promptCtx.disabledAllTags(),
+      disabledAllFiles: promptCtx.disabledAllFiles(),
+      disabledSystemPrompt: promptCtx.disabledSystemPrompt(),
+      disabledFileContext: promptCtx.disabledFileContext(),
+      disabledThoughts: promptCtx.disabledThoughts(),
+    });
+
+    await streamToFile({
+      ollama,
+      model: model.model,
+      messages,
+      targetFile: file,
+      openFiles,
+      setRunningPrompt: promptCtx.setRunningPrompt,
+    });
+  }
+
+  async function handleThinkSubmit() {
+    const file = activeFile();
+    const ollama = ollamaConnection();
+    const model = ollamaModel();
+
+    if (!ollama || !model) {
+      console.warn("Cannot submit think: missing ollama or model");
+      return;
+    }
+
+    const messages = buildMessages({
+      systemPrompt: promptCtx.systemPrompt(),
+      userPrompt: promptCtx.userPrompt(),
+      fileContent: reducedFileContent(),
+      modelThoughts: promptCtx.modelThoughts(),
+      tagFileContents: referencedTagFileContents(),
+      referencedFileContents: referencedFilesContents(),
+      disabledTags: promptCtx.disabledTags(),
+      disabledFiles: promptCtx.disabledFiles(),
+      disabledAllTags: promptCtx.disabledAllTags(),
+      disabledAllFiles: promptCtx.disabledAllFiles(),
+      disabledSystemPrompt: promptCtx.disabledSystemPrompt(),
+      disabledFileContext: promptCtx.disabledFileContext(),
+      disabledThoughts: promptCtx.disabledThoughts(),
+    });
+
+    await streamToSignal({
+      ollama,
+      model: model.model,
+      messages,
+      setTargetSignal: promptCtx.setModelThoughts,
+      setRunningPrompt: promptCtx.setRunningPrompt,
+      stopSequence: "</think>",
+    });
+  }
+
+  function handleCentralInputKeyUp(
+    e: KeyboardEvent & { currentTarget: HTMLInputElement },
+  ) {
+    if (e.key === "Enter") {
+      handlePromptSubmit();
+    }
+  }
+
   return (
     <div id="APP_CONTAINER" class="dark_theme">
       <input
@@ -260,7 +360,6 @@ function App(): JSXElement {
                           setHoveredDirectoryName(name);
                         }}
                         onmouseleave={() => {
-                          console.log("AAAH!");
                           setHoveredDirectoryName(null);
                         }}
                       >
@@ -711,7 +810,13 @@ function App(): JSXElement {
             appMode() === AppMode.AiWriter || appMode() === AppMode.MdReader
           }
         >
-          <input id="CENTRAL_PROMPT_INPUT"></input>
+          <input
+            id="CENTRAL_PROMPT_INPUT"
+            value={promptCtx.userPrompt()}
+            onInput={(e) => promptCtx.setUserPrompt(e.currentTarget.value)}
+            onKeyUp={handleCentralInputKeyUp}
+            placeholder="Enter prompt..."
+          />
         </Match>
       </Switch>
       <div id="RIGHT_SIDE">
@@ -721,14 +826,20 @@ function App(): JSXElement {
               appMode() === AppMode.AiWriter || appMode() === AppMode.MdReader
             }
           >
-            {AiWriter(
-              ollamaConnection(),
-              activeFile,
-              openFiles,
-              activeDirectoryParsedFileNames,
-              activeDirectoryName,
-              ollamaModel,
-            )}
+            <AiWriter
+              displayedReactiveFile={activeFile}
+              activeDirectoryParsedFileNames={activeDirectoryParsedFileNames}
+              activeDirectoryName={activeDirectoryName}
+              onReducedFileContentChange={(content) => {
+                createEffect(() => setReducedFileContent(content()));
+              }}
+              onReferencedFilesContentsChange={(contents) => {
+                createEffect(() => setReferencedFilesContents(contents()));
+              }}
+              onReferencedTagFileContentsChange={(contents) => {
+                createEffect(() => setReferencedTagFileContents(contents()));
+              }}
+            />
           </Match>
         </Switch>
         <div id="RIGHT_TOOLBAR">
@@ -752,15 +863,22 @@ function App(): JSXElement {
           <button class="button_icon">
             <i class="bx bx-network-chart" />
           </button>
-          ,
         </div>
       </div>
       <div id="RIGHT_SIDE_BUTTONS">
-        <button class="user_action">
+        <button
+          class="user_action"
+          title="Read from and write to the active file"
+          onClick={handlePromptSubmit}
+        >
           Continue Text
           <i class="bx bx-play-circle" />
         </button>
-        <button class="user_action fixed_width_icon">
+        <button
+          class="user_action fixed_width_icon"
+          title="Have the LLM think about the active file"
+          onClick={handleThinkSubmit}
+        >
           <i class="bx bx-network-chart" />
         </button>
       </div>
@@ -940,8 +1058,6 @@ function onInputKeyUp(
       ) {
         const [name, setName] = createSignal<string>(e.currentTarget.value);
         const [content, setContent] = createSignal<string>("");
-        const [contentDifferentFromSaved, setContentDifferentFromSaved] =
-          createSignal(false);
         setOpenFiles([...openFiles(), { name, setName, content, setContent }]);
         setActiveFile(name);
         storeActiveFileName(name());
