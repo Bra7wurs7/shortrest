@@ -6,6 +6,7 @@ import {
   For,
   JSXElement,
   Match,
+  Setter,
   Show,
   Switch,
 } from "solid-js";
@@ -14,30 +15,26 @@ import { TextUnits } from "../types/textUnits.enum";
 import { ParsedFileName } from "../types/parsedFileName.interface";
 import { BasicFile } from "../types/basicFile.interface";
 import { getFileContent } from "../functions/dbFilesInterface.functions";
-import {
-  usePromptContext,
-  localStorageChatSystemPrompt,
-  localStorageChatAssistentPromptLength,
-  localStorageChatAssistentPromptUnit,
-  sessionStorageDisabledTags,
-  sessionStorageDisabledFiles,
-} from "../contexts/promptContext";
 import { parseFileReferences } from "../functions/llm/parseFileReferences.function";
+import { PromptState } from "../types/promptState.interface";
 
 export interface AiWriterProps {
   displayedReactiveFile: Accessor<ReactiveFile | null>;
   activeDirectoryParsedFileNames: Accessor<ParsedFileName[] | null>;
   activeDirectoryName: Accessor<string | null>;
-  // Callbacks for derived data that App.tsx needs
-  onReducedFileContentChange?: (content: Accessor<string>) => void;
-  onReferencedFilesContentsChange?: (contents: Accessor<BasicFile[]>) => void;
-  onReferencedTagFileContentsChange?: (contents: Accessor<BasicFile[]>) => void;
+  promptState: PromptState;
+  // Setters for derived data that App.tsx needs for LLM calls
+  setReducedFileContent: Setter<string>;
+  setReferencedFilesContents: Setter<BasicFile[]>;
+  setReferencedTagFileContents: Setter<BasicFile[]>;
 }
 
 export function AiWriter(props: AiWriterProps): JSXElement {
-  const ctx = usePromptContext();
+  const ps = props.promptState;
 
-  // Memos for determining which tags/files are referenced
+  // ============================================
+  // Memos for tag/file references
+  // ============================================
   const allDefinedTags = createMemo<string[][]>(() => {
     const activeDirParsedFileNames = props.activeDirectoryParsedFileNames();
 
@@ -53,7 +50,7 @@ export function AiWriter(props: AiWriterProps): JSXElement {
 
   const referencedFiles = createMemo<string[]>(() => {
     return parseFileReferences(
-      ctx.userPrompt(),
+      ps.userPrompt(),
       props.activeDirectoryParsedFileNames(),
     );
   });
@@ -76,20 +73,17 @@ export function AiWriter(props: AiWriterProps): JSXElement {
       });
       Promise.all(fileContentPromises).then((files) => {
         setReferencedFilesContents(files);
+        props.setReferencedFilesContents(files);
       });
     } else {
       setReferencedFilesContents([]);
+      props.setReferencedFilesContents([]);
     }
-  });
-
-  // Notify parent of referencedFilesContents changes
-  createEffect(() => {
-    props.onReferencedFilesContentsChange?.(referencedFilesContents);
   });
 
   const referencedTags = createMemo<string[][]>(() => {
     const fileName = props.displayedReactiveFile()?.name();
-    const prompt = ctx.userPrompt();
+    const prompt = ps.userPrompt();
     return allDefinedTags().filter(
       (tag) =>
         (fileName?.includes(`${tag.join(" ")}`) &&
@@ -115,22 +109,19 @@ export function AiWriter(props: AiWriterProps): JSXElement {
       });
       Promise.all(fileContentPromises).then((files) => {
         setReferencedTagFileContents(files);
+        props.setReferencedTagFileContents(files);
       });
     } else {
       setReferencedTagFileContents([]);
+      props.setReferencedTagFileContents([]);
     }
-  });
-
-  // Notify parent of referencedTagFileContents changes
-  createEffect(() => {
-    props.onReferencedTagFileContentsChange?.(referencedTagFileContents);
   });
 
   const reducedFileContent = createMemo(() => {
     const wholeFile = props.displayedReactiveFile()?.content() ?? "";
     let reducedFile = wholeFile;
-    const length = ctx.reducedFileContentLength();
-    const unit = ctx.reducedFileContentUnit();
+    const length = ps.reducedFileContentLength();
+    const unit = ps.reducedFileContentUnit();
 
     if (length === 0 || unit === TextUnits.All) {
       return wholeFile;
@@ -155,30 +146,34 @@ export function AiWriter(props: AiWriterProps): JSXElement {
 
   // Notify parent of reducedFileContent changes
   createEffect(() => {
-    props.onReducedFileContentChange?.(reducedFileContent);
+    props.setReducedFileContent(reducedFileContent());
   });
 
-  // Helper for tag toggle
+  // ============================================
+  // UI Helpers
+  // ============================================
   function onClickTagToggle(tuple: string[]) {
     const tag = `${tuple.join(" ")}`;
-    const dsbldTags = ctx.disabledTags();
+    const dsbldTags = ps.disabledTags();
     if (dsbldTags.includes(tag)) {
-      ctx.setDisabledTags(dsbldTags.filter((t) => t !== tag));
+      ps.setDisabledTags(dsbldTags.filter((t) => t !== tag));
     } else {
-      ctx.setDisabledTags([tag, ...dsbldTags]);
+      ps.setDisabledTags([tag, ...dsbldTags]);
     }
   }
 
-  // Helper for file toggle
   function onClickFileToggle(name: string) {
-    const dsbldFiles = ctx.disabledFiles();
+    const dsbldFiles = ps.disabledFiles();
     if (dsbldFiles.includes(name)) {
-      ctx.setDisabledFiles(dsbldFiles.filter((f) => f !== name));
+      ps.setDisabledFiles(dsbldFiles.filter((f) => f !== name));
     } else {
-      ctx.setDisabledFiles([name, ...dsbldFiles]);
+      ps.setDisabledFiles([name, ...dsbldFiles]);
     }
   }
 
+  // ============================================
+  // Render
+  // ============================================
   return (
     <div id="AIWRITER_SIDEBAR">
       <div id="A_S_TOP">
@@ -190,13 +185,13 @@ export function AiWriter(props: AiWriterProps): JSXElement {
             </div>
             <div
               class="right"
-              onclick={() => ctx.setDisabledAllTags(!ctx.disabledAllTags())}
+              onclick={() => ps.setDisabledAllTags(!ps.disabledAllTags())}
             >
               <Switch>
-                <Match when={ctx.disabledAllTags()}>
+                <Match when={ps.disabledAllTags()}>
                   <i class="bx bx-square"></i>
                 </Match>
-                <Match when={!ctx.disabledAllTags()}>
+                <Match when={!ps.disabledAllTags()}>
                   <i class="bx bx-check-square"></i>
                 </Match>
               </Switch>
@@ -209,7 +204,7 @@ export function AiWriter(props: AiWriterProps): JSXElement {
                   <div
                     class={
                       "tag_row " +
-                      (ctx.disabledTags().includes(`${tuple.join(" ")}`)
+                      (ps.disabledTags().includes(`${tuple.join(" ")}`)
                         ? "disabled"
                         : "")
                     }
@@ -224,14 +219,12 @@ export function AiWriter(props: AiWriterProps): JSXElement {
                     </div>
                     <Switch>
                       <Match
-                        when={ctx.disabledTags().includes(`${tuple.join(" ")}`)}
+                        when={ps.disabledTags().includes(`${tuple.join(" ")}`)}
                       >
                         <i class="bx bx-checkbox"></i>
                       </Match>
                       <Match
-                        when={
-                          !ctx.disabledTags().includes(`${tuple.join(" ")}`)
-                        }
+                        when={!ps.disabledTags().includes(`${tuple.join(" ")}`)}
                       >
                         <i class="bx bx-checkbox-checked"></i>
                       </Match>
@@ -250,13 +243,13 @@ export function AiWriter(props: AiWriterProps): JSXElement {
             </div>
             <div
               class="right"
-              onclick={() => ctx.setDisabledAllFiles(!ctx.disabledAllFiles())}
+              onclick={() => ps.setDisabledAllFiles(!ps.disabledAllFiles())}
             >
               <Switch>
-                <Match when={ctx.disabledAllFiles()}>
+                <Match when={ps.disabledAllFiles()}>
                   <i class="bx bx-square"></i>
                 </Match>
-                <Match when={!ctx.disabledAllFiles()}>
+                <Match when={!ps.disabledAllFiles()}>
                   <i class="bx bx-check-square"></i>
                 </Match>
               </Switch>
@@ -269,18 +262,16 @@ export function AiWriter(props: AiWriterProps): JSXElement {
                   <div
                     class={
                       "tag_row " +
-                      (ctx.disabledFiles().includes(`${name}`)
-                        ? "disabled"
-                        : "")
+                      (ps.disabledFiles().includes(`${name}`) ? "disabled" : "")
                     }
                     onclick={() => onClickFileToggle(name)}
                   >
                     <div>{name}</div>
                     <Switch>
-                      <Match when={ctx.disabledFiles().includes(`${name}`)}>
+                      <Match when={ps.disabledFiles().includes(`${name}`)}>
                         <i class="bx bx-checkbox"></i>
                       </Match>
-                      <Match when={!ctx.disabledFiles().includes(`${name}`)}>
+                      <Match when={!ps.disabledFiles().includes(`${name}`)}>
                         <i class="bx bx-checkbox-checked"></i>
                       </Match>
                     </Switch>
@@ -298,25 +289,25 @@ export function AiWriter(props: AiWriterProps): JSXElement {
           <div
             class="right"
             onclick={() =>
-              ctx.setDisabledSystemPrompt(!ctx.disabledSystemPrompt())
+              ps.setDisabledSystemPrompt(!ps.disabledSystemPrompt())
             }
           >
             <Switch>
-              <Match when={ctx.disabledSystemPrompt()}>
+              <Match when={ps.disabledSystemPrompt()}>
                 <i class="bx bx-square"></i>
               </Match>
-              <Match when={!ctx.disabledSystemPrompt()}>
+              <Match when={!ps.disabledSystemPrompt()}>
                 <i class="bx bx-check-square"></i>
               </Match>
             </Switch>
           </div>
         </div>
         <textarea
-          class={"prompt" + (ctx.disabledSystemPrompt() ? " disabled" : "")}
+          class={"prompt" + (ps.disabledSystemPrompt() ? " disabled" : "")}
           rows={10}
-          value={ctx.systemPrompt()}
+          value={ps.systemPrompt()}
           onInput={(e) => {
-            ctx.setSystemPrompt(e.currentTarget.value);
+            ps.setSystemPrompt(e.currentTarget.value);
           }}
         />
         <Show when={reducedFileContent()}>
@@ -328,14 +319,14 @@ export function AiWriter(props: AiWriterProps): JSXElement {
             <div
               class="right"
               onclick={() =>
-                ctx.setDisabledFileContext(!ctx.disabledFileContext())
+                ps.setDisabledFileContext(!ps.disabledFileContext())
               }
             >
               <Switch>
-                <Match when={ctx.disabledFileContext()}>
+                <Match when={ps.disabledFileContext()}>
                   <i class="bx bx-square"></i>
                 </Match>
-                <Match when={!ctx.disabledFileContext()}>
+                <Match when={!ps.disabledFileContext()}>
                   <i class="bx bx-check-square"></i>
                 </Match>
               </Switch>
@@ -344,16 +335,16 @@ export function AiWriter(props: AiWriterProps): JSXElement {
           <div class="prompt_settings">
             <input
               type="number"
-              value={ctx.reducedFileContentLength()}
+              value={ps.reducedFileContentLength()}
               step={1}
               onInput={(e) => {
-                ctx.setReducedFileContentLength(Number(e.currentTarget.value));
+                ps.setReducedFileContentLength(Number(e.currentTarget.value));
               }}
             />
             <select
-              value={ctx.reducedFileContentUnit()}
+              value={ps.reducedFileContentUnit()}
               onChange={(e) => {
-                ctx.setReducedFileContentUnit(
+                ps.setReducedFileContentUnit(
                   e.currentTarget.value as TextUnits,
                 );
               }}
@@ -366,13 +357,13 @@ export function AiWriter(props: AiWriterProps): JSXElement {
           </div>
           <div
             class={
-              "readonly_prompt" + (ctx.disabledFileContext() ? " disabled" : "")
+              "readonly_prompt" + (ps.disabledFileContext() ? " disabled" : "")
             }
           >
             {reducedFileContent()}
           </div>
         </Show>
-        <Show when={ctx.modelThoughts()}>
+        <Show when={ps.modelThoughts()}>
           <div class="prompt_header">
             <div class="left">
               <i class="bx bx-network-chart"></i>
@@ -380,13 +371,13 @@ export function AiWriter(props: AiWriterProps): JSXElement {
             </div>
             <div
               class="right"
-              onclick={() => ctx.setDisabledThoughts(!ctx.disabledThoughts())}
+              onclick={() => ps.setDisabledThoughts(!ps.disabledThoughts())}
             >
               <Switch>
-                <Match when={ctx.disabledThoughts()}>
+                <Match when={ps.disabledThoughts()}>
                   <i class="bx bx-square"></i>
                 </Match>
-                <Match when={!ctx.disabledThoughts()}>
+                <Match when={!ps.disabledThoughts()}>
                   <i class="bx bx-check-square"></i>
                 </Match>
               </Switch>
@@ -394,15 +385,15 @@ export function AiWriter(props: AiWriterProps): JSXElement {
           </div>
 
           <div class="prompt_settings">
-            <button class="" onclick={() => ctx.setModelThoughts("")}>
+            <button class="" onclick={() => ps.setModelThoughts("")}>
               Forget
             </button>
           </div>
-          <div class={"prompt" + (ctx.disabledThoughts() ? " disabled" : "")}>
-            {ctx.modelThoughts()}
+          <div class={"prompt" + (ps.disabledThoughts() ? " disabled" : "")}>
+            {ps.modelThoughts()}
           </div>
         </Show>
-        <Show when={ctx.userPrompt()}>
+        <Show when={ps.userPrompt()}>
           <div class="prompt_header">
             <div class="left">
               <i class="bx bxs-user-voice"></i>
@@ -410,31 +401,29 @@ export function AiWriter(props: AiWriterProps): JSXElement {
             </div>
             <div
               class="right"
-              onclick={() =>
-                ctx.setDisabledUserPrompt(!ctx.disabledUserPrompt())
-              }
+              onclick={() => ps.setDisabledUserPrompt(!ps.disabledUserPrompt())}
             >
               <Switch>
-                <Match when={ctx.disabledUserPrompt()}>
+                <Match when={ps.disabledUserPrompt()}>
                   <i class="bx bx-square"></i>
                 </Match>
-                <Match when={!ctx.disabledUserPrompt()}>
+                <Match when={!ps.disabledUserPrompt()}>
                   <i class="bx bx-check-square"></i>
                 </Match>
               </Switch>
             </div>
           </div>
-          <div class={"prompt" + (ctx.disabledUserPrompt() ? " disabled" : "")}>
-            {ctx.userPrompt()}
+          <div class={"prompt" + (ps.disabledUserPrompt() ? " disabled" : "")}>
+            {ps.userPrompt()}
           </div>
         </Show>
       </div>
       <div>
-        <Show when={ctx.runningPrompt() !== null}>
+        <Show when={ps.runningPrompt() !== null}>
           <button
             class="user_action yellow_border"
             onclick={() => {
-              ctx.runningPrompt()?.abort();
+              ps.runningPrompt()?.abort();
             }}
           >
             Abort

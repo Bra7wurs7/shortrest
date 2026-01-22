@@ -35,12 +35,33 @@ import { BasicFile } from "./types/basicFile.interface";
 import { storeActiveFileName } from "./functions/storeActiveFileName.function";
 import { SettingsComponent } from "./components/settings.component";
 import { AiWriter } from "./components/aiWriter.component";
-import { ModelResponse, Ollama } from "ollama";
+import {
+  AbortableAsyncIterator,
+  ChatResponse,
+  ModelResponse,
+  Ollama,
+} from "ollama";
 import { MdReader } from "./components/mdReader.component";
-import { PromptProvider, usePromptContext } from "./contexts/promptContext";
 import { buildMessages } from "./functions/llm/buildMessages.function";
 import { streamToFile } from "./functions/llm/streamToFile.function";
 import { streamToSignal } from "./functions/llm/streamToSignal.function";
+import { TextUnits } from "./types/textUnits.enum";
+import { PromptState } from "./types/promptState.interface";
+import {
+  localStorageChatUserPrompt,
+  localStorageChatSystemPrompt,
+  localStorageChatAssistentPromptLength,
+  localStorageChatAssistentPromptUnit,
+  localStorageChatModelThoughts,
+  sessionStorageDisabledTags,
+  sessionStorageDisabledFiles,
+  sessionStorageDisabledSysPrompt,
+  sessionStorageDisabledAllTags,
+  sessionStorageDisabledFileContext,
+  sessionStorageDisabledAllFiles,
+  sessionStorageDisabledThoughts,
+  sessionStorageDisabledUserPrompt,
+} from "./constants/storageKeys";
 
 export const localStorageOpenFilesKey = "openFiles";
 export const localStorageActiveFileNameKey = "activeFile";
@@ -50,23 +71,15 @@ export const localStorageOllamaModel = "ollamaModel";
 export const localStorageOllamaUrl = "ollamaUrl";
 
 function App(): JSXElement {
-  return (
-    <PromptProvider>
-      <AppContent />
-    </PromptProvider>
-  );
-}
-
-function AppContent(): JSXElement {
-  const promptCtx = usePromptContext();
-
   const appModes = [
     { mode: AppMode.AiWriter, icon: "bx-code" },
     { mode: AppMode.MdReader, icon: "bx-book-reader" },
     { mode: AppMode.Settings, icon: "bx-cog" },
   ];
 
-  // Signals
+  // ============================================
+  // App-level signals
+  // ============================================
   const [appMode, setAppMode] = createSignal<AppMode>(
     localStorage.getItem(localStorageAppMode) as AppMode,
   );
@@ -99,6 +112,10 @@ function AppContent(): JSXElement {
   const [hoveredDirectoryName, setHoveredDirectoryName] = createSignal<
     string | null
   >(null);
+
+  // ============================================
+  // Ollama connection signals
+  // ============================================
   const [ollamaConnection, setOllamaConnection] = createSignal<Ollama | null>(
     new Ollama(),
   );
@@ -112,31 +129,101 @@ function AppContent(): JSXElement {
     null,
   );
 
-  const [activeDirectoryParsedFileNames, setActiveDirectoryParsedFileNames] =
-    createSignal<ParsedFileName[] | null>(null);
-  createEffect(() => {
-    const activeDirName = activeDirectoryName();
-    if (activeDirName) {
-      listFileNamesInDirectory(activeDirName).then((names) => {
-        setActiveDirectoryParsedFileNames(names.map((fn) => parseFileName(fn)));
-      });
-    }
-  });
+  // ============================================
+  // Prompt state signals (explicit, no context)
+  // ============================================
+  const [userPrompt, setUserPrompt] = createSignal<string>(
+    localStorage.getItem(localStorageChatUserPrompt) ?? "",
+  );
+  const [systemPrompt, setSystemPrompt] = createSignal<string>(
+    localStorage.getItem(localStorageChatSystemPrompt) ?? "",
+  );
+  const [modelThoughts, setModelThoughts] = createSignal<string>(
+    localStorage.getItem(localStorageChatModelThoughts) ?? "",
+  );
+  const [disabledTags, setDisabledTags] = createSignal<string[]>(
+    JSON.parse(sessionStorage.getItem(sessionStorageDisabledTags) ?? "[]"),
+  );
+  const [disabledFiles, setDisabledFiles] = createSignal<string[]>(
+    JSON.parse(sessionStorage.getItem(sessionStorageDisabledFiles) ?? "[]"),
+  );
+  const [disabledSystemPrompt, setDisabledSystemPrompt] = createSignal<boolean>(
+    JSON.parse(
+      sessionStorage.getItem(sessionStorageDisabledSysPrompt) ?? "false",
+    ),
+  );
+  const [disabledAllTags, setDisabledAllTags] = createSignal<boolean>(
+    JSON.parse(
+      sessionStorage.getItem(sessionStorageDisabledAllTags) ?? "false",
+    ),
+  );
+  const [disabledFileContext, setDisabledFileContext] = createSignal<boolean>(
+    JSON.parse(
+      sessionStorage.getItem(sessionStorageDisabledFileContext) ?? "false",
+    ),
+  );
+  const [disabledAllFiles, setDisabledAllFiles] = createSignal<boolean>(
+    JSON.parse(
+      sessionStorage.getItem(sessionStorageDisabledAllFiles) ?? "false",
+    ),
+  );
+  const [disabledThoughts, setDisabledThoughts] = createSignal<boolean>(
+    JSON.parse(
+      sessionStorage.getItem(sessionStorageDisabledThoughts) ?? "false",
+    ),
+  );
+  const [disabledUserPrompt, setDisabledUserPrompt] = createSignal<boolean>(
+    JSON.parse(
+      sessionStorage.getItem(sessionStorageDisabledUserPrompt) ?? "false",
+    ),
+  );
+  const [reducedFileContentLength, setReducedFileContentLength] =
+    createSignal<number>(
+      Number(localStorage.getItem(localStorageChatAssistentPromptLength)) || 0,
+    );
+  const [reducedFileContentUnit, setReducedFileContentUnit] =
+    createSignal<TextUnits>(
+      (localStorage.getItem(localStorageChatAssistentPromptUnit) ??
+        TextUnits.Sentences) as TextUnits,
+    );
+  const [runningPrompt, setRunningPrompt] =
+    createSignal<AbortableAsyncIterator<ChatResponse> | null>(null);
 
-  const [hoveredDirectoryFileNames, setHoveredDirectoryFileNames] =
-    createSignal<ParsedFileName[] | null>(null);
-  createEffect(() => {
-    const hoveredDirName = hoveredDirectoryName();
-    if (hoveredDirName) {
-      listFileNamesInDirectory(hoveredDirName).then((names) => {
-        setHoveredDirectoryFileNames(names.map((name) => parseFileName(name)));
-      });
-    } else {
-      setHoveredDirectoryFileNames(null);
-    }
-  });
+  // Bundle prompt state for passing to components
+  const promptState: PromptState = {
+    userPrompt,
+    setUserPrompt,
+    systemPrompt,
+    setSystemPrompt,
+    modelThoughts,
+    setModelThoughts,
+    disabledTags,
+    setDisabledTags,
+    disabledFiles,
+    setDisabledFiles,
+    disabledSystemPrompt,
+    setDisabledSystemPrompt,
+    disabledAllTags,
+    setDisabledAllTags,
+    disabledFileContext,
+    setDisabledFileContext,
+    disabledAllFiles,
+    setDisabledAllFiles,
+    disabledThoughts,
+    setDisabledThoughts,
+    disabledUserPrompt,
+    setDisabledUserPrompt,
+    reducedFileContentLength,
+    setReducedFileContentLength,
+    reducedFileContentUnit,
+    setReducedFileContentUnit,
+    runningPrompt,
+    setRunningPrompt,
+  };
 
-  // Signals to hold derived data from AiWriter component
+  // ============================================
+  // Derived data from AiWriter (set via callbacks)
+  // ============================================
   const [reducedFileContent, setReducedFileContent] = createSignal<string>("");
   const [referencedFilesContents, setReferencedFilesContents] = createSignal<
     BasicFile[]
@@ -144,7 +231,18 @@ function AppContent(): JSXElement {
   const [referencedTagFileContents, setReferencedTagFileContents] =
     createSignal<BasicFile[]>([]);
 
+  // ============================================
+  // Directory file name signals
+  // ============================================
+  const [activeDirectoryParsedFileNames, setActiveDirectoryParsedFileNames] =
+    createSignal<ParsedFileName[] | null>(null);
+
+  const [hoveredDirectoryFileNames, setHoveredDirectoryFileNames] =
+    createSignal<ParsedFileName[] | null>(null);
+
+  // ============================================
   // Memos
+  // ============================================
   const filteredParsedOpenFileNames = createMemo<ParsedFileName[]>(() => {
     return openFiles()
       .filter((of) =>
@@ -152,6 +250,7 @@ function AppContent(): JSXElement {
       )
       .map((of) => parseFileName(of.name()));
   });
+
   const filteredParsedAllFileNames = createMemo<ParsedFileName[] | null>(() => {
     const activeDirFileNames = activeDirectoryParsedFileNames();
     if (activeDirFileNames) {
@@ -161,11 +260,91 @@ function AppContent(): JSXElement {
     }
     return null;
   });
+
   const activeFile = createMemo<ReactiveFile | null>(
     () => openFiles().find((of) => of.name() === activeFileName()) ?? null,
   );
 
-  // Effects
+  // ============================================
+  // Effects - Persistence
+  // ============================================
+
+  // Prompt persistence to localStorage
+  createEffect(() => {
+    localStorage.setItem(localStorageChatUserPrompt, userPrompt());
+  });
+  createEffect(() => {
+    localStorage.setItem(localStorageChatSystemPrompt, systemPrompt());
+  });
+  createEffect(() => {
+    localStorage.setItem(localStorageChatModelThoughts, modelThoughts());
+  });
+  createEffect(() => {
+    localStorage.setItem(
+      localStorageChatAssistentPromptLength,
+      String(reducedFileContentLength()),
+    );
+  });
+  createEffect(() => {
+    localStorage.setItem(
+      localStorageChatAssistentPromptUnit,
+      reducedFileContentUnit(),
+    );
+  });
+
+  // Toggle persistence to sessionStorage
+  createEffect(() => {
+    sessionStorage.setItem(
+      sessionStorageDisabledTags,
+      JSON.stringify(disabledTags()),
+    );
+  });
+  createEffect(() => {
+    sessionStorage.setItem(
+      sessionStorageDisabledFiles,
+      JSON.stringify(disabledFiles()),
+    );
+  });
+  createEffect(() => {
+    sessionStorage.setItem(
+      sessionStorageDisabledSysPrompt,
+      JSON.stringify(disabledSystemPrompt()),
+    );
+  });
+  createEffect(() => {
+    sessionStorage.setItem(
+      sessionStorageDisabledAllTags,
+      JSON.stringify(disabledAllTags()),
+    );
+  });
+  createEffect(() => {
+    sessionStorage.setItem(
+      sessionStorageDisabledFileContext,
+      JSON.stringify(disabledFileContext()),
+    );
+  });
+  createEffect(() => {
+    sessionStorage.setItem(
+      sessionStorageDisabledAllFiles,
+      JSON.stringify(disabledAllFiles()),
+    );
+  });
+  createEffect(() => {
+    sessionStorage.setItem(
+      sessionStorageDisabledThoughts,
+      JSON.stringify(disabledThoughts()),
+    );
+  });
+  createEffect(() => {
+    sessionStorage.setItem(
+      sessionStorageDisabledUserPrompt,
+      JSON.stringify(disabledUserPrompt()),
+    );
+  });
+
+  // ============================================
+  // Effects - Ollama
+  // ============================================
   createEffect(() => {
     setOllamaConnection(new Ollama({ host: ollamaUrl() }));
   });
@@ -188,7 +367,6 @@ function AppContent(): JSXElement {
   createEffect(() => {
     localStorage.setItem(localStorageOllamaUrl, ollamaUrl());
   });
-  /* Set this.ollamaModel to the model whose name is stored in localstorage  */
   createEffect(() => {
     const llmModel = untrack(ollamaModel);
     const allLlmModels = ollamaModels();
@@ -205,16 +383,40 @@ function AppContent(): JSXElement {
     }
   });
 
+  // ============================================
+  // Effects - Directory loading
+  // ============================================
+  createEffect(() => {
+    const activeDirName = activeDirectoryName();
+    if (activeDirName) {
+      listFileNamesInDirectory(activeDirName).then((names) => {
+        setActiveDirectoryParsedFileNames(names.map((fn) => parseFileName(fn)));
+      });
+    }
+  });
+
+  createEffect(() => {
+    const hoveredDirName = hoveredDirectoryName();
+    if (hoveredDirName) {
+      listFileNamesInDirectory(hoveredDirName).then((names) => {
+        setHoveredDirectoryFileNames(names.map((name) => parseFileName(name)));
+      });
+    } else {
+      setHoveredDirectoryFileNames(null);
+    }
+  });
+
+  // ============================================
   // Initialization
+  // ============================================
   listAllDirectories().then((names) => {
     setDirectoryNames(names);
     onUpdateDirectory(directoryNames, setDirectoryNames).then(() => {
       const storedDirName = activeDirectoryName();
       const currentDirNames = directoryNames();
 
-      // If no active directory or it doesn't exist, activate the empty directory
       if (!storedDirName || !currentDirNames.includes(storedDirName)) {
-        const emptyDirectory = currentDirNames[0]; // Empty directory is always at index 0
+        const emptyDirectory = currentDirNames[0];
         if (emptyDirectory) {
           setActiveDirectoryName(emptyDirectory);
           localStorage.setItem(localStorageActiveDirectoryName, emptyDirectory);
@@ -223,7 +425,9 @@ function AppContent(): JSXElement {
     });
   });
 
+  // ============================================
   // LLM prompt handlers
+  // ============================================
   async function handlePromptSubmit() {
     const file = activeFile();
     const ollama = ollamaConnection();
@@ -235,19 +439,19 @@ function AppContent(): JSXElement {
     }
 
     const messages = buildMessages({
-      systemPrompt: promptCtx.systemPrompt(),
-      userPrompt: promptCtx.userPrompt(),
+      systemPrompt: systemPrompt(),
+      userPrompt: userPrompt(),
       fileContent: reducedFileContent(),
-      modelThoughts: promptCtx.modelThoughts(),
+      modelThoughts: modelThoughts(),
       tagFileContents: referencedTagFileContents(),
       referencedFileContents: referencedFilesContents(),
-      disabledTags: promptCtx.disabledTags(),
-      disabledFiles: promptCtx.disabledFiles(),
-      disabledAllTags: promptCtx.disabledAllTags(),
-      disabledAllFiles: promptCtx.disabledAllFiles(),
-      disabledSystemPrompt: promptCtx.disabledSystemPrompt(),
-      disabledFileContext: promptCtx.disabledFileContext(),
-      disabledThoughts: promptCtx.disabledThoughts(),
+      disabledTags: disabledTags(),
+      disabledFiles: disabledFiles(),
+      disabledAllTags: disabledAllTags(),
+      disabledAllFiles: disabledAllFiles(),
+      disabledSystemPrompt: disabledSystemPrompt(),
+      disabledFileContext: disabledFileContext(),
+      disabledThoughts: disabledThoughts(),
     });
 
     await streamToFile({
@@ -256,12 +460,11 @@ function AppContent(): JSXElement {
       messages,
       targetFile: file,
       openFiles,
-      setRunningPrompt: promptCtx.setRunningPrompt,
+      setRunningPrompt,
     });
   }
 
   async function handleThinkSubmit() {
-    const file = activeFile();
     const ollama = ollamaConnection();
     const model = ollamaModel();
 
@@ -271,27 +474,27 @@ function AppContent(): JSXElement {
     }
 
     const messages = buildMessages({
-      systemPrompt: promptCtx.systemPrompt(),
-      userPrompt: promptCtx.userPrompt(),
+      systemPrompt: systemPrompt(),
+      userPrompt: userPrompt(),
       fileContent: reducedFileContent(),
-      modelThoughts: promptCtx.modelThoughts(),
+      modelThoughts: modelThoughts(),
       tagFileContents: referencedTagFileContents(),
       referencedFileContents: referencedFilesContents(),
-      disabledTags: promptCtx.disabledTags(),
-      disabledFiles: promptCtx.disabledFiles(),
-      disabledAllTags: promptCtx.disabledAllTags(),
-      disabledAllFiles: promptCtx.disabledAllFiles(),
-      disabledSystemPrompt: promptCtx.disabledSystemPrompt(),
-      disabledFileContext: promptCtx.disabledFileContext(),
-      disabledThoughts: promptCtx.disabledThoughts(),
+      disabledTags: disabledTags(),
+      disabledFiles: disabledFiles(),
+      disabledAllTags: disabledAllTags(),
+      disabledAllFiles: disabledAllFiles(),
+      disabledSystemPrompt: disabledSystemPrompt(),
+      disabledFileContext: disabledFileContext(),
+      disabledThoughts: disabledThoughts(),
     });
 
     await streamToSignal({
       ollama,
       model: model.model,
       messages,
-      setTargetSignal: promptCtx.setModelThoughts,
-      setRunningPrompt: promptCtx.setRunningPrompt,
+      setTargetSignal: setModelThoughts,
+      setRunningPrompt,
       stopSequence: "</think>",
     });
   }
@@ -304,6 +507,9 @@ function AppContent(): JSXElement {
     }
   }
 
+  // ============================================
+  // Render
+  // ============================================
   return (
     <div id="APP_CONTAINER" class="dark_theme">
       <input
@@ -327,7 +533,7 @@ function AppContent(): JSXElement {
           <div id="LM_S_ACTIONS"></div>
           <div id="LM_S_BOTTOM">
             <button
-              class={"button_icon"}
+              class="button_icon"
               onclick={(e) => {
                 e.stopPropagation();
                 onClickUploadDirectory(directoryNames, setDirectoryNames);
@@ -481,7 +687,7 @@ function AppContent(): JSXElement {
                       >
                         <div
                           class="filename text_overflow_fade bg"
-                          contenteditable={true}
+                          contenteditable
                           onclick={(e) => {
                             e.stopPropagation();
                           }}
@@ -504,7 +710,7 @@ function AppContent(): JSXElement {
                               }
                             >
                               <button
-                                class={"button_icon"}
+                                class="button_icon"
                                 onclick={(e) => {
                                   e.stopPropagation();
                                   onClickDownloadOpenFile(
@@ -516,7 +722,7 @@ function AppContent(): JSXElement {
                                 <i class="bx bxs-download"></i>
                               </button>
                               <button
-                                class={"button_icon"}
+                                class="button_icon"
                                 onclick={(e) => {
                                   e.stopImmediatePropagation();
                                   onClickSaveOpenFile(
@@ -563,7 +769,7 @@ function AppContent(): JSXElement {
                               }
                             >
                               <button
-                                class={"button_icon"}
+                                class="button_icon"
                                 onclick={(e) => {
                                   e.stopPropagation();
                                   onRenameOpenFile(
@@ -679,7 +885,7 @@ function AppContent(): JSXElement {
                         >
                           <div
                             class="filename"
-                            contenteditable={true}
+                            contenteditable
                             onclick={(e) => {
                               e.stopPropagation();
                             }}
@@ -702,7 +908,7 @@ function AppContent(): JSXElement {
                                 }
                               >
                                 <button
-                                  class={"button_icon"}
+                                  class="button_icon"
                                   onclick={(e) => {
                                     onClickDownloadSavedFile(
                                       activeDirectoryName,
@@ -746,7 +952,7 @@ function AppContent(): JSXElement {
                                 }
                               >
                                 <button
-                                  class={"button_icon"}
+                                  class="button_icon"
                                   onclick={(e) => {
                                     e.stopPropagation();
                                     onRenameSavedFile(
@@ -812,8 +1018,8 @@ function AppContent(): JSXElement {
         >
           <input
             id="CENTRAL_PROMPT_INPUT"
-            value={promptCtx.userPrompt()}
-            onInput={(e) => promptCtx.setUserPrompt(e.currentTarget.value)}
+            value={userPrompt()}
+            onInput={(e) => setUserPrompt(e.currentTarget.value)}
             onKeyUp={handleCentralInputKeyUp}
             placeholder="Enter prompt..."
           />
@@ -830,15 +1036,10 @@ function AppContent(): JSXElement {
               displayedReactiveFile={activeFile}
               activeDirectoryParsedFileNames={activeDirectoryParsedFileNames}
               activeDirectoryName={activeDirectoryName}
-              onReducedFileContentChange={(content) => {
-                createEffect(() => setReducedFileContent(content()));
-              }}
-              onReferencedFilesContentsChange={(contents) => {
-                createEffect(() => setReferencedFilesContents(contents()));
-              }}
-              onReferencedTagFileContentsChange={(contents) => {
-                createEffect(() => setReferencedTagFileContents(contents()));
-              }}
+              promptState={promptState}
+              setReducedFileContent={setReducedFileContent}
+              setReferencedFilesContents={setReferencedFilesContents}
+              setReferencedTagFileContents={setReferencedTagFileContents}
             />
           </Match>
         </Switch>
@@ -947,7 +1148,6 @@ async function onClickCloseOpenFile(
       savedFileContent !== null && savedFileContent !== openFile.content();
 
     if (savedFileContent === null || changesExist) {
-      // Require confirmation for unsaved changes or non-existent saved file
       if (confirmAction() === ConfirmAction.DiscardChanges) {
         currentOpenFiles.splice(index, 1);
         setOpenFiles([...currentOpenFiles]);
@@ -957,7 +1157,6 @@ async function onClickCloseOpenFile(
         setConfirmAction(ConfirmAction.DiscardChanges);
       }
     } else {
-      // No confirmation needed for saved changes
       currentOpenFiles.splice(index, 1);
       setOpenFiles([...currentOpenFiles]);
       setConfirmAction(null);
@@ -1001,7 +1200,6 @@ function onClickSaveOpenFile(
   }
 }
 
-/** @TODO Put deleted files into a "trash" directory instead of deleting them outright */
 async function onClickTrashSavedFile(
   name: string,
   activeDirectoryName: Accessor<string | null>,
@@ -1155,7 +1353,6 @@ function onClickDownloadOpenFile(
   const openFile = openFiles().find((file) => file.name() === name);
 
   if (openFile) {
-    // Get content from the open file's signal
     const content = openFile.content();
 
     if (content !== null && content !== undefined) {
@@ -1181,11 +1378,9 @@ function onClickUploadDirectory(
 
     if (!files) return;
 
-    // Create a new directory in the IDB
     const directoryName = uuidv4();
     await addDirectory(directoryName);
 
-    // Upload each file to the new directory
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const reader = new FileReader();
@@ -1207,7 +1402,6 @@ function onClickUploadDirectory(
 }
 
 function onClickDownloadDirectory(name: string) {
-  // Get all file names in the directory
   listFileNamesInDirectory(name)
     .then((fileNames) => {
       if (fileNames.length === 0) {
@@ -1215,7 +1409,6 @@ function onClickDownloadDirectory(name: string) {
         return;
       }
 
-      // Create a ZIP archive with all files from the directory
       const zip = new JSZip();
       const promises = fileNames.map((fileName) => {
         return getFileContent(name, fileName)
