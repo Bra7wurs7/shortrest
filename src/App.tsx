@@ -749,7 +749,20 @@ function App(): JSXElement {
               );
             }}
           </For>
+          <button class="button_icon">
+            <i class="bx bx-network-chart" />
+          </button>
+          ,
         </div>
+      </div>
+      <div id="RIGHT_SIDE_BUTTONS">
+        <button class="user_action">
+          Continue Text
+          <i class="bx bx-play-circle" />
+        </button>
+        <button class="user_action fixed_width_icon">
+          <i class="bx bx-network-chart" />
+        </button>
       </div>
     </div>
   );

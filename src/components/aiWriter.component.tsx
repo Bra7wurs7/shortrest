@@ -568,65 +568,6 @@ export function AiWriter(
             <i class="bx bx-block yellow_dim" />
           </button>
         </Show>
-        <button
-          class="user_action"
-          onclick={() => {
-            generateAssistantThoughts(
-              userPrompt(),
-              ollama,
-              displayedReactiveFile,
-              systemPrompt,
-              openFiles,
-              reducedFileContent,
-              modelThoughts,
-              setModelThoughts,
-              referencedTagFileContents,
-              disabledTags,
-              ollamaModel,
-              runningPrompt,
-              setRunningPrompt,
-              referencedFilesContents,
-              disabledFiles,
-              disabledAllFiles,
-              disabledAllTags,
-              disabledFileContext,
-              disabledSystemPrompt,
-              disabledThoughts,
-            );
-          }}
-        >
-          Consider
-          <i class="bx bx-network-chart" />
-        </button>
-        <button
-          class="user_action"
-          onclick={() => {
-            generateAssistantResponse(
-              userPrompt(),
-              ollama,
-              displayedReactiveFile,
-              systemPrompt,
-              openFiles,
-              reducedFileContent,
-              modelThoughts,
-              referencedTagFileContents,
-              disabledTags,
-              ollamaModel,
-              runningPrompt,
-              setRunningPrompt,
-              referencedFilesContents,
-              disabledFiles,
-              disabledAllFiles,
-              disabledAllTags,
-              disabledFileContext,
-              disabledSystemPrompt,
-              disabledThoughts,
-            );
-          }}
-        >
-          Continue Text
-          <i class="bx bx-play-circle" />
-        </button>
       </div>
     </div>,
   ];
