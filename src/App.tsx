@@ -37,9 +37,7 @@ import { storeActiveFileName } from "./functions/storeActiveFileName.function";
 import { SettingsComponent } from "./components/settings.component";
 import { AiWriter } from "./components/aiWriter.component";
 import { ModelResponse, Ollama } from "ollama";
-import { DonateComponent } from "./components/donate.component";
 import { MdReader } from "./components/mdReader.component";
-import { OpenFileContentDifferentToSavedFileContent } from "./functions/openFileContentDifferentToSavedFileContent.function";
 
 export const localStorageOpenFilesKey = "openFiles";
 export const localStorageActiveFileNameKey = "activeFile";
@@ -191,7 +189,19 @@ function App(): JSXElement {
   // Initialization
   listAllDirectories().then((names) => {
     setDirectoryNames(names);
-    onUpdateDirectory(directoryNames, setDirectoryNames).then();
+    onUpdateDirectory(directoryNames, setDirectoryNames).then(() => {
+      const storedDirName = activeDirectoryName();
+      const currentDirNames = directoryNames();
+
+      // If no active directory or it doesn't exist, activate the empty directory
+      if (!storedDirName || !currentDirNames.includes(storedDirName)) {
+        const emptyDirectory = currentDirNames[0]; // Empty directory is always at index 0
+        if (emptyDirectory) {
+          setActiveDirectoryName(emptyDirectory);
+          localStorage.setItem(localStorageActiveDirectoryName, emptyDirectory);
+        }
+      }
+    });
   });
 
   return (
