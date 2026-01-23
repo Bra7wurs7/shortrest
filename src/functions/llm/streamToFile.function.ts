@@ -1,26 +1,26 @@
 import { ChatRequest, Message, Ollama } from "ollama";
 import { Accessor, Setter } from "solid-js";
 import { AbortableAsyncIterator, ChatResponse } from "ollama";
-import { ReactiveFile } from "../../types/reactiveFile.interface";
-import { storeOpenFiles } from "../../storage";
+import { ClipboardEntry } from "../../types/clipboardEntry.interface";
+import { storeClipboard } from "../storage.functions";
 
 export interface StreamToFileOptions {
   ollama: Ollama;
   model: string;
   messages: Message[];
-  targetFile: ReactiveFile;
-  openFiles: Accessor<ReactiveFile[]>;
+  targetEntry: ClipboardEntry;
+  clipboard: Accessor<ClipboardEntry[]>;
   setRunningPrompt: Setter<AbortableAsyncIterator<ChatResponse> | null>;
 }
 
 /**
- * Sends a chat request to Ollama and streams the response to a ReactiveFile.
- * Appends the streamed content to the file's existing content.
+ * Sends a chat request to Ollama and streams the response to a ClipboardEntry.
+ * Appends the streamed content to the entry's existing content.
  */
 export async function streamToFile(
   options: StreamToFileOptions,
 ): Promise<void> {
-  const { ollama, model, messages, targetFile, openFiles, setRunningPrompt } =
+  const { ollama, model, messages, targetEntry, clipboard, setRunningPrompt } =
     options;
 
   const request: ChatRequest & { stream: true } = {
@@ -35,10 +35,10 @@ export async function streamToFile(
     setRunningPrompt(responseStream);
 
     for await (const response of responseStream) {
-      targetFile.setContent((prev) => prev + response.message.content);
+      targetEntry.setContent((prev) => prev + response.message.content);
 
       if (response.done) {
-        storeOpenFiles(openFiles);
+        storeClipboard(clipboard);
         setRunningPrompt(null);
       }
     }

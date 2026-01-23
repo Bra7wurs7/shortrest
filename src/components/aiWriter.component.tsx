@@ -10,7 +10,6 @@ import {
   Show,
   Switch,
 } from "solid-js";
-import { ReactiveFile } from "../types/reactiveFile.interface";
 import { TextUnits } from "../types/textUnits.enum";
 import { ParsedFileName } from "../types/parsedFileName.interface";
 import { BasicFile } from "../types/basicFile.interface";
@@ -19,7 +18,8 @@ import { parseFileReferences } from "../functions/llm/parseFileReferences.functi
 import { PromptState } from "../types/promptState.interface";
 
 export interface AiWriterProps {
-  displayedReactiveFile: Accessor<ReactiveFile | null>;
+  displayedFileContent: Accessor<string>;
+  displayedFileName: Accessor<string | null>;
   activeDirectoryParsedFileNames: Accessor<ParsedFileName[] | null>;
   activeDirectoryName: Accessor<string | null>;
   promptState: PromptState;
@@ -82,7 +82,7 @@ export function AiWriter(props: AiWriterProps): JSXElement {
   });
 
   const referencedTags = createMemo<string[][]>(() => {
-    const fileName = props.displayedReactiveFile()?.name();
+    const fileName = props.displayedFileName();
     const prompt = ps.userPrompt();
     return allDefinedTags().filter(
       (tag) =>
@@ -118,7 +118,7 @@ export function AiWriter(props: AiWriterProps): JSXElement {
   });
 
   const reducedFileContent = createMemo(() => {
-    const wholeFile = props.displayedReactiveFile()?.content() ?? "";
+    const wholeFile = props.displayedFileContent();
     let reducedFile = wholeFile;
     const length = ps.reducedFileContentLength();
     const unit = ps.reducedFileContentUnit();

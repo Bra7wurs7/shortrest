@@ -12,9 +12,16 @@ import {
   type JSXElement,
 } from "solid-js";
 import { AppMode } from "./types/appMode.enum";
-import { ReactiveFile } from "./types/reactiveFile.interface";
-import { loadOpenFiles, storeOpenFiles, storeActiveFileName } from "./storage";
+import { ClipboardEntry } from "./types/clipboardEntry.interface";
+import { ViewedFile } from "./types/viewedFile.interface";
 import {
+  loadClipboard,
+  storeClipboard,
+  storeViewedFile,
+  loadViewedFile,
+} from "./functions/storage.functions";
+import {
+  getFileContent,
   listAllDirectories,
   listFileNamesInDirectory,
 } from "./functions/dbFilesInterface.functions";
@@ -24,18 +31,21 @@ import { ParsedFileName } from "./types/parsedFileName.interface";
 import { BasicFile } from "./types/basicFile.interface";
 import {
   onClickSavedFile,
-  onClickCloseOpenFile,
-  onClickSaveOpenFile,
+  onClickClipboardFile,
+  onDiscardClipboardFile,
+  onSaveClipboardFile,
   onClickTrashSavedFile,
   onInputKeyUp,
   onUpdateDirectory,
   onClickDownloadSavedFile,
-  onClickDownloadOpenFile,
+  onClickDownloadClipboardFile,
   onClickUploadDirectory,
   onClickDownloadDirectory,
   onInputExistingFileName,
-  onRenameOpenFile,
+  onRenameClipboardFile,
   onRenameSavedFile,
+  getOrCreateEditableFile,
+  ensureEmptyClipboardFile,
 } from "./app-handlers";
 import { SettingsComponent } from "./components/settings.component";
 import { AiWriter } from "./components/aiWriter.component";
@@ -66,7 +76,6 @@ import {
   sessionStorageDisabledThoughts,
   sessionStorageDisabledUserPrompt,
   localStorageActiveDirectoryName,
-  localStorageActiveFileNameKey,
   localStorageAppMode,
   localStorageOllamaModel,
   localStorageOllamaUrl,
@@ -84,20 +93,29 @@ function App(): JSXElement {
   const [activeDirectoryName, setActiveDirectoryName] = createSignal<
     string | null
   >(localStorage.getItem(localStorageActiveDirectoryName));
-  const [openFiles, setOpenFiles] =
-    createSignal<ReactiveFile[]>(loadOpenFiles());
-  const [activeFileName, setActiveFileName] = createSignal<string | null>(
-    localStorage.getItem(localStorageActiveFileNameKey),
+
+  // Clipboard: files with unsaved changes
+  const [clipboard, setClipboard] =
+    createSignal<ClipboardEntry[]>(loadClipboard());
+
+  // Viewed file: what's currently displayed (from IDB or clipboard)
+  const [viewedFile, setViewedFile] = createSignal<ViewedFile | null>(
+    loadViewedFile(),
   );
+
+  // IDB file content: populated when viewing an IDB file
+  const [idbFileContent, setIdbFileContent] = createSignal<string>("");
+
   const [inputValue, setInputValue] = createSignal<string>("");
   const [confirmAction, setConfirmAction] = createSignal<ConfirmAction | null>(
     null,
   );
-  const [rightClickedOpenFile, setRightClickedOpenFile] = createSignal<
-    string | null
-  >(null);
-  const [rightClickedOpenFileNewName, setRightClickedOpenFileNewName] =
+  const [rightClickedClipboardFile, setRightClickedClipboardFile] =
     createSignal<string | null>(null);
+  const [
+    rightClickedClipboardFileNewName,
+    setRightClickedClipboardFileNewName,
+  ] = createSignal<string | null>(null);
   const [rightClickedSavedFile, setRightClickedSavedFile] = createSignal<
     string | null
   >(null);
@@ -240,12 +258,12 @@ function App(): JSXElement {
   // ============================================
   // Memos
   // ============================================
-  const filteredParsedOpenFileNames = createMemo<ParsedFileName[]>(() => {
-    return openFiles()
-      .filter((of) =>
-        of.name().toLowerCase().includes(inputValue().toLowerCase()),
+  const filteredParsedClipboardFileNames = createMemo<ParsedFileName[]>(() => {
+    return clipboard()
+      .filter((entry) =>
+        entry.name().toLowerCase().includes(inputValue().toLowerCase()),
       )
-      .map((of) => parseFileName(of.name()));
+      .map((entry) => parseFileName(entry.name()));
   });
 
   const filteredParsedAllFileNames = createMemo<ParsedFileName[] | null>(() => {
@@ -258,9 +276,39 @@ function App(): JSXElement {
     return null;
   });
 
-  const activeFile = createMemo<ReactiveFile | null>(
-    () => openFiles().find((of) => of.name() === activeFileName()) ?? null,
-  );
+  // The currently displayed file content
+  const displayedFileContent = createMemo<string>(() => {
+    const vf = viewedFile();
+    if (!vf) return "";
+
+    if (vf.source === "clipboard") {
+      const entry = clipboard().find((c) => c.name() === vf.fileName);
+      return entry?.content() ?? "";
+    }
+
+    // IDB source - return the fetched content
+    return idbFileContent();
+  });
+
+  // The currently displayed file name
+  const displayedFileName = createMemo<string | null>(() => {
+    const vf = viewedFile();
+    return vf?.fileName ?? null;
+  });
+
+  // Check if currently viewing a clipboard file
+  const isViewingClipboardFile = createMemo<boolean>(() => {
+    return viewedFile()?.source === "clipboard";
+  });
+
+  // Get the current clipboard entry if viewing one
+  const currentClipboardEntry = createMemo<ClipboardEntry | null>(() => {
+    const vf = viewedFile();
+    if (vf?.source === "clipboard") {
+      return clipboard().find((c) => c.name() === vf.fileName) ?? null;
+    }
+    return null;
+  });
 
   // ============================================
   // Effects - Persistence
@@ -404,6 +452,30 @@ function App(): JSXElement {
   });
 
   // ============================================
+  // Effects - IDB file content loading
+  // ============================================
+  createEffect(() => {
+    const vf = viewedFile();
+    if (vf?.source === "idb" && vf.directoryName && vf.fileName) {
+      getFileContent(vf.directoryName, vf.fileName).then((content) => {
+        setIdbFileContent(content ?? "");
+      });
+    } else if (vf?.source === "clipboard") {
+      // Clear IDB content when viewing clipboard
+      setIdbFileContent("");
+    }
+  });
+
+  // ============================================
+  // Effects - Ensure clipboard always has an empty file
+  // ============================================
+  createEffect(() => {
+    // Track clipboard changes to ensure there's always an empty file ready
+    clipboard();
+    ensureEmptyClipboardFile(clipboard, setClipboard, activeDirectoryName);
+  });
+
+  // ============================================
   // Initialization
   // ============================================
   listAllDirectories().then((names) => {
@@ -426,14 +498,23 @@ function App(): JSXElement {
   // LLM prompt handlers
   // ============================================
   async function handlePromptSubmit() {
-    const file = activeFile();
     const ollama = ollamaConnection();
     const model = ollamaModel();
 
-    if (!file || !ollama || !model) {
-      console.warn("Cannot submit prompt: missing file, ollama, or model");
+    if (!ollama || !model) {
+      console.warn("Cannot submit prompt: missing ollama or model");
       return;
     }
+
+    // Get or create an editable clipboard entry
+    const targetEntry = getOrCreateEditableFile(
+      viewedFile,
+      setViewedFile,
+      clipboard,
+      setClipboard,
+      idbFileContent,
+      activeDirectoryName,
+    );
 
     const messages = buildMessages({
       systemPrompt: systemPrompt(),
@@ -455,8 +536,8 @@ function App(): JSXElement {
       ollama,
       model: model.model,
       messages,
-      targetFile: file,
-      openFiles,
+      targetEntry,
+      clipboard,
       setRunningPrompt,
     });
   }
@@ -504,6 +585,34 @@ function App(): JSXElement {
     }
   }
 
+  /**
+   * Handle textarea input - create clipboard entry on first edit if viewing IDB file
+   */
+  function handleTextareaInput(value: string) {
+    const vf = viewedFile();
+
+    if (vf?.source === "clipboard") {
+      // Already viewing clipboard file - update directly
+      const entry = clipboard().find((c) => c.name() === vf.fileName);
+      if (entry) {
+        entry.setContent(value);
+        storeClipboard(clipboard);
+      }
+    } else {
+      // Viewing IDB file or nothing - need to create clipboard entry
+      const entry = getOrCreateEditableFile(
+        viewedFile,
+        setViewedFile,
+        clipboard,
+        setClipboard,
+        idbFileContent,
+        activeDirectoryName,
+      );
+      entry.setContent(value);
+      storeClipboard(clipboard);
+    }
+  }
+
   // ============================================
   // Render
   // ============================================
@@ -517,11 +626,11 @@ function App(): JSXElement {
             e,
             activeDirectoryName,
             setInputValue,
-            openFiles,
-            filteredParsedOpenFileNames,
-            setOpenFiles,
+            clipboard,
+            setClipboard,
+            filteredParsedClipboardFileNames,
             filteredParsedAllFileNames,
-            setActiveFileName,
+            setViewedFile,
           );
         }}
       ></input>
@@ -625,29 +734,32 @@ function App(): JSXElement {
         >
           <div id="L_S_TOP">
             <div id="L_S_OPENFILES">
-              <For each={filteredParsedOpenFileNames()}>
+              <For each={filteredParsedClipboardFileNames()}>
                 {(parsedName: ParsedFileName, index: Accessor<number>) => (
                   <Switch>
                     <Match
-                      when={rightClickedOpenFile() !== parsedName.fullName}
+                      when={rightClickedClipboardFile() !== parsedName.fullName}
                     >
                       <button
                         class={
                           "button_file " +
-                          (activeFileName() === parsedName.fullName
+                          (viewedFile()?.source === "clipboard" &&
+                          viewedFile()?.fileName === parsedName.fullName
                             ? "active "
                             : "") +
-                          (rightClickedOpenFile() === parsedName.fullName
+                          (rightClickedClipboardFile() === parsedName.fullName
                             ? "context_menu"
                             : "")
                         }
                         onclick={() => {
-                          setActiveFileName(parsedName.fullName);
-                          storeActiveFileName(parsedName.fullName);
+                          onClickClipboardFile(
+                            parsedName.fullName,
+                            setViewedFile,
+                          );
                         }}
                         oncontextmenu={(e: PointerEvent) => {
                           e.preventDefault();
-                          setRightClickedOpenFile(parsedName.fullName);
+                          setRightClickedClipboardFile(parsedName.fullName);
                         }}
                       >
                         <div class="filename bg">
@@ -669,17 +781,17 @@ function App(): JSXElement {
                       </button>
                     </Match>
                     <Match
-                      when={rightClickedOpenFile() === parsedName.fullName}
+                      when={rightClickedClipboardFile() === parsedName.fullName}
                     >
                       <div
                         class="button_file_contextmenu"
                         onmouseleave={() => {
-                          setRightClickedOpenFile(null);
-                          setRightClickedOpenFileNewName(null);
+                          setRightClickedClipboardFile(null);
+                          setRightClickedClipboardFileNewName(null);
                           setConfirmAction(null);
                         }}
                         onClick={() => {
-                          setRightClickedOpenFile(null);
+                          setRightClickedClipboardFile(null);
                         }}
                       >
                         <div
@@ -691,7 +803,7 @@ function App(): JSXElement {
                           oninput={(e) => {
                             onInputExistingFileName(
                               e,
-                              setRightClickedOpenFileNewName,
+                              setRightClickedClipboardFileNewName,
                             );
                           }}
                         >
@@ -701,17 +813,17 @@ function App(): JSXElement {
                           <Switch>
                             <Match
                               when={
-                                rightClickedOpenFileNewName() === null ||
-                                rightClickedOpenFile() ===
-                                  rightClickedOpenFileNewName()
+                                rightClickedClipboardFileNewName() === null ||
+                                rightClickedClipboardFile() ===
+                                  rightClickedClipboardFileNewName()
                               }
                             >
                               <button
                                 class="button_icon"
                                 onclick={(e) => {
                                   e.stopPropagation();
-                                  onClickDownloadOpenFile(
-                                    openFiles,
+                                  onClickDownloadClipboardFile(
+                                    clipboard,
                                     parsedName.fullName,
                                   );
                                 }}
@@ -722,14 +834,18 @@ function App(): JSXElement {
                                 class="button_icon"
                                 onclick={(e) => {
                                   e.stopImmediatePropagation();
-                                  onClickSaveOpenFile(
+                                  onSaveClipboardFile(
                                     index(),
-                                    openFiles,
+                                    clipboard,
+                                    setClipboard,
                                     directoryNames,
                                     setDirectoryNames,
                                     activeDirectoryParsedFileNames,
                                     setActiveDirectoryParsedFileNames,
                                     activeDirectoryName,
+                                    viewedFile,
+                                    setViewedFile,
+                                    setRightClickedClipboardFile,
                                   );
                                 }}
                               >
@@ -745,14 +861,15 @@ function App(): JSXElement {
                                 }
                                 onclick={(e) => {
                                   e.stopImmediatePropagation();
-                                  onClickCloseOpenFile(
+                                  onDiscardClipboardFile(
                                     index(),
-                                    openFiles,
-                                    activeDirectoryName,
-                                    setOpenFiles,
+                                    clipboard,
+                                    setClipboard,
+                                    viewedFile,
+                                    setViewedFile,
                                     confirmAction,
                                     setConfirmAction,
-                                    setRightClickedOpenFile,
+                                    setRightClickedClipboardFile,
                                   ).then();
                                 }}
                               >
@@ -761,18 +878,18 @@ function App(): JSXElement {
                             </Match>
                             <Match
                               when={
-                                rightClickedOpenFile() !==
-                                rightClickedOpenFileNewName()
+                                rightClickedClipboardFile() !==
+                                rightClickedClipboardFileNewName()
                               }
                             >
                               <button
                                 class="button_icon"
                                 onclick={(e) => {
                                   e.stopPropagation();
-                                  onRenameOpenFile(
-                                    rightClickedOpenFile(),
-                                    rightClickedOpenFileNewName(),
-                                    openFiles,
+                                  onRenameClipboardFile(
+                                    rightClickedClipboardFile(),
+                                    rightClickedClipboardFileNewName(),
+                                    clipboard,
                                   );
                                 }}
                               >
@@ -787,7 +904,7 @@ function App(): JSXElement {
                 )}
               </For>
             </div>
-            <Show when={filteredParsedOpenFileNames().length > 0}>
+            <Show when={filteredParsedClipboardFileNames().length > 0}>
               <div class="filelist_footer">
                 <i class="bx bx-clipboard"></i>
                 <span>Clipboard</span>
@@ -830,18 +947,23 @@ function App(): JSXElement {
                         <button
                           class={
                             "button_file " +
+                            (viewedFile()?.source === "idb" &&
+                            viewedFile()?.fileName === parsedName.fullName
+                              ? "active "
+                              : "") +
                             (rightClickedSavedFile() === parsedName.fullName
                               ? "context_menu"
                               : "")
                           }
                           onclick={() => {
-                            onClickSavedFile(
-                              parsedName.fullName,
-                              activeDirectoryName,
-                              openFiles,
-                              setOpenFiles,
-                              setActiveFileName,
-                            );
+                            const activeDirName = activeDirectoryName();
+                            if (activeDirName) {
+                              onClickSavedFile(
+                                parsedName.fullName,
+                                activeDirName,
+                                setViewedFile,
+                              );
+                            }
                           }}
                           oncontextmenu={(e: PointerEvent) => {
                             e.preventDefault();
@@ -983,17 +1105,14 @@ function App(): JSXElement {
           <Match when={appMode() === AppMode.AiWriter}>
             <textarea
               id="BASIC_TEXT_EDITOR"
-              value={activeFile()?.content() ?? ""}
-              onkeyup={(e) => {
-                activeFile()?.setContent(e.currentTarget.value);
-              }}
-              onchange={(e) => {
-                storeOpenFiles(openFiles);
+              value={displayedFileContent()}
+              oninput={(e) => {
+                handleTextareaInput(e.currentTarget.value);
               }}
             />
           </Match>
           <Match when={appMode() === AppMode.MdReader}>
-            {MdReader(activeFile)}
+            {MdReader(displayedFileContent)}
           </Match>
           <Match when={appMode() === AppMode.Settings}>
             {SettingsComponent(
@@ -1032,7 +1151,8 @@ function App(): JSXElement {
             }
           >
             <AiWriter
-              displayedReactiveFile={activeFile}
+              displayedFileContent={displayedFileContent}
+              displayedFileName={displayedFileName}
               activeDirectoryParsedFileNames={activeDirectoryParsedFileNames}
               activeDirectoryName={activeDirectoryName}
               promptState={promptState}

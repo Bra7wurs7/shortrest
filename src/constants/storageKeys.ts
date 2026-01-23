@@ -17,8 +17,8 @@ export const sessionStorageDisabledThoughts = "disabledThoughts";
 export const sessionStorageDisabledUserPrompt = "disabledUserPrompt";
 
 // localStorage keys for app state
-export const localStorageOpenFilesKey = "openFiles";
-export const localStorageActiveFileNameKey = "activeFile";
+export const localStorageClipboardKey = "clipboard";
+export const localStorageViewedFileKey = "viewedFile";
 export const localStorageActiveDirectoryName = "activeDirectory";
 export const localStorageAppMode = "appMode";
 export const localStorageOllamaModel = "ollamaModel";
