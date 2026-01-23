@@ -1101,10 +1101,37 @@ function App(): JSXElement {
         </div>
       </div>
       <div id="CENTER">
+        <div id="CENTRAL_HEADER">
+          <div class="central_tab ">
+            <span class="tab_filename">Filename</span>{" "}
+            <i class="bx bx-x-circle remove_x_mark"></i>
+          </div>
+          <div class="central_header_right">
+            <For each={appModes}>
+              {(am) => {
+                return (
+                  <button
+                    onclick={() => {
+                      setAppMode(am.mode);
+                      localStorage.setItem(localStorageAppMode, am.mode);
+                    }}
+                    class={
+                      "button_icon rounded_top" +
+                      (appMode() === am.mode ? " active" : "")
+                    }
+                  >
+                    <i class={"bx " + am.icon}></i>
+                  </button>
+                );
+              }}
+            </For>
+          </div>
+        </div>
         <Switch>
           <Match when={appMode() === AppMode.AiWriter}>
             <textarea
               id="BASIC_TEXT_EDITOR"
+              /* class="rounded_top_left" // only if the active tab is the first one */
               value={displayedFileContent()}
               oninput={(e) => {
                 handleTextareaInput(e.currentTarget.value);
@@ -1162,25 +1189,7 @@ function App(): JSXElement {
             />
           </Match>
         </Switch>
-        <div id="RIGHT_TOOLBAR">
-          <For each={appModes}>
-            {(am) => {
-              return (
-                <button
-                  onclick={() => {
-                    setAppMode(am.mode);
-                    localStorage.setItem(localStorageAppMode, am.mode);
-                  }}
-                  class={
-                    "button_icon " + (appMode() === am.mode ? "active" : "")
-                  }
-                >
-                  <i class={"bx " + am.icon}></i>
-                </button>
-              );
-            }}
-          </For>
-        </div>
+        <div id="RIGHT_TOOLBAR"></div>
       </div>
       <div id="RIGHT_SIDE_BUTTONS">
         <button

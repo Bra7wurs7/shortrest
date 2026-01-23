@@ -67,7 +67,7 @@
     --size_padding: 3px;
     --size_padding_large: 14px;
     --size_input_padding: 3px 10px 3px 10px;
-    --size_icon: large;
+    --size_icon: 18px;
 
     --transition_duration: 150ms;
 
@@ -315,7 +315,6 @@
         padding: var(--size_padding_large);
         box-shadow: var(--shadow);
         background-color: var(--color_background);
-        border-top-left-radius: var(--size_border_radius_large);
         border-top-right-radius: var(--size_border_radius_large);
 
         &:hover {
@@ -324,6 +323,10 @@
 
         :first-child {
             margin-top: 0;
+        }
+
+        &.rounded_top_left {
+            border-top-left-radius: var(--size_border_radius_large);
         }
 
         h1,
@@ -511,6 +514,80 @@
         flex-direction: column;
     }
 
+    #CENTRAL_HEADER {
+        height: var(--size_toolbar_width);
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+
+        .central_tab {
+            border-top-left-radius: var(--size_border_radius_large);
+            border-top-right-radius: var(--size_border_radius_large);
+            height: var(--size_toolbar_width);
+            box-sizing: border-box;
+            width: min-content;
+            max-width: 10vw;
+            min-width: var(--size_toolbar_width);
+            border-width: var(--size_border);
+            border-style: var(--style_border);
+            border-color: transparent;
+            padding: var(--size_padding);
+            padding-right: var(--size_icon);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--color_border_light);
+            cursor: pointer;
+            user-select: none;
+            overflow-x: hidden;
+            position: relative;
+            background-color: var(--color_background);
+
+            &.active_tab {
+                color: var(--color_foreground);
+                background-color: var(--color_background_soft);
+
+                box-shadow: var(--shadow);
+            }
+
+            .remove_x_mark {
+                visibility: hidden;
+                position: absolute;
+                right: var(--size_padding);
+                height: min-content;
+                width: min-content;
+                z-index: 50;
+                border-radius: var(--size_border_radius);
+            }
+
+            &:hover {
+                border-color: var(--color_border_light);
+                color: var(--color_foreground);
+
+                .remove_x_mark {
+                    visibility: visible;
+                    &:hover {
+                        background-color: var(--color_border_light);
+                    }
+                }
+            }
+
+            &:not(:last-of-type) {
+                margin-right: var(--size_margin);
+            }
+
+            .tab_filename {
+                margin-right: var(--size_margin);
+            }
+        }
+
+        .central_header_right {
+            display: flex;
+            flex-direction: row;
+        }
+    }
+
     #BASIC_TEXT_EDITOR {
         resize: none;
         background-color: var(--color_background_soft);
@@ -518,7 +595,6 @@
         color: var(--color_foreground_hard);
         font-family: var(--sans);
         padding: var(--size_padding_large);
-        border-top-left-radius: var(--size_border_radius_large);
         border-top-right-radius: var(--size_border_radius_large);
         margin: 0;
         box-shadow: var(--shadow);
@@ -529,6 +605,9 @@
         &:focus {
             outline: none;
             border-color: var(--color_foreground_soft);
+        }
+        &.rounded_top_left {
+            border-top-left-radius: var(--size_border_radius_large);
         }
     }
 
@@ -1002,6 +1081,10 @@
     }
     &.active {
         background-color: var(--color_border);
+    }
+    &.rounded_top {
+        border-top-left-radius: var(--size_border_radius_large);
+        border-top-right-radius: var(--size_border_radius_large);
     }
     &.red {
         background-color: var(--red-dim);
