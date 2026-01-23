@@ -2,7 +2,7 @@ import { ChatRequest, Message, Ollama } from "ollama";
 import { Accessor, Setter } from "solid-js";
 import { AbortableAsyncIterator, ChatResponse } from "ollama";
 import { ReactiveFile } from "../../types/reactiveFile.interface";
-import { storeOpenFiles } from "../storeOpenFiles.function";
+import { storeOpenFiles } from "../../storage";
 
 export interface StreamToFileOptions {
   ollama: Ollama;
@@ -20,14 +20,8 @@ export interface StreamToFileOptions {
 export async function streamToFile(
   options: StreamToFileOptions,
 ): Promise<void> {
-  const {
-    ollama,
-    model,
-    messages,
-    targetFile,
-    openFiles,
-    setRunningPrompt,
-  } = options;
+  const { ollama, model, messages, targetFile, openFiles, setRunningPrompt } =
+    options;
 
   const request: ChatRequest & { stream: true } = {
     model,
