@@ -1,7 +1,7 @@
 import { Accessor } from "solid-js";
-import { localStorageOpenFilesKey } from "../App";
 import { ReactiveFile } from "../types/reactiveFile.interface";
 import { BasicFile } from "../types/basicFile.interface";
+import { localStorageOpenFilesKey } from "../constants/storageKeys";
 
 /**
  * Persists the values of the provided array in localstorage

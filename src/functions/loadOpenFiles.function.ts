@@ -1,4 +1,4 @@
-import { localStorageOpenFilesKey } from "../App";
+import { localStorageOpenFilesKey } from "../constants/storageKeys";
 import { ReactiveFile } from "../types/reactiveFile.interface";
 import { parseFile } from "./parseFile.function";
 

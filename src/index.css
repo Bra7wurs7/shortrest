@@ -220,7 +220,6 @@
         }
     }
     #SETTINGS_WINDOW {
-        grid-area: 1 / 3 / 8 / 8;
         display: flex;
         flex-direction: column;
         background-color: var(--color_background);
@@ -307,8 +306,7 @@
     }
 
     #MARKDOWN_READER {
-        grid-area: 1 / 3 / 7 / 8;
-        max-height: 100%;
+        flex-grow: 1;
         overflow: scroll;
         font-family: var(--serif);
         color: var(--color_foreground);
@@ -317,7 +315,8 @@
         padding: var(--size_padding_large);
         box-shadow: var(--shadow);
         background-color: var(--color_background);
-        border-radius: var(--size_border_radius_large);
+        border-top-left-radius: var(--size_border_radius_large);
+        border-top-right-radius: var(--size_border_radius_large);
 
         &:hover {
             grid-area: 1 / 3 / 6 / 8;
@@ -506,17 +505,24 @@
         }
     }
 
+    #CENTER {
+        grid-area: 1 / 3 / 8 / 8;
+        display: flex;
+        flex-direction: column;
+    }
+
     #BASIC_TEXT_EDITOR {
-        grid-area: 1 / 3 / 7 / 8;
         resize: none;
-        background-color: var(--color_background);
+        background-color: var(--color_background_soft);
         border: var(--size_border) var(--style_border) transparent;
         color: var(--color_foreground_hard);
         font-family: var(--sans);
         padding: var(--size_padding_large);
-        border-radius: var(--size_border_radius_large);
+        border-top-left-radius: var(--size_border_radius_large);
+        border-top-right-radius: var(--size_border_radius_large);
         margin: 0;
         box-shadow: var(--shadow);
+        flex-grow: 1;
         &:hover {
             border-color: var(--color_border_light);
         }
@@ -527,13 +533,15 @@
     }
 
     #CENTRAL_PROMPT_INPUT {
-        grid-area: 7 / 3 / 8 / 8;
         border: var(--size_border) var(--style_border) transparent;
         background-color: var(--color_background_soft);
         color: var(--color_foreground);
-        border-radius: var(--size_border_radius_large);
+        border-bottom-left-radius: var(--size_border_radius_large);
+        border-bottom-right-radius: var(--size_border_radius_large);
         padding: var(--size_input_padding);
         box-shadow: var(--shadow);
+        height: var(--size_toolbar_width);
+        box-sizing: border-box;
 
         &:hover {
             border-color: var(--color_border_light);
@@ -1026,7 +1034,7 @@
     border-color: transparent;
     color: var(--color_foreground);
     font-family: var(--sans);
-    padding: var(--size_padding_large);
+    padding: var(--size_padding);
 
     &:hover {
         border-color: var(--color_border_light);
@@ -1181,7 +1189,7 @@
     height: var(--size_toolbar_width);
     box-sizing: border-box;
     color: var(--color_foreground);
-    background-color: var(--color_background_soft);
+    background-color: var(--color_background);
     width: 100%;
     box-shadow: var(--shadow);
 

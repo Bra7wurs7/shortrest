@@ -61,22 +61,15 @@ import {
   sessionStorageDisabledAllFiles,
   sessionStorageDisabledThoughts,
   sessionStorageDisabledUserPrompt,
+  localStorageActiveDirectoryName,
+  localStorageActiveFileNameKey,
+  localStorageAppMode,
+  localStorageOllamaModel,
+  localStorageOllamaUrl,
 } from "./constants/storageKeys";
-
-export const localStorageOpenFilesKey = "openFiles";
-export const localStorageActiveFileNameKey = "activeFile";
-export const localStorageActiveDirectoryName = "activeDirectory";
-export const localStorageAppMode = "appMode";
-export const localStorageOllamaModel = "ollamaModel";
-export const localStorageOllamaUrl = "ollamaUrl";
+import { appModes } from "./constants/appModes";
 
 function App(): JSXElement {
-  const appModes = [
-    { mode: AppMode.AiWriter, icon: "bx-code" },
-    { mode: AppMode.MdReader, icon: "bx-book-reader" },
-    { mode: AppMode.Settings, icon: "bx-cog" },
-  ];
-
   // ============================================
   // App-level signals
   // ============================================
@@ -981,50 +974,52 @@ function App(): JSXElement {
           </div>
         </div>
       </div>
-      <Switch>
-        <Match when={appMode() === AppMode.AiWriter}>
-          <textarea
-            id="BASIC_TEXT_EDITOR"
-            value={activeFile()?.content() ?? ""}
-            onkeyup={(e) => {
-              activeFile()?.setContent(e.currentTarget.value);
-            }}
-            onchange={(e) => {
-              storeOpenFiles(openFiles);
-            }}
-          />
-        </Match>
-        <Match when={appMode() === AppMode.MdReader}>
-          {MdReader(activeFile)}
-        </Match>
-        <Match when={appMode() === AppMode.Settings}>
-          {SettingsComponent(
-            ollamaConnection,
-            setOllamaConnection,
-            ollamaModel,
-            setOllamaModel,
-            ollamaModels,
-            setOllamaModels,
-            ollamaUrl,
-            setOllamaUrl,
-          )}
-        </Match>
-      </Switch>
-      <Switch>
-        <Match
-          when={
-            appMode() === AppMode.AiWriter || appMode() === AppMode.MdReader
-          }
-        >
-          <input
-            id="CENTRAL_PROMPT_INPUT"
-            value={userPrompt()}
-            onInput={(e) => setUserPrompt(e.currentTarget.value)}
-            onKeyUp={handleCentralInputKeyUp}
-            placeholder="Enter prompt..."
-          />
-        </Match>
-      </Switch>
+      <div id="CENTER">
+        <Switch>
+          <Match when={appMode() === AppMode.AiWriter}>
+            <textarea
+              id="BASIC_TEXT_EDITOR"
+              value={activeFile()?.content() ?? ""}
+              onkeyup={(e) => {
+                activeFile()?.setContent(e.currentTarget.value);
+              }}
+              onchange={(e) => {
+                storeOpenFiles(openFiles);
+              }}
+            />
+          </Match>
+          <Match when={appMode() === AppMode.MdReader}>
+            {MdReader(activeFile)}
+          </Match>
+          <Match when={appMode() === AppMode.Settings}>
+            {SettingsComponent(
+              ollamaConnection,
+              setOllamaConnection,
+              ollamaModel,
+              setOllamaModel,
+              ollamaModels,
+              setOllamaModels,
+              ollamaUrl,
+              setOllamaUrl,
+            )}
+          </Match>
+        </Switch>
+        <Switch>
+          <Match
+            when={
+              appMode() === AppMode.AiWriter || appMode() === AppMode.MdReader
+            }
+          >
+            <input
+              id="CENTRAL_PROMPT_INPUT"
+              value={userPrompt()}
+              onInput={(e) => setUserPrompt(e.currentTarget.value)}
+              onKeyUp={handleCentralInputKeyUp}
+              placeholder="Enter prompt..."
+            />
+          </Match>
+        </Switch>
+      </div>
       <div id="RIGHT_SIDE">
         <Switch>
           <Match
@@ -1262,14 +1257,15 @@ function onInputKeyUp(
         setInputValue("");
         storeOpenFiles(openFiles);
       } else {
-        if ((filtrdOpenFiles.length = 1)) {
+        if (filtrdOpenFiles.length === 1) {
           setActiveFile(filtrdOpenFiles[0].fullName);
           storeActiveFileName(filtrdOpenFiles[0].fullName);
           setInputValue("");
         } else if (
           filtrdAllFileNames !== null &&
           activeDirName !== null &&
-          (filtrdAllFileNames.length = 1 && (filtrdOpenFiles.length = 0))
+          filtrdAllFileNames.length === 1 &&
+          filtrdOpenFiles.length === 0
         ) {
           const [name, setName] = createSignal<string>(
             filtrdAllFileNames[0].fullName,

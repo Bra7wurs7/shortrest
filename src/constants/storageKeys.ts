@@ -15,3 +15,11 @@ export const sessionStorageDisabledFileContext = "disabledFileContext";
 export const sessionStorageDisabledAllFiles = "disabledAllFiles";
 export const sessionStorageDisabledThoughts = "disabledThoughts";
 export const sessionStorageDisabledUserPrompt = "disabledUserPrompt";
+
+// localStorage keys for app state
+export const localStorageOpenFilesKey = "openFiles";
+export const localStorageActiveFileNameKey = "activeFile";
+export const localStorageActiveDirectoryName = "activeDirectory";
+export const localStorageAppMode = "appMode";
+export const localStorageOllamaModel = "ollamaModel";
+export const localStorageOllamaUrl = "ollamaUrl";

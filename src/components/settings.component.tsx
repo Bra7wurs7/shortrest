@@ -1,6 +1,4 @@
 import { Accessor, For, JSXElement, Setter } from "solid-js";
-import { localStorageAppMode } from "../App";
-import { AppMode } from "../types/appMode.enum";
 import { ModelResponse, Ollama } from "ollama";
 
 export function SettingsComponent(
