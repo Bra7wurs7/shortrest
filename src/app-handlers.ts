@@ -357,10 +357,10 @@ export function onInputKeyUp(
   clipboard: Accessor<ClipboardEntry[]>,
   setClipboard: Setter<ClipboardEntry[]>,
   filteredParsedClipboardFileNames: Accessor<ParsedFileName[]>,
-  filteredParsedAllFileNames: Accessor<ParsedFileName[] | null>,
+  filteredParsedDirectoryFileNames: Accessor<ParsedFileName[] | null>,
   setViewedFile: Setter<ViewedFile | null>,
 ) {
-  const filtrdAllFileNames = filteredParsedAllFileNames();
+  const filtrdAllFileNames = filteredParsedDirectoryFileNames();
   const filtrdClipboardFiles = filteredParsedClipboardFileNames();
   const activeDirName = activeDirectoryName();
 

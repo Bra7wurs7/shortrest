@@ -268,15 +268,17 @@ function App(): JSXElement {
       .map((entry) => parseFileName(entry.name()));
   });
 
-  const filteredParsedAllFileNames = createMemo<ParsedFileName[] | null>(() => {
-    const activeDirFileNames = activeDirectoryParsedFileNames();
-    if (activeDirFileNames) {
-      return activeDirFileNames.filter((name: ParsedFileName) =>
-        name.baseName.includes(inputValue().toLowerCase()),
-      );
-    }
-    return null;
-  });
+  const filteredParsedDirectoryFileNames = createMemo<ParsedFileName[] | null>(
+    () => {
+      const activeDirFileNames = activeDirectoryParsedFileNames();
+      if (activeDirFileNames) {
+        return activeDirFileNames.filter((name: ParsedFileName) =>
+          name.fullName.toLowerCase().includes(inputValue().toLowerCase()),
+        );
+      }
+      return null;
+    },
+  );
 
   // The currently displayed file content
   const displayedFileContent = createMemo<string>(() => {
@@ -631,7 +633,7 @@ function App(): JSXElement {
             clipboard,
             setClipboard,
             filteredParsedClipboardFileNames,
-            filteredParsedAllFileNames,
+            filteredParsedDirectoryFileNames,
             setViewedFile,
           );
         }}
@@ -954,7 +956,7 @@ function App(): JSXElement {
               <Show
                 when={
                   hoveredDirectoryFileNames() ||
-                  filteredParsedAllFileNames() !== null
+                  filteredParsedDirectoryFileNames() !== null
                 }
               >
                 <div id="L_S_DIRECTORY">
@@ -962,7 +964,7 @@ function App(): JSXElement {
                     each={
                       hoveredDirectoryFileNames()
                         ? hoveredDirectoryFileNames()
-                        : filteredParsedAllFileNames()
+                        : filteredParsedDirectoryFileNames()
                     }
                   >
                     {(parsedName: ParsedFileName, index: Accessor<number>) => (
