@@ -518,11 +518,14 @@ function App(): JSXElement {
       activeDirectoryName,
     );
 
+    // Determine existing thoughts (only if not disabled)
+    const existingThoughts = disabledThoughts() ? "" : modelThoughts();
+
     const messages = buildMessages({
       systemPrompt: systemPrompt(),
       userPrompt: userPrompt(),
       fileContent: reducedFileContent(),
-      modelThoughts: modelThoughts(),
+      modelThoughts: existingThoughts,
       tagFileContents: referencedTagFileContents(),
       referencedFileContents: referencedFilesContents(),
       disabledTags: disabledTags(),
@@ -541,6 +544,8 @@ function App(): JSXElement {
       targetEntry,
       clipboard,
       setRunningPrompt,
+      setModelThoughts,
+      existingThoughts,
     });
   }
 
@@ -553,11 +558,13 @@ function App(): JSXElement {
       return;
     }
 
+    // For think-only, we don't include existing thoughts in the messages
+    // because we want the model to generate fresh thinking
     const messages = buildMessages({
       systemPrompt: systemPrompt(),
       userPrompt: userPrompt(),
       fileContent: reducedFileContent(),
-      modelThoughts: modelThoughts(),
+      modelThoughts: "", // Don't include existing thoughts for think-only
       tagFileContents: referencedTagFileContents(),
       referencedFileContents: referencedFilesContents(),
       disabledTags: disabledTags(),
@@ -566,7 +573,7 @@ function App(): JSXElement {
       disabledAllFiles: disabledAllFiles(),
       disabledSystemPrompt: disabledSystemPrompt(),
       disabledFileContext: disabledFileContext(),
-      disabledThoughts: disabledThoughts(),
+      disabledThoughts: true, // Always disable thoughts in the prompt for think-only
     });
 
     await streamToSignal({
@@ -575,7 +582,6 @@ function App(): JSXElement {
       messages,
       setTargetSignal: setModelThoughts,
       setRunningPrompt,
-      stopSequence: "</think>",
     });
   }
 

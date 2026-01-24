@@ -11,13 +11,93 @@ export interface StreamToFileOptions {
   targetEntry: ClipboardEntry;
   clipboard: Accessor<ClipboardEntry[]>;
   setRunningPrompt: Setter<AbortableAsyncIterator<ChatResponse> | null>;
+  setModelThoughts: Setter<string>;
+  existingThoughts: string;
 }
 
 /**
  * Sends a chat request to Ollama and streams the response to a ClipboardEntry.
- * Appends the streamed content to the entry's existing content.
+ * Supports native thinking models - thoughts are streamed to setModelThoughts.
+ * Falls back gracefully for non-thinking models.
  */
 export async function streamToFile(
+  options: StreamToFileOptions,
+): Promise<void> {
+  const {
+    ollama,
+    model,
+    messages,
+    targetEntry,
+    clipboard,
+    setRunningPrompt,
+    setModelThoughts,
+    existingThoughts,
+  } = options;
+
+  // If we have existing thoughts, don't request new ones
+  const shouldThink = !existingThoughts;
+
+  const request: ChatRequest & { stream: true } = {
+    model,
+    stream: true,
+    think: shouldThink,
+    messages,
+  };
+
+  try {
+    const responseStream = await ollama.chat(request);
+    setRunningPrompt(responseStream);
+
+    // Track if we've received any thinking content
+    let hasReceivedThinking = false;
+
+    for await (const response of responseStream) {
+      // Handle thinking content (native thinking models)
+      if (response.message.thinking) {
+        if (!hasReceivedThinking) {
+          // Clear previous thoughts when new thinking starts
+          setModelThoughts("");
+          hasReceivedThinking = true;
+        }
+        setModelThoughts((prev) => prev + response.message.thinking);
+      }
+
+      // Handle regular content
+      if (response.message.content) {
+        targetEntry.setContent((prev) => prev + response.message.content);
+      }
+
+      if (response.done) {
+        storeClipboard(clipboard);
+        setRunningPrompt(null);
+      }
+    }
+  } catch (error: unknown) {
+    // Check if this is a 400 error related to thinking not being supported
+    const isThinkingError =
+      error instanceof Error &&
+      (error.message.includes("400") ||
+        error.message.toLowerCase().includes("think"));
+
+    if (isThinkingError && shouldThink) {
+      // Retry without thinking for non-thinking models
+      console.log(
+        "Model does not support native thinking, retrying without think parameter",
+      );
+      return streamToFileWithoutThinking(options);
+    }
+
+    setRunningPrompt(null);
+    console.error("Error processing chat response:", error);
+    throw error;
+  }
+}
+
+/**
+ * Fallback function for models that don't support native thinking.
+ * Streams directly to file without the think parameter.
+ */
+async function streamToFileWithoutThinking(
   options: StreamToFileOptions,
 ): Promise<void> {
   const { ollama, model, messages, targetEntry, clipboard, setRunningPrompt } =
@@ -26,7 +106,6 @@ export async function streamToFile(
   const request: ChatRequest & { stream: true } = {
     model,
     stream: true,
-    think: false,
     messages,
   };
 
