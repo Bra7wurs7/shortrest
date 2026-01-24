@@ -163,8 +163,31 @@
         }
     }
 
-    #LEFT_INPUT {
+    #LEFT_INPUT_WRAPPER {
         grid-area: 1 / 1 / 2 / 3;
+        position: relative;
+        display: flex;
+        align-items: center;
+
+        > i {
+            position: absolute;
+            left: 12px;
+            color: var(--color_foreground);
+            opacity: 0.5;
+            pointer-events: none;
+            transition: var(--transition_background_color);
+        }
+
+        &:focus-within > i {
+            color: var(--color_foreground_hard);
+            opacity: 1;
+        }
+    }
+
+    #LEFT_INPUT {
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
         background-color: var(--color_background_soft);
         border-color: transparent;
         font-family: var(--sans);
@@ -172,6 +195,7 @@
         box-shadow: var(--shadow);
         border-radius: var(--size_toolbar_width_half);
         padding: var(--size_input_padding);
+        padding-left: 32px;
 
         &:hover {
             border-color: var(--color_border_light);

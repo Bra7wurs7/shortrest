@@ -5,7 +5,6 @@ import {
   createSignal,
   For,
   Match,
-  Setter,
   Show,
   Switch,
   untrack,
@@ -17,7 +16,6 @@ import { ViewedFile } from "./types/viewedFile.interface";
 import {
   loadClipboard,
   storeClipboard,
-  storeViewedFile,
   loadViewedFile,
 } from "./functions/storage.functions";
 import {
@@ -622,22 +620,25 @@ function App(): JSXElement {
   // ============================================
   return (
     <div id="APP_CONTAINER" class="dark_theme">
-      <input
-        id="LEFT_INPUT"
-        value={inputValue()}
-        onkeyup={(e) => {
-          onInputKeyUp(
-            e,
-            activeDirectoryName,
-            setInputValue,
-            clipboard,
-            setClipboard,
-            filteredParsedClipboardFileNames,
-            filteredParsedDirectoryFileNames,
-            setViewedFile,
-          );
-        }}
-      ></input>
+      <div id="LEFT_INPUT_WRAPPER">
+        <i class="bx bx-search"></i>
+        <input
+          id="LEFT_INPUT"
+          value={inputValue()}
+          onkeyup={(e) => {
+            onInputKeyUp(
+              e,
+              activeDirectoryName,
+              setInputValue,
+              clipboard,
+              setClipboard,
+              filteredParsedClipboardFileNames,
+              filteredParsedDirectoryFileNames,
+              setViewedFile,
+            );
+          }}
+        ></input>
+      </div>
       <div id="LEFT_SIDE">
         <div id="LEFT_TOOLBAR">
           <div id="LM_S_ACTIONS"></div>
@@ -813,6 +814,14 @@ function App(): JSXElement {
                         <div
                           class="clipboard_file_contextmenu"
                           onmouseleave={() => {
+                            // Don't close if user is editing the name
+                            if (
+                              rightClickedClipboardFileNewName() !== null &&
+                              rightClickedClipboardFileNewName() !==
+                                rightClickedClipboardFile()
+                            ) {
+                              return;
+                            }
                             setRightClickedClipboardFile(null);
                             setRightClickedClipboardFileNewName(null);
                             setConfirmAction(null);
@@ -913,11 +922,24 @@ function App(): JSXElement {
                                   class="button_icon"
                                   onclick={(e) => {
                                     e.stopPropagation();
+                                    setRightClickedClipboardFile(null);
+                                    setRightClickedClipboardFileNewName(null);
+                                    setConfirmAction(null);
+                                  }}
+                                >
+                                  <i class="bx bx-x"></i>
+                                </button>
+                                <button
+                                  class="button_icon"
+                                  onclick={(e) => {
+                                    e.stopPropagation();
                                     onRenameClipboardFile(
                                       rightClickedClipboardFile(),
                                       rightClickedClipboardFileNewName(),
                                       clipboard,
                                     );
+                                    setRightClickedClipboardFile(null);
+                                    setRightClickedClipboardFileNewName(null);
                                   }}
                                 >
                                   <i class="bx bx-check"></i>
@@ -1023,6 +1045,14 @@ function App(): JSXElement {
                           <div
                             class="saved_file_contextmenu"
                             onmouseleave={() => {
+                              // Don't close if user is editing the name
+                              if (
+                                rightClickedSavedFileNewName() !== null &&
+                                rightClickedSavedFileNewName() !==
+                                  rightClickedSavedFile()
+                              ) {
+                                return;
+                              }
                               setRightClickedSavedFile(null);
                               setRightClickedSavedFileNewName(null);
                               setConfirmAction(null);
@@ -1104,6 +1134,17 @@ function App(): JSXElement {
                                     class="button_icon"
                                     onclick={(e) => {
                                       e.stopPropagation();
+                                      setRightClickedSavedFile(null);
+                                      setRightClickedSavedFileNewName(null);
+                                      setConfirmAction(null);
+                                    }}
+                                  >
+                                    <i class="bx bx-x"></i>
+                                  </button>
+                                  <button
+                                    class="button_icon"
+                                    onclick={(e) => {
+                                      e.stopPropagation();
                                       onRenameSavedFile(
                                         parsedName.fullName,
                                         rightClickedSavedFileNewName(),
@@ -1113,6 +1154,8 @@ function App(): JSXElement {
                                         directoryNames,
                                         setDirectoryNames,
                                       );
+                                      setRightClickedSavedFile(null);
+                                      setRightClickedSavedFileNewName(null);
                                     }}
                                   >
                                     <i class="bx bx-check"></i>
