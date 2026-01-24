@@ -178,107 +178,117 @@ export function AiWriter(props: AiWriterProps): JSXElement {
     <div id="AIWRITER_SIDEBAR">
       <div id="A_S_TOP">
         <Show when={referencedTags().length > 0}>
-          <div class="prompt_header">
-            <div class="left">
-              <i class="bx bx-hash"></i>
-              <span>Tags</span>
+          <div id="A_S_TAGS">
+            <div class="prompt_header">
+              <div class="left">
+                <i class="bx bx-hash"></i>
+                <span>Tags</span>
+              </div>
+              <div
+                class="right"
+                onclick={() => ps.setDisabledAllTags(!ps.disabledAllTags())}
+              >
+                <Switch>
+                  <Match when={ps.disabledAllTags()}>
+                    <i class="bx bx-square"></i>
+                  </Match>
+                  <Match when={!ps.disabledAllTags()}>
+                    <i class="bx bx-check-square"></i>
+                  </Match>
+                </Switch>
+              </div>
             </div>
-            <div
-              class="right"
-              onclick={() => ps.setDisabledAllTags(!ps.disabledAllTags())}
-            >
-              <Switch>
-                <Match when={ps.disabledAllTags()}>
-                  <i class="bx bx-square"></i>
-                </Match>
-                <Match when={!ps.disabledAllTags()}>
-                  <i class="bx bx-check-square"></i>
-                </Match>
-              </Switch>
-            </div>
-          </div>
-          <div class="tags_list">
-            <For each={referencedTags()}>
-              {(tuple) => {
-                return (
-                  <div
-                    class={
-                      "tag_row " +
-                      (ps.disabledTags().includes(`${tuple.join(" ")}`)
-                        ? "disabled"
-                        : "")
-                    }
-                    onclick={() => onClickTagToggle(tuple)}
-                  >
-                    <div>
-                      <For each={tuple}>
-                        {(tag) => {
-                          return <div>{tag}</div>;
-                        }}
-                      </For>
+            <div class="tags_list">
+              <For each={referencedTags()}>
+                {(tuple) => {
+                  return (
+                    <div
+                      class={
+                        "tag_row " +
+                        (ps.disabledTags().includes(`${tuple.join(" ")}`)
+                          ? "disabled"
+                          : "")
+                      }
+                      onclick={() => onClickTagToggle(tuple)}
+                    >
+                      <div>
+                        <For each={tuple}>
+                          {(tag) => {
+                            return <div>{tag}</div>;
+                          }}
+                        </For>
+                      </div>
+                      <Switch>
+                        <Match
+                          when={ps
+                            .disabledTags()
+                            .includes(`${tuple.join(" ")}`)}
+                        >
+                          <i class="bx bx-checkbox"></i>
+                        </Match>
+                        <Match
+                          when={
+                            !ps.disabledTags().includes(`${tuple.join(" ")}`)
+                          }
+                        >
+                          <i class="bx bx-checkbox-checked"></i>
+                        </Match>
+                      </Switch>
                     </div>
-                    <Switch>
-                      <Match
-                        when={ps.disabledTags().includes(`${tuple.join(" ")}`)}
-                      >
-                        <i class="bx bx-checkbox"></i>
-                      </Match>
-                      <Match
-                        when={!ps.disabledTags().includes(`${tuple.join(" ")}`)}
-                      >
-                        <i class="bx bx-checkbox-checked"></i>
-                      </Match>
-                    </Switch>
-                  </div>
-                );
-              }}
-            </For>
+                  );
+                }}
+              </For>
+            </div>
           </div>
         </Show>
         <Show when={referencedFiles().length > 0}>
-          <div class="prompt_header">
-            <div class="left">
-              <i class="bx bx-bracket"></i>
-              <span>Referenzen</span>
+          <div id="A_S_REFERENCES">
+            <div class="prompt_header">
+              <div class="left">
+                <i class="bx bx-bracket"></i>
+                <span>Referenzen</span>
+              </div>
+              <div
+                class="right"
+                onclick={() => ps.setDisabledAllFiles(!ps.disabledAllFiles())}
+              >
+                <Switch>
+                  <Match when={ps.disabledAllFiles()}>
+                    <i class="bx bx-square"></i>
+                  </Match>
+                  <Match when={!ps.disabledAllFiles()}>
+                    <i class="bx bx-check-square"></i>
+                  </Match>
+                </Switch>
+              </div>
             </div>
-            <div
-              class="right"
-              onclick={() => ps.setDisabledAllFiles(!ps.disabledAllFiles())}
-            >
-              <Switch>
-                <Match when={ps.disabledAllFiles()}>
-                  <i class="bx bx-square"></i>
-                </Match>
-                <Match when={!ps.disabledAllFiles()}>
-                  <i class="bx bx-check-square"></i>
-                </Match>
-              </Switch>
+            <div class="tags_list">
+              <For each={referencedFiles()}>
+                {(name) => {
+                  return (
+                    <div
+                      class={
+                        "tag_row " +
+                        (ps.disabledFiles().includes(`${name}`)
+                          ? "disabled"
+                          : "")
+                      }
+                      onclick={() => onClickFileToggle(name)}
+                    >
+                      <div>{name}</div>
+                      <Switch>
+                        <Match when={ps.disabledFiles().includes(`${name}`)}>
+                          <i class="bx bx-checkbox"></i>
+                        </Match>
+                        <Match when={!ps.disabledFiles().includes(`${name}`)}>
+                          <i class="bx bx-checkbox-checked"></i>
+                        </Match>
+                      </Switch>
+                    </div>
+                  );
+                }}
+              </For>
             </div>
-          </div>
-          <div class="tags_list">
-            <For each={referencedFiles()}>
-              {(name) => {
-                return (
-                  <div
-                    class={
-                      "tag_row " +
-                      (ps.disabledFiles().includes(`${name}`) ? "disabled" : "")
-                    }
-                    onclick={() => onClickFileToggle(name)}
-                  >
-                    <div>{name}</div>
-                    <Switch>
-                      <Match when={ps.disabledFiles().includes(`${name}`)}>
-                        <i class="bx bx-checkbox"></i>
-                      </Match>
-                      <Match when={!ps.disabledFiles().includes(`${name}`)}>
-                        <i class="bx bx-checkbox-checked"></i>
-                      </Match>
-                    </Switch>
-                  </div>
-                );
-              }}
-            </For>
           </div>
         </Show>
         <div class="prompt_header">

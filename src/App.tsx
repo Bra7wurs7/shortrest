@@ -127,6 +127,8 @@ function App(): JSXElement {
   const [hoveredDirectoryName, setHoveredDirectoryName] = createSignal<
     string | null
   >(null);
+  const [clipboardCollapsed, setClipboardCollapsed] = createSignal(false);
+  const [directoryCollapsed, setDirectoryCollapsed] = createSignal(false);
 
   // ============================================
   // Ollama connection signals
@@ -732,246 +734,58 @@ function App(): JSXElement {
               : ""
           }
         >
-          <div id="L_S_TOP">
-            <div id="L_S_OPENFILES">
-              <For each={filteredParsedClipboardFileNames()}>
-                {(parsedName: ParsedFileName, index: Accessor<number>) => (
-                  <Switch>
-                    <Match
-                      when={rightClickedClipboardFile() !== parsedName.fullName}
-                    >
-                      <button
-                        class={
-                          "button_file " +
-                          (viewedFile()?.source === "clipboard" &&
-                          viewedFile()?.fileName === parsedName.fullName
-                            ? "active "
-                            : "") +
-                          (rightClickedClipboardFile() === parsedName.fullName
-                            ? "context_menu"
-                            : "")
-                        }
-                        onclick={() => {
-                          onClickClipboardFile(
-                            parsedName.fullName,
-                            setViewedFile,
-                          );
-                        }}
-                        oncontextmenu={(e: PointerEvent) => {
-                          e.preventDefault();
-                          setRightClickedClipboardFile(parsedName.fullName);
-                        }}
-                      >
-                        <div class="filename bg">
-                          <Switch>
-                            <Match when={parsedName.baseName}>
-                              <i class="bx bxs-file"></i>
-                            </Match>
-                            <Match when={parsedName.baseName === ""}>
-                              <i class="bx bxs-tag-alt"></i>
-                            </Match>
-                          </Switch>
-                          {parsedName.baseName}
-                        </div>
-                        <div class="tags">
-                          <For each={parsedName.tags}>
-                            {(tag: string) => <span>&nbsp;{tag}</span>}
-                          </For>
-                        </div>
-                      </button>
-                    </Match>
-                    <Match
-                      when={rightClickedClipboardFile() === parsedName.fullName}
-                    >
-                      <div
-                        class="button_file_contextmenu"
-                        onmouseleave={() => {
-                          setRightClickedClipboardFile(null);
-                          setRightClickedClipboardFileNewName(null);
-                          setConfirmAction(null);
-                        }}
-                        onClick={() => {
-                          setRightClickedClipboardFile(null);
-                        }}
-                      >
-                        <div
-                          class="filename text_overflow_fade bg"
-                          contenteditable
-                          onclick={(e) => {
-                            e.stopPropagation();
-                          }}
-                          oninput={(e) => {
-                            onInputExistingFileName(
-                              e,
-                              setRightClickedClipboardFileNewName,
-                            );
-                          }}
-                        >
-                          {parsedName.fullName ?? "unnamed file"}
-                        </div>
-                        <div class="actions">
-                          <Switch>
-                            <Match
-                              when={
-                                rightClickedClipboardFileNewName() === null ||
-                                rightClickedClipboardFile() ===
-                                  rightClickedClipboardFileNewName()
-                              }
-                            >
-                              <button
-                                class="button_icon"
-                                onclick={(e) => {
-                                  e.stopPropagation();
-                                  onClickDownloadClipboardFile(
-                                    clipboard,
-                                    parsedName.fullName,
-                                  );
-                                }}
-                              >
-                                <i class="bx bxs-download"></i>
-                              </button>
-                              <button
-                                class="button_icon"
-                                onclick={(e) => {
-                                  e.stopImmediatePropagation();
-                                  onSaveClipboardFile(
-                                    index(),
-                                    clipboard,
-                                    setClipboard,
-                                    directoryNames,
-                                    setDirectoryNames,
-                                    activeDirectoryParsedFileNames,
-                                    setActiveDirectoryParsedFileNames,
-                                    activeDirectoryName,
-                                    viewedFile,
-                                    setViewedFile,
-                                    setRightClickedClipboardFile,
-                                  );
-                                }}
-                              >
-                                <i class="bx bx-save"></i>
-                              </button>
-                              <button
-                                class={
-                                  "button_icon " +
-                                  (confirmAction() ===
-                                  ConfirmAction.DiscardChanges
-                                    ? "orange"
-                                    : "")
-                                }
-                                onclick={(e) => {
-                                  e.stopImmediatePropagation();
-                                  onDiscardClipboardFile(
-                                    index(),
-                                    clipboard,
-                                    setClipboard,
-                                    viewedFile,
-                                    setViewedFile,
-                                    confirmAction,
-                                    setConfirmAction,
-                                    setRightClickedClipboardFile,
-                                  ).then();
-                                }}
-                              >
-                                <i class="bx bx-x-circle"></i>
-                              </button>
-                            </Match>
-                            <Match
-                              when={
-                                rightClickedClipboardFile() !==
-                                rightClickedClipboardFileNewName()
-                              }
-                            >
-                              <button
-                                class="button_icon"
-                                onclick={(e) => {
-                                  e.stopPropagation();
-                                  onRenameClipboardFile(
-                                    rightClickedClipboardFile(),
-                                    rightClickedClipboardFileNewName(),
-                                    clipboard,
-                                  );
-                                }}
-                              >
-                                <i class="bx bx-check"></i>
-                              </button>
-                            </Match>
-                          </Switch>
-                        </div>
-                      </div>
-                    </Match>
-                  </Switch>
-                )}
-              </For>
-            </div>
-            <Show when={filteredParsedClipboardFileNames().length > 0}>
-              <div class="filelist_footer">
+          <div id="L_S_TOP" class={clipboardCollapsed() ? "collapsed" : ""}>
+            <div
+              class="filelist_header"
+              onclick={() => setClipboardCollapsed(!clipboardCollapsed())}
+            >
+              <div class="left">
+                <i
+                  class={
+                    "bx " +
+                    (clipboardCollapsed()
+                      ? "bx-chevron-right"
+                      : "bx-chevron-down")
+                  }
+                ></i>
                 <i class="bx bx-clipboard"></i>
                 <span>Clipboard</span>
               </div>
-            </Show>
-          </div>
-          <div id="L_S_BOTTOM">
-            <Show
-              when={
-                hoveredDirectoryFileNames()
-                  ? hoveredDirectoryFileNames()!.length > 0
-                  : filteredParsedAllFileNames() &&
-                    filteredParsedAllFileNames()!.length > 0
-              }
-            >
-              <div class="filelist_header">
-                <i class="bx bx-folder"></i>
-                <span>Directory</span>
-              </div>
-            </Show>
-            <Show
-              when={
-                hoveredDirectoryFileNames() ||
-                filteredParsedAllFileNames() !== null
-              }
-            >
-              <div id="L_S_B_ALLFILES">
-                <For
-                  each={
-                    hoveredDirectoryFileNames()
-                      ? hoveredDirectoryFileNames()
-                      : filteredParsedAllFileNames()
-                  }
-                >
+              <div class="right"></div>
+            </div>
+            <Show when={!clipboardCollapsed()}>
+              <div id="L_S_CLIPBOARD">
+                <For each={filteredParsedClipboardFileNames()}>
                   {(parsedName: ParsedFileName, index: Accessor<number>) => (
                     <Switch>
                       <Match
-                        when={rightClickedSavedFile() !== parsedName.fullName}
+                        when={
+                          rightClickedClipboardFile() !== parsedName.fullName
+                        }
                       >
                         <button
                           class={
-                            "button_file " +
-                            (viewedFile()?.source === "idb" &&
+                            "clipboard_file " +
+                            (viewedFile()?.source === "clipboard" &&
                             viewedFile()?.fileName === parsedName.fullName
                               ? "active "
                               : "") +
-                            (rightClickedSavedFile() === parsedName.fullName
+                            (rightClickedClipboardFile() === parsedName.fullName
                               ? "context_menu"
                               : "")
                           }
                           onclick={() => {
-                            const activeDirName = activeDirectoryName();
-                            if (activeDirName) {
-                              onClickSavedFile(
-                                parsedName.fullName,
-                                activeDirName,
-                                clipboard,
-                                setViewedFile,
-                              );
-                            }
+                            onClickClipboardFile(
+                              parsedName.fullName,
+                              setViewedFile,
+                            );
                           }}
                           oncontextmenu={(e: PointerEvent) => {
                             e.preventDefault();
-                            setRightClickedSavedFile(parsedName.fullName);
+                            setRightClickedClipboardFile(parsedName.fullName);
                           }}
                         >
-                          <div class="filename text_overflow_fade bg">
+                          <div class="filename bg">
                             <Switch>
                               <Match when={parsedName.baseName}>
                                 <i class="bx bxs-file"></i>
@@ -990,21 +804,23 @@ function App(): JSXElement {
                         </button>
                       </Match>
                       <Match
-                        when={rightClickedSavedFile() === parsedName.fullName}
+                        when={
+                          rightClickedClipboardFile() === parsedName.fullName
+                        }
                       >
                         <div
-                          class="button_file_contextmenu"
+                          class="clipboard_file_contextmenu"
                           onmouseleave={() => {
-                            setRightClickedSavedFile(null);
-                            setRightClickedSavedFileNewName(null);
+                            setRightClickedClipboardFile(null);
+                            setRightClickedClipboardFileNewName(null);
                             setConfirmAction(null);
                           }}
                           onClick={() => {
-                            setRightClickedSavedFile(null);
+                            setRightClickedClipboardFile(null);
                           }}
                         >
                           <div
-                            class="filename"
+                            class="filename text_overflow_fade bg"
                             contenteditable
                             onclick={(e) => {
                               e.stopPropagation();
@@ -1012,7 +828,7 @@ function App(): JSXElement {
                             oninput={(e) => {
                               onInputExistingFileName(
                                 e,
-                                setRightClickedSavedFileNewName,
+                                setRightClickedClipboardFileNewName,
                               );
                             }}
                           >
@@ -1022,67 +838,83 @@ function App(): JSXElement {
                             <Switch>
                               <Match
                                 when={
-                                  rightClickedSavedFileNewName() === null ||
-                                  rightClickedSavedFileNewName() ===
-                                    rightClickedSavedFile()
+                                  rightClickedClipboardFileNewName() === null ||
+                                  rightClickedClipboardFile() ===
+                                    rightClickedClipboardFileNewName()
                                 }
                               >
                                 <button
                                   class="button_icon"
                                   onclick={(e) => {
-                                    onClickDownloadSavedFile(
-                                      activeDirectoryName,
+                                    e.stopPropagation();
+                                    onClickDownloadClipboardFile(
+                                      clipboard,
                                       parsedName.fullName,
                                     );
-                                    e.stopPropagation();
                                   }}
                                 >
                                   <i class="bx bxs-download"></i>
                                 </button>
                                 <button
+                                  class="button_icon"
+                                  onclick={(e) => {
+                                    e.stopImmediatePropagation();
+                                    onSaveClipboardFile(
+                                      index(),
+                                      clipboard,
+                                      setClipboard,
+                                      directoryNames,
+                                      setDirectoryNames,
+                                      activeDirectoryParsedFileNames,
+                                      setActiveDirectoryParsedFileNames,
+                                      activeDirectoryName,
+                                      viewedFile,
+                                      setViewedFile,
+                                      setRightClickedClipboardFile,
+                                    );
+                                  }}
+                                >
+                                  <i class="bx bx-save"></i>
+                                </button>
+                                <button
                                   class={
                                     "button_icon " +
-                                    (confirmAction() === ConfirmAction.TrashFile
-                                      ? "red"
+                                    (confirmAction() ===
+                                    ConfirmAction.DiscardChanges
+                                      ? "orange"
                                       : "")
                                   }
                                   onclick={(e) => {
-                                    e.stopPropagation();
-                                    onClickTrashSavedFile(
-                                      parsedName.fullName,
-                                      activeDirectoryName,
-                                      activeDirectoryParsedFileNames,
-                                      setActiveDirectoryParsedFileNames,
-                                      directoryNames,
-                                      setDirectoryNames,
+                                    e.stopImmediatePropagation();
+                                    onDiscardClipboardFile(
+                                      index(),
+                                      clipboard,
+                                      setClipboard,
+                                      viewedFile,
+                                      setViewedFile,
                                       confirmAction,
                                       setConfirmAction,
-                                      setRightClickedSavedFile,
+                                      setRightClickedClipboardFile,
                                     ).then();
                                   }}
                                 >
-                                  <i class="bx bxs-trash-alt"></i>
+                                  <i class="bx bx-x-circle"></i>
                                 </button>
                               </Match>
                               <Match
                                 when={
-                                  rightClickedSavedFileNewName() !== null &&
-                                  rightClickedSavedFileNewName() !==
-                                    rightClickedSavedFile()
+                                  rightClickedClipboardFile() !==
+                                  rightClickedClipboardFileNewName()
                                 }
                               >
                                 <button
                                   class="button_icon"
                                   onclick={(e) => {
                                     e.stopPropagation();
-                                    onRenameSavedFile(
-                                      parsedName.fullName,
-                                      rightClickedSavedFileNewName(),
-                                      activeDirectoryParsedFileNames,
-                                      setActiveDirectoryParsedFileNames,
-                                      activeDirectoryName,
-                                      directoryNames,
-                                      setDirectoryNames,
+                                    onRenameClipboardFile(
+                                      rightClickedClipboardFile(),
+                                      rightClickedClipboardFileNewName(),
+                                      clipboard,
                                     );
                                   }}
                                 >
@@ -1097,6 +929,202 @@ function App(): JSXElement {
                   )}
                 </For>
               </div>
+            </Show>
+          </div>
+          <div id="L_S_BOTTOM" class={directoryCollapsed() ? "collapsed" : ""}>
+            <div
+              class="filelist_header"
+              onclick={() => setDirectoryCollapsed(!directoryCollapsed())}
+            >
+              <div class="left">
+                <i
+                  class={
+                    "bx " +
+                    (directoryCollapsed()
+                      ? "bx-chevron-right"
+                      : "bx-chevron-down")
+                  }
+                ></i>
+                <i class="bx bx-folder"></i>
+                <span>Directory</span>
+              </div>
+              <div class="right"></div>
+            </div>
+            <Show when={!directoryCollapsed()}>
+              <Show
+                when={
+                  hoveredDirectoryFileNames() ||
+                  filteredParsedAllFileNames() !== null
+                }
+              >
+                <div id="L_S_DIRECTORY">
+                  <For
+                    each={
+                      hoveredDirectoryFileNames()
+                        ? hoveredDirectoryFileNames()
+                        : filteredParsedAllFileNames()
+                    }
+                  >
+                    {(parsedName: ParsedFileName, index: Accessor<number>) => (
+                      <Switch>
+                        <Match
+                          when={rightClickedSavedFile() !== parsedName.fullName}
+                        >
+                          <button
+                            class={
+                              "saved_file " +
+                              (viewedFile()?.source === "idb" &&
+                              viewedFile()?.fileName === parsedName.fullName
+                                ? "active "
+                                : "") +
+                              (rightClickedSavedFile() === parsedName.fullName
+                                ? "context_menu"
+                                : "")
+                            }
+                            onclick={() => {
+                              const activeDirName = activeDirectoryName();
+                              if (activeDirName) {
+                                onClickSavedFile(
+                                  parsedName.fullName,
+                                  activeDirName,
+                                  clipboard,
+                                  setViewedFile,
+                                );
+                              }
+                            }}
+                            oncontextmenu={(e: PointerEvent) => {
+                              e.preventDefault();
+                              setRightClickedSavedFile(parsedName.fullName);
+                            }}
+                          >
+                            <div class="filename text_overflow_fade bg">
+                              <Switch>
+                                <Match when={parsedName.baseName}>
+                                  <i class="bx bxs-file"></i>
+                                </Match>
+                                <Match when={parsedName.baseName === ""}>
+                                  <i class="bx bxs-tag-alt"></i>
+                                </Match>
+                              </Switch>
+                              {parsedName.baseName}
+                            </div>
+                            <div class="tags">
+                              <For each={parsedName.tags}>
+                                {(tag: string) => <span>&nbsp;{tag}</span>}
+                              </For>
+                            </div>
+                          </button>
+                        </Match>
+                        <Match
+                          when={rightClickedSavedFile() === parsedName.fullName}
+                        >
+                          <div
+                            class="saved_file_contextmenu"
+                            onmouseleave={() => {
+                              setRightClickedSavedFile(null);
+                              setRightClickedSavedFileNewName(null);
+                              setConfirmAction(null);
+                            }}
+                            onClick={() => {
+                              setRightClickedSavedFile(null);
+                            }}
+                          >
+                            <div
+                              class="filename"
+                              contenteditable
+                              onclick={(e) => {
+                                e.stopPropagation();
+                              }}
+                              oninput={(e) => {
+                                onInputExistingFileName(
+                                  e,
+                                  setRightClickedSavedFileNewName,
+                                );
+                              }}
+                            >
+                              {parsedName.fullName ?? "unnamed file"}
+                            </div>
+                            <div class="actions">
+                              <Switch>
+                                <Match
+                                  when={
+                                    rightClickedSavedFileNewName() === null ||
+                                    rightClickedSavedFileNewName() ===
+                                      rightClickedSavedFile()
+                                  }
+                                >
+                                  <button
+                                    class="button_icon"
+                                    onclick={(e) => {
+                                      onClickDownloadSavedFile(
+                                        activeDirectoryName,
+                                        parsedName.fullName,
+                                      );
+                                      e.stopPropagation();
+                                    }}
+                                  >
+                                    <i class="bx bxs-download"></i>
+                                  </button>
+                                  <button
+                                    class={
+                                      "button_icon " +
+                                      (confirmAction() ===
+                                      ConfirmAction.TrashFile
+                                        ? "red"
+                                        : "")
+                                    }
+                                    onclick={(e) => {
+                                      e.stopPropagation();
+                                      onClickTrashSavedFile(
+                                        parsedName.fullName,
+                                        activeDirectoryName,
+                                        activeDirectoryParsedFileNames,
+                                        setActiveDirectoryParsedFileNames,
+                                        directoryNames,
+                                        setDirectoryNames,
+                                        confirmAction,
+                                        setConfirmAction,
+                                        setRightClickedSavedFile,
+                                      ).then();
+                                    }}
+                                  >
+                                    <i class="bx bxs-trash-alt"></i>
+                                  </button>
+                                </Match>
+                                <Match
+                                  when={
+                                    rightClickedSavedFileNewName() !== null &&
+                                    rightClickedSavedFileNewName() !==
+                                      rightClickedSavedFile()
+                                  }
+                                >
+                                  <button
+                                    class="button_icon"
+                                    onclick={(e) => {
+                                      e.stopPropagation();
+                                      onRenameSavedFile(
+                                        parsedName.fullName,
+                                        rightClickedSavedFileNewName(),
+                                        activeDirectoryParsedFileNames,
+                                        setActiveDirectoryParsedFileNames,
+                                        activeDirectoryName,
+                                        directoryNames,
+                                        setDirectoryNames,
+                                      );
+                                    }}
+                                  >
+                                    <i class="bx bx-check"></i>
+                                  </button>
+                                </Match>
+                              </Switch>
+                            </div>
+                          </div>
+                        </Match>
+                      </Switch>
+                    )}
+                  </For>
+                </div>
+              </Show>
             </Show>
           </div>
         </div>
