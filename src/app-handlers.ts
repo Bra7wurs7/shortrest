@@ -59,18 +59,21 @@ export function ensureEmptyClipboardFile(
 }
 
 /**
- * Click a saved file in the directory listing - just view it (don't copy to clipboard)
+ * Click a saved file in the directory listing.
+ * Prefers clipboard file if one with the same name exists.
  */
 export function onClickSavedFile(
   fileName: string,
   directoryName: string,
+  clipboard: Accessor<ClipboardEntry[]>,
   setViewedFile: Setter<ViewedFile | null>,
 ) {
-  const viewedFile: ViewedFile = {
-    source: "idb",
-    directoryName,
-    fileName,
-  };
+  const clipboardHasFile = clipboard().some((c) => c.name() === fileName);
+
+  const viewedFile: ViewedFile = clipboardHasFile
+    ? { source: "clipboard", directoryName: null, fileName }
+    : { source: "idb", directoryName, fileName };
+
   setViewedFile(viewedFile);
   storeViewedFile(viewedFile);
 }

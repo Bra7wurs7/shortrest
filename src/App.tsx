@@ -961,6 +961,7 @@ function App(): JSXElement {
                               onClickSavedFile(
                                 parsedName.fullName,
                                 activeDirName,
+                                clipboard,
                                 setViewedFile,
                               );
                             }
@@ -1102,11 +1103,10 @@ function App(): JSXElement {
       </div>
       <div id="CENTER">
         <div id="CENTRAL_HEADER">
-          <div class="central_tab ">
-            <span class="tab_filename">Filename</span>{" "}
-            <i class="bx bx-x-circle remove_x_mark"></i>
+          <div class="central_header_side">
+            <div class="central_header_filename">{viewedFile()?.fileName}</div>
           </div>
-          <div class="central_header_right">
+          <div class="central_header_side">
             <For each={appModes}>
               {(am) => {
                 return (
@@ -1116,8 +1116,7 @@ function App(): JSXElement {
                       localStorage.setItem(localStorageAppMode, am.mode);
                     }}
                     class={
-                      "button_icon rounded_top" +
-                      (appMode() === am.mode ? " active" : "")
+                      "button_icon" + (appMode() === am.mode ? " active" : "")
                     }
                   >
                     <i class={"bx " + am.icon}></i>
