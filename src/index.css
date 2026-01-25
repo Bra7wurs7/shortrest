@@ -274,7 +274,8 @@
         flex-direction: column;
         background-color: var(--color_background);
         border-bottom-left-radius: var(--size_toolbar_width_half);
-        box-shadow: var(--shadow);
+        border-bottom-right-radius: var(--size_toolbar_width_half);
+        height: 100%;
 
         .settings_category {
             border-bottom-left-radius: var(--size_toolbar_width_half);
