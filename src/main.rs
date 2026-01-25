@@ -4,78 +4,159 @@ use axum::{
     http::{StatusCode, Uri, header},
     response::{IntoResponse, Response},
 };
+use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem};
 use rust_embed::RustEmbed;
 use std::net::SocketAddr;
-use tokio::net::TcpListener;
+use tray_icon::{Icon, TrayIconBuilder};
 
-// This struct is used by rust-embed to discover and embed the files.
-// The `folder` attribute points to the directory relative to your Cargo.toml
-// that you want to embed.
 #[derive(RustEmbed)]
 #[folder = "dist/"]
 struct Assets;
 
-// The main entry point of our application.
-// `tokio::main` is a macro that sets up the asynchronous runtime.
-#[tokio::main]
-async fn main() {
-    // Try binding to port 7777
-    let addr = SocketAddr::from(([127, 0, 0, 1], 7777));
+const ICON_BYTES: &[u8] = include_bytes!("assets/favicon.png");
 
-    match TcpListener::bind(&addr).await {
-        Ok(listener) => {
-            println!("✅ Server started successfully!");
-            println!("   Listening on http://{}", addr);
+fn load_icon() -> Icon {
+    let img = image::load_from_memory(ICON_BYTES)
+        .expect("Failed to load embedded icon")
+        .into_rgba8();
+    let (width, height) = img.dimensions();
+    let rgba = img.into_raw();
+    Icon::from_rgba(rgba, width, height).expect("Failed to create icon")
+}
 
-            // Create the Axum router that defines our application's routes.
-            let app = Router::new().fallback(static_handler);
-
-            // Open the default web browser to our server's address.
-            let server_url = format!("http://{}", addr);
-            if let Err(e) = webbrowser::open(&server_url) {
-                eprintln!("🔥 Failed to open web browser: {}", e);
-                eprintln!("   Please navigate to {} manually.", server_url);
-            }
-
-            // Run the server with our Axum application.
-            axum::serve(listener, app).await.unwrap();
+fn main() {
+    // Initialize GTK on Linux and suppress library deprecation warnings
+    #[cfg(target_os = "linux")]
+    {
+        // SAFETY: Called at program start before spawning any threads,
+        // so no concurrent access to environment variables is possible.
+        unsafe {
+            std::env::set_var("G_MESSAGES_DEBUG", "");
+            std::env::set_var("G_MESSAGES_PREFIXED", "");
         }
-        Err(e) => {
-            if e.to_string().contains("Address already in use") {
-                println!("🔥 Port 7777 is already in use!");
-                let existing_url = format!("http://{}", addr);
-                if let Err(browser_err) = webbrowser::open(&existing_url) {
-                    eprintln!("🔥 Failed to open web browser: {}", browser_err);
-                    eprintln!("   Please navigate to {} manually.", existing_url);
-                }
-            } else {
-                eprintln!("❌ Server failed to start: {:?}", e);
-            }
+        gtk::init().expect("Failed to initialize GTK");
+    }
 
-            // Exit gracefully
-            std::process::exit(0);
+    let addr = SocketAddr::from(([127, 0, 0, 1], 7777));
+    let server_url = format!("http://{}", addr);
+
+    // Start the async server in a background thread
+    let server_url_clone = server_url.clone();
+    std::thread::spawn(move || {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            match tokio::net::TcpListener::bind(&addr).await {
+                Ok(listener) => {
+                    println!("Server started successfully!");
+                    println!("   Listening on http://{}", addr);
+                    println!("   Look for the tray icon to quit or open in browser.");
+
+                    let app = Router::new().fallback(static_handler);
+
+                    if let Err(e) = webbrowser::open(&server_url_clone) {
+                        eprintln!("Failed to open web browser: {}", e);
+                        eprintln!("   Please navigate to {} manually.", server_url_clone);
+                    }
+
+                    axum::serve(listener, app).await.unwrap();
+                }
+                Err(e) => {
+                    if e.to_string().contains("Address already in use") {
+                        println!("Port 7777 is already in use!");
+                        if let Err(browser_err) = webbrowser::open(&server_url_clone) {
+                            eprintln!("Failed to open web browser: {}", browser_err);
+                            eprintln!("   Please navigate to {} manually.", server_url_clone);
+                        }
+                    } else {
+                        eprintln!("Server failed to start: {:?}", e);
+                    }
+                    std::process::exit(0);
+                }
+            }
+        });
+    });
+
+    // Create menu items
+    let menu = Menu::new();
+    let open_item = MenuItem::new("Open in Browser", true, None);
+    let quit_item = MenuItem::new("Quit", true, None);
+
+    menu.append(&open_item).unwrap();
+    menu.append(&PredefinedMenuItem::separator()).unwrap();
+    menu.append(&quit_item).unwrap();
+
+    let open_id = open_item.id().clone();
+    let quit_id = quit_item.id().clone();
+
+    // Create the tray icon on the main thread
+    let _tray_icon = TrayIconBuilder::new()
+        .with_menu(Box::new(menu))
+        .with_tooltip("ShortRest Server")
+        .with_icon(load_icon())
+        .build()
+        .expect("Failed to create tray icon");
+
+    // Platform-specific event loop
+    #[cfg(target_os = "linux")]
+    {
+        // Linux: Use GTK main context for event processing
+        let main_context = gtk::glib::MainContext::default();
+        let menu_receiver = MenuEvent::receiver();
+        loop {
+            // Process GTK events
+            while main_context.iteration(false) {}
+
+            // Check menu events
+            if let Ok(event) = menu_receiver.try_recv() {
+                if event.id == open_id {
+                    let _ = webbrowser::open(&server_url);
+                } else if event.id == quit_id {
+                    std::process::exit(0);
+                }
+            }
+            std::thread::sleep(std::time::Duration::from_millis(50));
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        // Windows: Simple message loop
+        let menu_receiver = MenuEvent::receiver();
+        loop {
+            if let Ok(event) = menu_receiver.recv_timeout(std::time::Duration::from_millis(100)) {
+                if event.id == open_id {
+                    let _ = webbrowser::open(&server_url);
+                } else if event.id == quit_id {
+                    std::process::exit(0);
+                }
+            }
+        }
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        // macOS: Need to run the native event loop
+        use std::time::Duration;
+        let menu_receiver = MenuEvent::receiver();
+        loop {
+            if let Ok(event) = menu_receiver.recv_timeout(Duration::from_millis(100)) {
+                if event.id == open_id {
+                    let _ = webbrowser::open(&server_url);
+                } else if event.id == quit_id {
+                    std::process::exit(0);
+                }
+            }
         }
     }
 }
 
-/// Fallback handler for serving static files or the main `index.html`.
-/// It takes a `Uri` extractor, which Axum provides with the request's URI.
 async fn static_handler(uri: Uri) -> impl IntoResponse {
-    // Get the path from the URI and remove the leading slash.
     let path = uri.path().trim_start_matches('/');
-
-    // If the path is empty, it means the request was for the root (`/`).
-    // In that case, we serve `index.html`. Otherwise, we use the path.
     let final_path = if path.is_empty() { "index.html" } else { path };
 
-    // Use rust-embed to get the requested file.
     match Assets::get(final_path) {
         Some(content) => {
-            // The file was found, so we serve it.
             let body = Body::from(content.data);
-            // We use `mime_guess` to determine the correct Content-Type header.
-            // This is crucial for the browser to correctly interpret the file
-            // (e.g., as HTML, CSS, JavaScript).
             let mime_type = mime_guess::from_path(final_path).first_or_octet_stream();
 
             Response::builder()
@@ -83,29 +164,18 @@ async fn static_handler(uri: Uri) -> impl IntoResponse {
                 .body(body)
                 .unwrap()
         }
-        None => {
-            // The file was not found in the embedded assets.
-            // This is the crucial part for Single Page Applications (SPAs) like SolidJS.
-            // If the user refreshes on a client-side route (e.g., /about), the server
-            // won't find a file named "about". In this case, we must serve `index.html`
-            // and let the client-side router handle it.
-            match Assets::get("index.html") {
-                Some(content) => {
-                    let body = Body::from(content.data);
-                    Response::builder()
-                        .header(header::CONTENT_TYPE, "text/html")
-                        .body(body)
-                        .unwrap()
-                }
-                None => {
-                    // This is a fallback for the fallback. If `index.html` is also missing,
-                    // something is very wrong with the embedded assets.
-                    Response::builder()
-                        .status(StatusCode::NOT_FOUND)
-                        .body(Body::from("404: Not Found - index.html is missing!"))
-                        .unwrap()
-                }
+        None => match Assets::get("index.html") {
+            Some(content) => {
+                let body = Body::from(content.data);
+                Response::builder()
+                    .header(header::CONTENT_TYPE, "text/html")
+                    .body(body)
+                    .unwrap()
             }
-        }
+            None => Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .body(Body::from("404: Not Found - index.html is missing!"))
+                .unwrap(),
+        },
     }
 }
