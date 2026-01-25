@@ -55,10 +55,6 @@ export function AiWriter(props: AiWriterProps): JSXElement {
     );
   });
 
-  const [referencedFilesContents, setReferencedFilesContents] = createSignal<
-    BasicFile[]
-  >([]);
-
   // Load referenced file contents when referencedFiles changes
   createEffect(() => {
     const fileNames = referencedFiles();
@@ -72,11 +68,9 @@ export function AiWriter(props: AiWriterProps): JSXElement {
         };
       });
       Promise.all(fileContentPromises).then((files) => {
-        setReferencedFilesContents(files);
         props.setReferencedFilesContents(files);
       });
     } else {
-      setReferencedFilesContents([]);
       props.setReferencedFilesContents([]);
     }
   });

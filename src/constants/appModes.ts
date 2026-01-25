@@ -1,7 +1,7 @@
-import { AppMode } from "../types/appMode.enum";
+import { FileViewerMode } from "../types/fileViewerMode.enum";
 
 export const appModes = [
-  { mode: AppMode.AiWriter, icon: "bx-code" },
-  { mode: AppMode.MdReader, icon: "bx-book-reader" },
-  { mode: AppMode.Settings, icon: "bx-cog" },
+  { mode: FileViewerMode.AiWriter, icon: "bx-code" },
+  { mode: FileViewerMode.MdReader, icon: "bx-book-reader" },
+  { mode: FileViewerMode.Settings, icon: "bx-cog" },
 ];

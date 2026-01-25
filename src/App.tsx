@@ -10,7 +10,7 @@ import {
   untrack,
   type JSXElement,
 } from "solid-js";
-import { AppMode } from "./types/appMode.enum";
+import { FileViewerMode } from "./types/fileViewerMode.enum";
 import { ClipboardEntry } from "./types/clipboardEntry.interface";
 import { ViewedFile } from "./types/viewedFile.interface";
 import {
@@ -74,19 +74,26 @@ import {
   sessionStorageDisabledThoughts,
   sessionStorageDisabledUserPrompt,
   localStorageActiveDirectoryName,
-  localStorageAppMode,
+  localStorageFileViewerMode,
   localStorageOllamaModel,
   localStorageOllamaUrl,
+  localStorageRightSidebarMode,
 } from "./constants/storageKeys";
 import { appModes } from "./constants/appModes";
+import { RightSidebarMode } from "./types/rightSidebarMode.enum";
+import { TestBench } from "./components/testBench.component";
 
 function App(): JSXElement {
   // ============================================
   // App-level signals
   // ============================================
-  const [appMode, setAppMode] = createSignal<AppMode>(
-    localStorage.getItem(localStorageAppMode) as AppMode,
+  const [fileViewerMode, setFileViewerMode] = createSignal<FileViewerMode>(
+    localStorage.getItem(localStorageFileViewerMode) as FileViewerMode,
   );
+  const [rightSidebarMode, setRightSidebarMode] =
+    createSignal<RightSidebarMode>(
+      localStorage.getItem(localStorageRightSidebarMode) as RightSidebarMode,
+    );
   const [directoryNames, setDirectoryNames] = createSignal<string[]>([]);
   const [activeDirectoryName, setActiveDirectoryName] = createSignal<
     string | null
@@ -1191,11 +1198,12 @@ function App(): JSXElement {
                 return (
                   <button
                     onclick={() => {
-                      setAppMode(am.mode);
-                      localStorage.setItem(localStorageAppMode, am.mode);
+                      setFileViewerMode(am.mode);
+                      localStorage.setItem(localStorageFileViewerMode, am.mode);
                     }}
                     class={
-                      "button_icon" + (appMode() === am.mode ? " active" : "")
+                      "button_icon" +
+                      (fileViewerMode() === am.mode ? " active" : "")
                     }
                   >
                     <i class={"bx " + am.icon}></i>
@@ -1206,7 +1214,7 @@ function App(): JSXElement {
           </div>
         </div>
         <Switch>
-          <Match when={appMode() === AppMode.AiWriter}>
+          <Match when={fileViewerMode() === FileViewerMode.AiWriter}>
             <textarea
               id="BASIC_TEXT_EDITOR"
               /* class="rounded_top_left" // only if the active tab is the first one */
@@ -1216,10 +1224,10 @@ function App(): JSXElement {
               }}
             />
           </Match>
-          <Match when={appMode() === AppMode.MdReader}>
+          <Match when={fileViewerMode() === FileViewerMode.MdReader}>
             {MdReader(displayedFileContent)}
           </Match>
-          <Match when={appMode() === AppMode.Settings}>
+          <Match when={fileViewerMode() === FileViewerMode.Settings}>
             {SettingsComponent(
               ollamaConnection,
               setOllamaConnection,
@@ -1235,7 +1243,8 @@ function App(): JSXElement {
         <Switch>
           <Match
             when={
-              appMode() === AppMode.AiWriter || appMode() === AppMode.MdReader
+              fileViewerMode() === FileViewerMode.AiWriter ||
+              fileViewerMode() === FileViewerMode.MdReader
             }
           >
             <input
@@ -1250,11 +1259,7 @@ function App(): JSXElement {
       </div>
       <div id="RIGHT_SIDE">
         <Switch>
-          <Match
-            when={
-              appMode() === AppMode.AiWriter || appMode() === AppMode.MdReader
-            }
-          >
+          <Match when={rightSidebarMode() === RightSidebarMode.AiWriter}>
             <AiWriter
               displayedFileContent={displayedFileContent}
               displayedFileName={displayedFileName}
@@ -1266,8 +1271,46 @@ function App(): JSXElement {
               setReferencedTagFileContents={setReferencedTagFileContents}
             />
           </Match>
+          <Match when={rightSidebarMode() === RightSidebarMode.TestBench}>
+            <TestBench></TestBench>
+          </Match>
         </Switch>
-        <div id="RIGHT_TOOLBAR"></div>
+        <div id="RIGHT_TOOLBAR">
+          <button
+            class={
+              "button_icon" +
+              (rightSidebarMode() === RightSidebarMode.AiWriter
+                ? " active"
+                : "")
+            }
+            onclick={() => {
+              setRightSidebarMode(RightSidebarMode.AiWriter);
+              localStorage.setItem(
+                localStorageRightSidebarMode,
+                RightSidebarMode.AiWriter,
+              );
+            }}
+          >
+            <i class="bx bxs-edit"></i>
+          </button>
+          <button
+            class={
+              "button_icon" +
+              (rightSidebarMode() === RightSidebarMode.TestBench
+                ? " active"
+                : "")
+            }
+            onclick={() => {
+              setRightSidebarMode(RightSidebarMode.TestBench);
+              localStorage.setItem(
+                localStorageRightSidebarMode,
+                RightSidebarMode.TestBench,
+              );
+            }}
+          >
+            <i class="bx bx-test-tube"></i>
+          </button>
+        </div>
       </div>
       <div id="RIGHT_SIDE_BUTTONS">
         <button

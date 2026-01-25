@@ -1,4 +1,4 @@
-export enum AppMode {
+export enum FileViewerMode {
   Settings = "settings",
   AiWriter = "aiwriter",
   MdReader = "mdreader",
