@@ -8,6 +8,7 @@ import {
   Switch,
 } from "solid-js";
 import { TextUnits } from "../types/textUnits.enum";
+import { SummaryStyle } from "../types/summaryStyle.enum";
 import { ParsedFileName } from "../types/parsedFileName.interface";
 import { BasicFile } from "../types/basicFile.interface";
 import { PromptState } from "../types/promptState.interface";
@@ -24,6 +25,8 @@ export interface AiWriterProps {
   setReducedFileContent: Setter<string>;
   setReferencedFilesContents: Setter<BasicFile[]>;
   setReferencedTagFileContents: Setter<BasicFile[]>;
+  // Summary action handlers
+  onGenerateSummary: (mode: "generate" | "extend") => void;
 }
 
 export function AiWriter(props: AiWriterProps): JSXElement {
@@ -163,6 +166,111 @@ export function AiWriter(props: AiWriterProps): JSXElement {
             onInput={(e) => {
               ps.setSystemPrompt(e.currentTarget.value);
             }}
+          />
+        </PromptSection>
+
+        {/* Rolling Summary Section */}
+        <PromptSection
+          id="A_S_ROLLING_SUMMARY"
+          icon="bx-history"
+          label="Rolling Summary"
+          disabled={ps.disabledRollingSummary}
+          onToggleDisabled={() =>
+            ps.setDisabledRollingSummary(!ps.disabledRollingSummary())
+          }
+          collapsed={state.sectionCollapsed.rollingSummary}
+          onToggleCollapsed={() =>
+            state.toggleSectionCollapsed("rollingSummary")
+          }
+          settingsSlot={
+            <>
+              <div class="settings_row">
+                <input
+                  id="A_S_SUMMARY_MAX_LENGTH"
+                  type="number"
+                  value={ps.summaryMaxLength()}
+                  step={50}
+                  min={0}
+                  onInput={(e) => {
+                    ps.setSummaryMaxLength(Number(e.currentTarget.value));
+                  }}
+                  title="Maximum length for the generated summary"
+                />
+                <select
+                  id="A_S_SUMMARY_MAX_LENGTH_UNIT"
+                  value={ps.summaryMaxLengthUnit()}
+                  onChange={(e) => {
+                    ps.setSummaryMaxLengthUnit(
+                      e.currentTarget.value as TextUnits,
+                    );
+                  }}
+                  title="Unit for the maximum summary length (words, sentences, or paragraphs)"
+                >
+                  <option value={TextUnits.Words}>Words</option>
+                  <option value={TextUnits.Sentences}>Sentences</option>
+                  <option value={TextUnits.Paragraphs}>Paragraphs</option>
+                </select>
+                <select
+                  id="A_S_SUMMARY_STYLE"
+                  value={ps.summaryStyle()}
+                  onChange={(e) => {
+                    ps.setSummaryStyle(e.currentTarget.value as SummaryStyle);
+                  }}
+                  title="Writing style for the summary: Narrative (prose), Bullets (list), Key Events (chronological), or Characters (focus on people)"
+                >
+                  <option value={SummaryStyle.Narrative}>Narrative</option>
+                  <option value={SummaryStyle.Bullets}>Bullets</option>
+                  <option value={SummaryStyle.KeyEvents}>Key Events</option>
+                  <option value={SummaryStyle.CharacterFocused}>
+                    Characters
+                  </option>
+                </select>
+              </div>
+              <div class="settings_row">
+                <button
+                  onclick={() => props.onGenerateSummary("generate")}
+                  title="Generate a new summary from the current file context, replacing any existing summary"
+                  disabled={ps.runningPrompt() !== null}
+                >
+                  <i class="bx bx-refresh" />
+                </button>
+                <button
+                  onclick={() => props.onGenerateSummary("extend")}
+                  title="Extend the existing summary with new content from the file context"
+                  disabled={
+                    ps.runningPrompt() !== null ||
+                    ps.rollingSummary().trim().length === 0
+                  }
+                >
+                  <i class="bx bx-plus" />
+                </button>
+                <button
+                  onclick={() => ps.setRollingSummary("")}
+                  title="Clear the summary"
+                  disabled={ps.rollingSummary().trim().length === 0}
+                >
+                  <i class="bx bx-trash" />
+                </button>
+                <button
+                  class={ps.autoSummarize() ? "active" : ""}
+                  onclick={() => ps.setAutoSummarize(!ps.autoSummarize())}
+                  title="Automatically generate or extend the summary after the AI finishes writing"
+                >
+                  <i class="bx bx-bot" />
+                </button>
+              </div>
+            </>
+          }
+        >
+          <textarea
+            id="A_S_ROLLING_SUMMARY_INPUT"
+            class={"prompt" + (ps.disabledRollingSummary() ? " disabled" : "")}
+            rows={6}
+            value={ps.rollingSummary()}
+            onInput={(e) => {
+              ps.setRollingSummary(e.currentTarget.value);
+            }}
+            placeholder="Summary of previous content..."
           />
         </PromptSection>
 

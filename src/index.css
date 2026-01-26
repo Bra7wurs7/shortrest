@@ -752,7 +752,17 @@
 
         .prompt_settings {
             display: flex;
-            flex-direction: row;
+            flex-direction: column;
+
+            .settings_row {
+                display: flex;
+                flex-direction: row;
+
+                button.active {
+                    border-color: var(--green);
+                }
+            }
+
             input {
                 background-color: var(--color_background);
                 color: var(--color_foreground);

@@ -6,6 +6,13 @@ export const localStorageChatAssistentPromptLength =
 export const localStorageChatAssistentPromptUnit = "chatAssistantPromptUnit";
 export const localStorageChatModelThoughts = "chatModelThoughts";
 
+// localStorage keys for rolling summary
+export const localStorageRollingSummary = "rollingSummary";
+export const localStorageSummaryMaxLength = "summaryMaxLength";
+export const localStorageSummaryMaxLengthUnit = "summaryMaxLengthUnit";
+export const localStorageSummaryStyle = "summaryStyle";
+export const localStorageAutoSummarize = "autoSummarize";
+
 // sessionStorage keys for toggle states
 export const sessionStorageDisabledTags = "disabledTags";
 export const sessionStorageDisabledFiles = "disabledFiles";

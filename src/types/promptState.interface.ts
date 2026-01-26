@@ -1,6 +1,7 @@
 import { Accessor, Setter } from "solid-js";
 import { AbortableAsyncIterator, ChatResponse } from "ollama";
 import { TextUnits } from "./textUnits.enum";
+import { SummaryStyle } from "./summaryStyle.enum";
 
 /**
  * All prompt-related state passed explicitly to components.
@@ -14,6 +15,20 @@ export interface PromptState {
   setSystemPrompt: Setter<string>;
   modelThoughts: Accessor<string>;
   setModelThoughts: Setter<string>;
+
+  // Rolling summary
+  rollingSummary: Accessor<string>;
+  setRollingSummary: Setter<string>;
+  disabledRollingSummary: Accessor<boolean>;
+  setDisabledRollingSummary: Setter<boolean>;
+  summaryMaxLength: Accessor<number>;
+  setSummaryMaxLength: Setter<number>;
+  summaryMaxLengthUnit: Accessor<TextUnits>;
+  setSummaryMaxLengthUnit: Setter<TextUnits>;
+  summaryStyle: Accessor<SummaryStyle>;
+  setSummaryStyle: Setter<SummaryStyle>;
+  autoSummarize: Accessor<boolean>;
+  setAutoSummarize: Setter<boolean>;
 
   // Toggle signals for disabling parts of the prompt
   disabledTags: Accessor<string[]>;

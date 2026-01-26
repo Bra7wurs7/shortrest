@@ -57,7 +57,10 @@ import { MdReader } from "./components/mdReader.component";
 import { buildMessages } from "./functions/llm/buildMessages.function";
 import { streamToFile } from "./functions/llm/streamToFile.function";
 import { streamToSignal } from "./functions/llm/streamToSignal.function";
+import { streamContentToSignal } from "./functions/llm/streamContentToSignal.function";
+import { buildSummaryPrompt } from "./functions/llm/buildSummaryPrompt.function";
 import { TextUnits } from "./types/textUnits.enum";
+import { SummaryStyle } from "./types/summaryStyle.enum";
 import { PromptState } from "./types/promptState.interface";
 import {
   localStorageChatUserPrompt,
@@ -65,6 +68,11 @@ import {
   localStorageChatAssistentPromptLength,
   localStorageChatAssistentPromptUnit,
   localStorageChatModelThoughts,
+  localStorageRollingSummary,
+  localStorageSummaryMaxLength,
+  localStorageSummaryMaxLengthUnit,
+  localStorageSummaryStyle,
+  localStorageAutoSummarize,
   sessionStorageDisabledTags,
   sessionStorageDisabledFiles,
   sessionStorageDisabledSysPrompt,
@@ -163,6 +171,29 @@ function App(): JSXElement {
   const [modelThoughts, setModelThoughts] = createSignal<string>(
     localStorage.getItem(localStorageChatModelThoughts) ?? "",
   );
+
+  // Rolling summary signals
+  const [rollingSummary, setRollingSummary] = createSignal<string>(
+    localStorage.getItem(localStorageRollingSummary) ?? "",
+  );
+  const [disabledRollingSummary, setDisabledRollingSummary] =
+    createSignal<boolean>(false);
+  const [summaryMaxLength, setSummaryMaxLength] = createSignal<number>(
+    Number(localStorage.getItem(localStorageSummaryMaxLength)) || 500,
+  );
+  const [summaryMaxLengthUnit, setSummaryMaxLengthUnit] =
+    createSignal<TextUnits>(
+      (localStorage.getItem(localStorageSummaryMaxLengthUnit) ??
+        TextUnits.Words) as TextUnits,
+    );
+  const [summaryStyle, setSummaryStyle] = createSignal<SummaryStyle>(
+    (localStorage.getItem(localStorageSummaryStyle) ??
+      SummaryStyle.Narrative) as SummaryStyle,
+  );
+  const [autoSummarize, setAutoSummarize] = createSignal<boolean>(
+    JSON.parse(localStorage.getItem(localStorageAutoSummarize) ?? "false"),
+  );
+
   const [disabledTags, setDisabledTags] = createSignal<string[]>(
     JSON.parse(sessionStorage.getItem(sessionStorageDisabledTags) ?? "[]"),
   );
@@ -219,6 +250,18 @@ function App(): JSXElement {
     setSystemPrompt,
     modelThoughts,
     setModelThoughts,
+    rollingSummary,
+    setRollingSummary,
+    disabledRollingSummary,
+    setDisabledRollingSummary,
+    summaryMaxLength,
+    setSummaryMaxLength,
+    summaryMaxLengthUnit,
+    setSummaryMaxLengthUnit,
+    summaryStyle,
+    setSummaryStyle,
+    autoSummarize,
+    setAutoSummarize,
     disabledTags,
     setDisabledTags,
     disabledFiles,
@@ -343,6 +386,32 @@ function App(): JSXElement {
     localStorage.setItem(
       localStorageChatAssistentPromptUnit,
       reducedFileContentUnit(),
+    );
+  });
+
+  // Rolling summary persistence to localStorage
+  createEffect(() => {
+    localStorage.setItem(localStorageRollingSummary, rollingSummary());
+  });
+  createEffect(() => {
+    localStorage.setItem(
+      localStorageSummaryMaxLength,
+      String(summaryMaxLength()),
+    );
+  });
+  createEffect(() => {
+    localStorage.setItem(
+      localStorageSummaryMaxLengthUnit,
+      summaryMaxLengthUnit(),
+    );
+  });
+  createEffect(() => {
+    localStorage.setItem(localStorageSummaryStyle, summaryStyle());
+  });
+  createEffect(() => {
+    localStorage.setItem(
+      localStorageAutoSummarize,
+      JSON.stringify(autoSummarize()),
     );
   });
 
@@ -533,6 +602,7 @@ function App(): JSXElement {
       userPrompt: userPrompt(),
       fileContent: reducedFileContent(),
       modelThoughts: existingThoughts,
+      rollingSummary: rollingSummary(),
       tagFileContents: referencedTagFileContents(),
       referencedFileContents: referencedFilesContents(),
       disabledTags: disabledTags(),
@@ -540,6 +610,7 @@ function App(): JSXElement {
       disabledAllTags: disabledAllTags(),
       disabledAllFiles: disabledAllFiles(),
       disabledSystemPrompt: disabledSystemPrompt(),
+      disabledRollingSummary: disabledRollingSummary(),
       disabledFileContext: disabledFileContext(),
       disabledThoughts: disabledThoughts(),
     });
@@ -553,6 +624,13 @@ function App(): JSXElement {
       setRunningPrompt,
       setModelThoughts,
       existingThoughts,
+      onStreamComplete: autoSummarize()
+        ? () => {
+            // Trigger auto-summarize when generation completes
+            const hasSummary = rollingSummary().trim().length > 0;
+            handleSummaryGenerate(hasSummary ? "extend" : "generate");
+          }
+        : undefined,
     });
   }
 
@@ -572,6 +650,7 @@ function App(): JSXElement {
       userPrompt: userPrompt(),
       fileContent: reducedFileContent(),
       modelThoughts: "", // Don't include existing thoughts for think-only
+      rollingSummary: rollingSummary(),
       tagFileContents: referencedTagFileContents(),
       referencedFileContents: referencedFilesContents(),
       disabledTags: disabledTags(),
@@ -579,6 +658,7 @@ function App(): JSXElement {
       disabledAllTags: disabledAllTags(),
       disabledAllFiles: disabledAllFiles(),
       disabledSystemPrompt: disabledSystemPrompt(),
+      disabledRollingSummary: disabledRollingSummary(),
       disabledFileContext: disabledFileContext(),
       disabledThoughts: true, // Always disable thoughts in the prompt for think-only
     });
@@ -588,6 +668,42 @@ function App(): JSXElement {
       model: model.model,
       messages,
       setTargetSignal: setModelThoughts,
+      setRunningPrompt,
+    });
+  }
+
+  /**
+   * Generate or extend the rolling summary based on current file content.
+   */
+  async function handleSummaryGenerate(mode: "generate" | "extend") {
+    const ollama = ollamaConnection();
+    const model = ollamaModel();
+
+    if (!ollama || !model) {
+      console.warn("Cannot generate summary: missing ollama or model");
+      return;
+    }
+
+    const content = reducedFileContent();
+    if (!content) {
+      console.warn("Cannot generate summary: no file content");
+      return;
+    }
+
+    const prompt = buildSummaryPrompt({
+      fileContent: content,
+      existingSummary: rollingSummary(),
+      summaryStyle: summaryStyle(),
+      maxLength: summaryMaxLength(),
+      maxLengthUnit: summaryMaxLengthUnit(),
+      mode,
+    });
+
+    await streamContentToSignal({
+      ollama,
+      model: model.model,
+      messages: [{ role: "user", content: prompt }],
+      setTargetSignal: setRollingSummary,
       setRunningPrompt,
     });
   }
@@ -1269,6 +1385,7 @@ function App(): JSXElement {
               setReducedFileContent={setReducedFileContent}
               setReferencedFilesContents={setReferencedFilesContents}
               setReferencedTagFileContents={setReferencedTagFileContents}
+              onGenerateSummary={handleSummaryGenerate}
             />
           </Match>
           <Match when={rightSidebarMode() === RightSidebarMode.TestBench}>

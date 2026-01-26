@@ -13,6 +13,8 @@ export interface StreamToFileOptions {
   setRunningPrompt: Setter<AbortableAsyncIterator<ChatResponse> | null>;
   setModelThoughts: Setter<string>;
   existingThoughts: string;
+  /** Optional callback invoked when streaming completes successfully */
+  onStreamComplete?: () => void;
 }
 
 /**
@@ -32,6 +34,7 @@ export async function streamToFile(
     setRunningPrompt,
     setModelThoughts,
     existingThoughts,
+    onStreamComplete,
   } = options;
 
   // If we have existing thoughts, don't request new ones
@@ -70,6 +73,7 @@ export async function streamToFile(
       if (response.done) {
         storeClipboard(clipboard);
         setRunningPrompt(null);
+        onStreamComplete?.();
       }
     }
   } catch (error: unknown) {
@@ -100,8 +104,15 @@ export async function streamToFile(
 async function streamToFileWithoutThinking(
   options: StreamToFileOptions,
 ): Promise<void> {
-  const { ollama, model, messages, targetEntry, clipboard, setRunningPrompt } =
-    options;
+  const {
+    ollama,
+    model,
+    messages,
+    targetEntry,
+    clipboard,
+    setRunningPrompt,
+    onStreamComplete,
+  } = options;
 
   const request: ChatRequest & { stream: true } = {
     model,
@@ -119,6 +130,7 @@ async function streamToFileWithoutThinking(
       if (response.done) {
         storeClipboard(clipboard);
         setRunningPrompt(null);
+        onStreamComplete?.();
       }
     }
   } catch (error) {

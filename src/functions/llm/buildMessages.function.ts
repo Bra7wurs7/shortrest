@@ -6,6 +6,7 @@ export interface MessageBuildConfig {
   userPrompt: string;
   fileContent: string;
   modelThoughts: string;
+  rollingSummary: string;
   tagFileContents: BasicFile[];
   referencedFileContents: BasicFile[];
   disabledTags: string[];
@@ -13,6 +14,7 @@ export interface MessageBuildConfig {
   disabledAllTags: boolean;
   disabledAllFiles: boolean;
   disabledSystemPrompt: boolean;
+  disabledRollingSummary: boolean;
   disabledFileContext: boolean;
   disabledThoughts: boolean;
 }
@@ -50,6 +52,14 @@ export function buildMessages(config: MessageBuildConfig): Message[] {
   // Add system prompt
   if (config.systemPrompt && !config.disabledSystemPrompt) {
     messages.push({ role: "system", content: config.systemPrompt });
+  }
+
+  // Add rolling summary (above file context in message order)
+  if (config.rollingSummary && !config.disabledRollingSummary) {
+    messages.push({
+      role: "system",
+      content: `Previously in this document:\n${config.rollingSummary}`,
+    });
   }
 
   // Add model thoughts as assistant context

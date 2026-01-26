@@ -28,6 +28,7 @@ export interface SectionCollapsedState {
   tags: Accessor<boolean>;
   references: Accessor<boolean>;
   systemPrompt: Accessor<boolean>;
+  rollingSummary: Accessor<boolean>;
   fileContext: Accessor<boolean>;
   thoughts: Accessor<boolean>;
   userPrompt: Accessor<boolean>;
@@ -43,9 +44,7 @@ export interface UseAiWriterStateReturn {
 
   // UI state
   sectionCollapsed: SectionCollapsedState;
-  toggleSectionCollapsed: (
-    section: keyof SectionCollapsedState,
-  ) => void;
+  toggleSectionCollapsed: (section: keyof SectionCollapsedState) => void;
 
   // Actions
   onClickTagToggle: (tuple: string[]) => void;
@@ -63,6 +62,8 @@ export function useAiWriterState(
   const [tagsCollapsed, setTagsCollapsed] = createSignal(false);
   const [referencesCollapsed, setReferencesCollapsed] = createSignal(false);
   const [systemPromptCollapsed, setSystemPromptCollapsed] = createSignal(false);
+  const [rollingSummaryCollapsed, setRollingSummaryCollapsed] =
+    createSignal(false);
   const [fileContextCollapsed, setFileContextCollapsed] = createSignal(false);
   const [thoughtsCollapsed, setThoughtsCollapsed] = createSignal(false);
   const [userPromptCollapsed, setUserPromptCollapsed] = createSignal(false);
@@ -71,6 +72,7 @@ export function useAiWriterState(
     tags: tagsCollapsed,
     references: referencesCollapsed,
     systemPrompt: systemPromptCollapsed,
+    rollingSummary: rollingSummaryCollapsed,
     fileContext: fileContextCollapsed,
     thoughts: thoughtsCollapsed,
     userPrompt: userPromptCollapsed,
@@ -86,6 +88,9 @@ export function useAiWriterState(
         break;
       case "systemPrompt":
         setSystemPromptCollapsed(!systemPromptCollapsed());
+        break;
+      case "rollingSummary":
+        setRollingSummaryCollapsed(!rollingSummaryCollapsed());
         break;
       case "fileContext":
         setFileContextCollapsed(!fileContextCollapsed());
