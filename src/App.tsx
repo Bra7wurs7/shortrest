@@ -84,6 +84,7 @@ import {
   localStorageActiveDirectoryName,
   localStorageFileViewerMode,
   localStorageOllamaModel,
+  localStorageOllamaSummaryModel,
   localStorageOllamaUrl,
   localStorageRightSidebarMode,
 } from "./constants/storageKeys";
@@ -158,6 +159,8 @@ function App(): JSXElement {
   const [ollamaModel, setOllamaModel] = createSignal<ModelResponse | null>(
     null,
   );
+  const [ollamaSummaryModel, setOllamaSummaryModel] =
+    createSignal<ModelResponse | null>(null);
 
   // ============================================
   // Prompt state signals (explicit, no context)
@@ -502,6 +505,27 @@ function App(): JSXElement {
         setOllamaModel(model);
       } else {
         setOllamaModel(allLlmModels[0] ?? null);
+      }
+    }
+  });
+  createEffect(() => {
+    const llmModel = ollamaSummaryModel();
+    if (llmModel !== null) {
+      localStorage.setItem(localStorageOllamaSummaryModel, llmModel.model);
+    }
+  });
+  createEffect(() => {
+    const llmModel = untrack(ollamaSummaryModel);
+    const allLlmModels = ollamaModels();
+    if (allLlmModels && allLlmModels.length > 0 && llmModel === null) {
+      const localStorageModelName = localStorage.getItem(
+        localStorageOllamaSummaryModel,
+      );
+      const model = allLlmModels.find((m) => m.model === localStorageModelName);
+      if (model !== undefined) {
+        setOllamaSummaryModel(model);
+      } else {
+        setOllamaSummaryModel(allLlmModels[0] ?? null);
       }
     }
   });
@@ -1349,6 +1373,8 @@ function App(): JSXElement {
               setOllamaConnection,
               ollamaModel,
               setOllamaModel,
+              ollamaSummaryModel,
+              setOllamaSummaryModel,
               ollamaModels,
               setOllamaModels,
               ollamaUrl,

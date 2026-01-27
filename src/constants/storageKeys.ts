@@ -30,4 +30,5 @@ export const localStorageActiveDirectoryName = "activeDirectory";
 export const localStorageFileViewerMode = "fileViewerMode";
 export const localStorageRightSidebarMode = "rightSidebarMode";
 export const localStorageOllamaModel = "ollamaModel";
+export const localStorageOllamaSummaryModel = "ollamaSummaryModel";
 export const localStorageOllamaUrl = "ollamaUrl";
