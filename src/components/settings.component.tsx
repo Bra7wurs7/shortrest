@@ -17,9 +17,6 @@ interface ModelEntryProps {
   ollamaModels: Accessor<ModelResponse[] | null>;
   selectedModel: Accessor<ModelResponse | null>;
   setSelectedModel: Setter<ModelResponse | null>;
-  ollamaUrl: Accessor<string>;
-  setOllamaUrl: Setter<string>;
-  showUrlInput?: boolean;
 }
 
 function ModelEntry(props: ModelEntryProps): JSXElement {
@@ -53,15 +50,6 @@ function ModelEntry(props: ModelEntryProps): JSXElement {
         <div class="entry_description">{props.description}</div>
       </div>
       <div class="entry_controls">
-        <Show when={props.showUrlInput}>
-          <input
-            value={props.ollamaUrl()}
-            onchange={(e) => {
-              props.setOllamaUrl(e.currentTarget.value);
-            }}
-            placeholder="Ollama URL"
-          />
-        </Show>
         <select
           onchange={(e) => {
             props.setSelectedModel(
@@ -123,30 +111,44 @@ export function SettingsComponent(
 ): JSXElement {
   return (
     <div id="SETTINGS_WINDOW">
-      <ModelEntry
-        title="Primary Model"
-        description="General purpose LLM for writing and chat"
-        icon="bx-bot"
-        ollamaConnection={ollamaConnection}
-        ollamaModels={ollamaModels}
-        selectedModel={ollamaModel}
-        setSelectedModel={setOllamaModel}
-        ollamaUrl={ollamaUrl}
-        setOllamaUrl={setOllamaUrl}
-        showUrlInput={true}
-      />
-      <ModelEntry
-        title="Summary Model"
-        description="Smaller model for rolling summaries"
-        icon="bx-file"
-        ollamaConnection={ollamaConnection}
-        ollamaModels={ollamaModels}
-        selectedModel={ollamaSummaryModel}
-        setSelectedModel={setOllamaSummaryModel}
-        ollamaUrl={ollamaUrl}
-        setOllamaUrl={setOllamaUrl}
-        showUrlInput={false}
-      />
+      <div class="settings_group">
+        <div class="settings_entry group_header">
+          <div class="entry_header">
+            <i class="bx bx-server"></i>
+            <div class="entry_title">Ollama Connection</div>
+            <div class="entry_description">Server URL for Ollama API</div>
+          </div>
+          <div class="entry_controls">
+            <input
+              value={ollamaUrl()}
+              onchange={(e) => {
+                setOllamaUrl(e.currentTarget.value);
+              }}
+              placeholder="Ollama URL"
+            />
+          </div>
+        </div>
+        <div class="group_children">
+          <ModelEntry
+            title="Primary Model"
+            description="General purpose LLM for writing and chat"
+            icon="bx-bot"
+            ollamaConnection={ollamaConnection}
+            ollamaModels={ollamaModels}
+            selectedModel={ollamaModel}
+            setSelectedModel={setOllamaModel}
+          />
+          <ModelEntry
+            title="Summary Model"
+            description="Smaller model for rolling summaries"
+            icon="bx-file"
+            ollamaConnection={ollamaConnection}
+            ollamaModels={ollamaModels}
+            selectedModel={ollamaSummaryModel}
+            setSelectedModel={setOllamaSummaryModel}
+          />
+        </div>
+      </div>
     </div>
   );
 }

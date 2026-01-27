@@ -388,6 +388,40 @@
         .log {
             background-color: var(--color_background);
         }
+
+        .settings_group {
+            width: 80%;
+            display: flex;
+            flex-direction: column;
+            gap: var(--size_grid_spacing);
+
+            .group_header {
+                width: 100%;
+            }
+
+            .group_children {
+                display: flex;
+                flex-direction: column;
+                gap: var(--size_grid_spacing);
+                padding-left: calc(var(--size_padding_large) * 2);
+                position: relative;
+
+                &::before {
+                    content: "";
+                    position: absolute;
+                    left: var(--size_padding_large);
+                    top: 0;
+                    bottom: 0;
+                    width: 2px;
+                    background-color: var(--color_border);
+                    border-radius: 1px;
+                }
+
+                .settings_entry {
+                    width: 100%;
+                }
+            }
+        }
     }
     #ENCOUNTER {
         grid-area: 1 / 3 / 8 / 9;
