@@ -91,6 +91,7 @@ import {
 import { appModes } from "./constants/appModes";
 import { RightSidebarMode } from "./types/rightSidebarMode.enum";
 import { TestBench } from "./components/testBench.component";
+import { CodeMirrorEditor } from "./components/codeMirrorEditor.component";
 
 function App(): JSXElement {
   // ============================================
@@ -1355,14 +1356,21 @@ function App(): JSXElement {
         </div>
         <Switch>
           <Match when={fileViewerMode() === FileViewerMode.AiWriter}>
-            <textarea
-              id="BASIC_TEXT_EDITOR"
-              /* class="rounded_top_left" // only if the active tab is the first one */
-              value={displayedFileContent()}
-              oninput={(e) => {
-                handleTextareaInput(e.currentTarget.value);
-              }}
-            />
+            <Show
+              when={viewedFile()}
+              keyed
+              fallback={<div id="CODEMIRROR_EDITOR" />}
+            >
+              {(vf) => (
+                <CodeMirrorEditor
+                  content={displayedFileContent}
+                  onInput={(value) => handleTextareaInput(value)}
+                  enableMarkdown={parseFileName(vf.fileName).ext.startsWith(
+                    ".md",
+                  )}
+                />
+              )}
+            </Show>
           </Match>
           <Match when={fileViewerMode() === FileViewerMode.MdReader}>
             {MdReader(displayedFileContent)}

@@ -285,10 +285,12 @@
         .settings_entry {
             width: 80%;
             background-color: var(--color_background_soft);
-            border-radius: var(--size_toolbar_width_half);
             border: var(--size_border) var(--color_border) var(--style_border);
             padding: var(--size_padding_large);
             box-sizing: border-box;
+            border-top-left-radius: var(--size_toolbar_width_half);
+            border-bottom-left-radius: var(--size_toolbar_width_half);
+
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -397,6 +399,7 @@
 
             .group_header {
                 width: 100%;
+                border-bottom-left-radius: 0;
             }
 
             .group_children {
@@ -679,24 +682,17 @@
         }
     }
 
-    #BASIC_TEXT_EDITOR {
-        resize: none;
-        background-color: var(--color_background_soft);
-        border: var(--size_border) var(--style_border) transparent;
-        color: var(--color_foreground_hard);
-        font-family: var(--sans);
-        padding: var(--size_padding_large);
-        margin: 0;
+    #CODEMIRROR_EDITOR {
+        display: flex;
         flex-grow: 1;
-        &:hover {
-            border-color: var(--color_border_light);
+        overflow: hidden;
+
+        & .cm-editor {
+            flex-grow: 1;
         }
-        &:focus {
-            outline: none;
-            border-color: var(--color_foreground_soft);
-        }
-        &.rounded_top_left {
-            border-top-left-radius: var(--size_toolbar_width_half);
+
+        & .cm-scroller {
+            overflow: auto;
         }
     }
 

@@ -22,9 +22,16 @@
     "vite-plugin-node-polyfills": "^0.24.0"
   },
   "dependencies": {
+    "@codemirror/lang-markdown": "^6.5.0",
+    "@codemirror/language": "^6.0.0",
+    "@codemirror/language-data": "^6.5.2",
+    "@codemirror/state": "^6.5.4",
+    "@codemirror/view": "^6.39.12",
+    "@lezer/highlight": "^1.0.0",
     "@types/file-saver": "^2.0.7",
     "boxicons": "^2.1.4",
     "buffer": "^6.0.3",
+    "codemirror": "^6.0.2",
     "dayjs": "^1.11.18",
     "file-saver": "^2.0.5",
     "idb": "^8.0.3",
