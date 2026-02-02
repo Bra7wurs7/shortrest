@@ -92,6 +92,8 @@ import { appModes } from "./constants/appModes";
 import { RightSidebarMode } from "./types/rightSidebarMode.enum";
 import { TestBench } from "./components/testBench.component";
 import { CodeMirrorEditor } from "./components/codeMirrorEditor.component";
+import { extractBracketQuery } from "./functions/extractBracketQuery.function";
+import { longestCommonPrefix } from "./functions/longestCommonPrefix.function";
 
 function App(): JSXElement {
   // ============================================
@@ -122,6 +124,7 @@ function App(): JSXElement {
   const [idbFileContent, setIdbFileContent] = createSignal<string>("");
 
   const [inputValue, setInputValue] = createSignal<string>("");
+  const [bracketMode, setBracketMode] = createSignal(false);
   const [confirmAction, setConfirmAction] = createSignal<ConfirmAction | null>(
     null,
   );
@@ -733,11 +736,73 @@ function App(): JSXElement {
     });
   }
 
+  function handleCentralInputKeyDown(
+    e: KeyboardEvent & { currentTarget: HTMLInputElement },
+  ) {
+    if (e.key === "Tab" && bracketMode()) {
+      e.preventDefault();
+
+      const input = e.currentTarget;
+      const value = input.value;
+      const cursorPos = input.selectionStart ?? value.length;
+      const query = extractBracketQuery(value, cursorPos);
+      if (query === null) return;
+
+      const clipboardMatches = filteredParsedClipboardFileNames().map(
+        (f) => f.fullName,
+      );
+      const dirMatches = (filteredParsedDirectoryFileNames() ?? []).map(
+        (f) => f.fullName,
+      );
+      const allMatches = [...clipboardMatches, ...dirMatches];
+      if (allMatches.length === 0) return;
+
+      const completion = longestCommonPrefix(allMatches);
+      if (completion.length <= query.length) return;
+
+      const bracketStart = cursorPos - query.length;
+
+      if (allMatches.length === 1) {
+        const newValue =
+          value.substring(0, bracketStart) +
+          completion +
+          "]" +
+          value.substring(cursorPos);
+        setUserPrompt(newValue);
+        setBracketMode(false);
+        setInputValue("");
+        requestAnimationFrame(() => {
+          input.setSelectionRange(
+            bracketStart + completion.length + 1,
+            bracketStart + completion.length + 1,
+          );
+        });
+      } else {
+        const newValue =
+          value.substring(0, bracketStart) +
+          completion +
+          value.substring(cursorPos);
+        setUserPrompt(newValue);
+        setInputValue(completion);
+        requestAnimationFrame(() => {
+          input.setSelectionRange(
+            bracketStart + completion.length,
+            bracketStart + completion.length,
+          );
+        });
+      }
+    }
+  }
+
   function handleCentralInputKeyUp(
     e: KeyboardEvent & { currentTarget: HTMLInputElement },
   ) {
     if (e.key === "Enter") {
       handlePromptSubmit();
+    }
+    if (e.key === "]" && bracketMode()) {
+      setBracketMode(false);
+      setInputValue("");
     }
   }
 
@@ -1123,7 +1188,7 @@ function App(): JSXElement {
                       : "bx-chevron-down")
                   }
                 ></i>
-                <i class="bx bx-folder"></i>
+                <i class="bx bx-open-folder"></i>
                 <span>Directory</span>
               </div>
               <div class="right"></div>
@@ -1399,8 +1464,23 @@ function App(): JSXElement {
           >
             <input
               id="CENTRAL_PROMPT_INPUT"
+              class={bracketMode() ? "bracket-active" : ""}
               value={userPrompt()}
-              onInput={(e) => setUserPrompt(e.currentTarget.value)}
+              onInput={(e) => {
+                const value = e.currentTarget.value;
+                const cursorPos =
+                  e.currentTarget.selectionStart ?? value.length;
+                setUserPrompt(value);
+                const query = extractBracketQuery(value, cursorPos);
+                if (query !== null) {
+                  setBracketMode(true);
+                  setInputValue(query);
+                } else if (bracketMode()) {
+                  setBracketMode(false);
+                  setInputValue("");
+                }
+              }}
+              onKeyDown={handleCentralInputKeyDown}
               onKeyUp={handleCentralInputKeyUp}
               placeholder="Enter prompt..."
             />

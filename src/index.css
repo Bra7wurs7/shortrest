@@ -713,6 +713,9 @@
             outline: none;
             border-color: var(--color_foreground_soft);
         }
+        &.bracket-active {
+            border-color: var(--blue-dim);
+        }
     }
 
     #RIGHT_SIDE {
