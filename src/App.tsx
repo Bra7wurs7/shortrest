@@ -1188,7 +1188,7 @@ function App(): JSXElement {
                       : "bx-chevron-down")
                   }
                 ></i>
-                <i class="bx bx-open-folder"></i>
+                <i class="bx bx-folder-open"></i>
                 <span>Directory</span>
               </div>
               <div class="right"></div>
@@ -1438,7 +1438,12 @@ function App(): JSXElement {
             </Show>
           </Match>
           <Match when={fileViewerMode() === FileViewerMode.MdReader}>
-            {MdReader(displayedFileContent)}
+            <MdReader
+              content={displayedFileContent}
+              clipboard={clipboard}
+              activeDirectoryName={activeDirectoryName}
+              setViewedFile={setViewedFile}
+            />
           </Match>
           <Match when={fileViewerMode() === FileViewerMode.Settings}>
             {SettingsComponent(
