@@ -1,13 +1,19 @@
-import { onMount, onCleanup, createEffect, type Accessor } from "solid-js";
+import {
+  onMount,
+  onCleanup,
+  createEffect,
+  type Accessor,
+  type Setter,
+} from "solid-js";
 import { EditorView, basicSetup } from "codemirror";
 import { EditorState, Compartment } from "@codemirror/state";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
-import {
-  HighlightStyle,
-  syntaxHighlighting,
-} from "@codemirror/language";
+import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { tags as t } from "@lezer/highlight";
+import { keymap } from "@codemirror/view";
+import { extractParenQuery } from "../functions/extractParenQuery.function";
+import { longestCommonPrefix } from "../functions/longestCommonPrefix.function";
 
 const gruvboxTheme = EditorView.theme({
   "&": {
@@ -80,12 +86,111 @@ export interface CodeMirrorEditorProps {
   content: Accessor<string>;
   onInput: (value: string) => void;
   enableMarkdown: boolean;
+  inputValue: Accessor<string>;
+  setInputValue: Setter<string>;
+  filteredClipboardFileNames: Accessor<{ fullName: string }[]>;
+  filteredDirectoryFileNames: Accessor<{ fullName: string }[] | null>;
+  onSave?: () => void;
 }
 
 export function CodeMirrorEditor(props: CodeMirrorEditorProps) {
   let containerRef!: HTMLDivElement;
   let view: EditorView | undefined;
   const languageCompartment = new Compartment();
+  let inParenMode = false;
+  let isSyncingContent = false;
+
+  // Update inputValue based on cursor position (for ]( pattern)
+  const updateParenMode = (docText: string, cursorPos: number) => {
+    if (!props.enableMarkdown) {
+      if (inParenMode) {
+        inParenMode = false;
+        props.setInputValue("");
+      }
+      return;
+    }
+
+    const parenQuery = extractParenQuery(docText, cursorPos);
+    if (parenQuery !== null) {
+      inParenMode = true;
+      props.setInputValue(parenQuery);
+    } else if (inParenMode) {
+      inParenMode = false;
+      props.setInputValue("");
+    }
+  };
+
+  // Get all matching file names based on current filter
+  const getFilteredFileNames = (): string[] => {
+    const clipboardMatches = props
+      .filteredClipboardFileNames()
+      .map((f) => f.fullName);
+    const dirMatches = (props.filteredDirectoryFileNames() ?? []).map(
+      (f) => f.fullName,
+    );
+    return [...clipboardMatches, ...dirMatches];
+  };
+
+  // Handle Tab key for autocomplete
+  const handleTabAutocomplete = (): boolean => {
+    if (!view || !inParenMode) return false;
+
+    const query = props.inputValue();
+    const matches = getFilteredFileNames();
+    if (matches.length === 0) return false;
+
+    const completion = longestCommonPrefix(matches);
+    if (completion.length <= query.length) return false;
+
+    const cursorPos = view.state.selection.main.head;
+    const queryStart = cursorPos - query.length;
+
+    if (matches.length === 1) {
+      // Single match: replace query with URL-encoded filename and close the paren
+      const fileName = matches[0];
+      const encodedFileName = encodeURI(fileName);
+      view.dispatch({
+        changes: {
+          from: queryStart,
+          to: cursorPos,
+          insert: encodedFileName,
+        },
+        selection: { anchor: queryStart + encodedFileName.length + 1 },
+      });
+      inParenMode = false;
+      props.setInputValue("");
+    } else {
+      // Multiple matches: replace query with longest common prefix
+      view.dispatch({
+        changes: {
+          from: queryStart,
+          to: cursorPos,
+          insert: completion,
+        },
+        selection: { anchor: queryStart + completion.length },
+      });
+      props.setInputValue(completion);
+    }
+    return true;
+  };
+
+  // Create keymap for custom key bindings
+  const customKeymap = keymap.of([
+    {
+      key: "Tab",
+      run: () => handleTabAutocomplete(),
+    },
+    {
+      key: "Mod-s",
+      run: () => {
+        if (props.onSave) {
+          props.onSave();
+          return true;
+        }
+        return false;
+      },
+    },
+  ]);
 
   onMount(() => {
     const languageExtension = props.enableMarkdown
@@ -101,9 +206,15 @@ export function CodeMirrorEditor(props: CodeMirrorEditorProps) {
           syntaxHighlighting(gruvboxHighlighting),
           languageCompartment.of(languageExtension),
           EditorView.lineWrapping,
+          customKeymap,
           EditorView.updateListener.of((update) => {
-            if (update.docChanged) {
+            if (update.docChanged && !isSyncingContent) {
               props.onInput(update.state.doc.toString());
+            }
+            // Update paren mode on any selection or document change
+            if (update.docChanged || update.selectionSet) {
+              const cursorPos = update.state.selection.main.head;
+              updateParenMode(update.state.doc.toString(), cursorPos);
             }
           }),
         ],
@@ -113,25 +224,52 @@ export function CodeMirrorEditor(props: CodeMirrorEditorProps) {
   });
 
   // Sync external content changes (file switching, LLM writes, etc.)
+  // Uses minimal diffing to preserve scroll position, cursor, and selection.
   createEffect(() => {
     const newContent = props.content();
-    if (view && view.state.doc.toString() !== newContent) {
-      view.dispatch({
-        changes: {
-          from: 0,
-          to: view.state.doc.length,
-          insert: newContent,
-        },
-      });
+    if (!view) return;
+    const oldContent = view.state.doc.toString();
+    if (oldContent === newContent) return;
+
+    // Find the first character that differs
+    let prefixLen = 0;
+    const minLen = Math.min(oldContent.length, newContent.length);
+    while (
+      prefixLen < minLen &&
+      oldContent[prefixLen] === newContent[prefixLen]
+    ) {
+      prefixLen++;
     }
+
+    // Find the last character that differs (not overlapping with prefix)
+    let oldSuffix = oldContent.length;
+    let newSuffix = newContent.length;
+    while (
+      oldSuffix > prefixLen &&
+      newSuffix > prefixLen &&
+      oldContent[oldSuffix - 1] === newContent[newSuffix - 1]
+    ) {
+      oldSuffix--;
+      newSuffix--;
+    }
+
+    isSyncingContent = true;
+    view.dispatch({
+      changes: {
+        from: prefixLen,
+        to: oldSuffix,
+        insert: newContent.slice(prefixLen, newSuffix),
+      },
+    });
+    isSyncingContent = false;
   });
 
-  onCleanup(() => view?.destroy());
+  onCleanup(() => {
+    if (inParenMode) {
+      props.setInputValue("");
+    }
+    view?.destroy();
+  });
 
-  return (
-    <div
-      ref={containerRef}
-      id="CODEMIRROR_EDITOR"
-    />
-  );
+  return <div ref={containerRef} id="CODEMIRROR_EDITOR" />;
 }

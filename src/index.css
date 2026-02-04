@@ -1258,7 +1258,6 @@
 }
 
 .user_action {
-    cursor: pointer;
     transition: var(--transition_background_color);
     display: flex;
     flex-direction: row;
@@ -1276,9 +1275,12 @@
         border-color: var(--yellow-dim);
     }
 
-    &:hover {
-        border-color: var(--color_border_light);
-        color: var(--color_foreground_soft);
+    &:not(:disabled) {
+        cursor: pointer;
+        &:hover {
+            border-color: var(--color_border_light);
+            color: var(--color_foreground_soft);
+        }
     }
 
     &.active {

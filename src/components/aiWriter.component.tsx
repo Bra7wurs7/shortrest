@@ -378,21 +378,8 @@ export function AiWriter(props: AiWriterProps): JSXElement {
         </Show>
       </div>
 
-      {/* Bottom Section with Abort Button */}
-      <div id="A_S_BOTTOM">
-        <Show when={ps.runningPrompt() !== null}>
-          <button
-            id="A_S_ABORT_BUTTON"
-            class="user_action yellow_border"
-            onclick={() => {
-              ps.runningPrompt()?.abort();
-            }}
-          >
-            Abort
-            <i class="bx bx-block yellow_dim" />
-          </button>
-        </Show>
-      </div>
+      {/* Bottom Section */}
+      <div id="A_S_BOTTOM" />
     </div>
   );
 }

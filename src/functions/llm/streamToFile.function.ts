@@ -11,6 +11,7 @@ export interface StreamToFileOptions {
   targetEntry: ClipboardEntry;
   clipboard: Accessor<ClipboardEntry[]>;
   setRunningPrompt: Setter<AbortableAsyncIterator<ChatResponse> | null>;
+  setPromptLoading: Setter<boolean>;
   setModelThoughts: Setter<string>;
   existingThoughts: string;
   /** Optional callback invoked when streaming completes successfully */
@@ -32,6 +33,7 @@ export async function streamToFile(
     targetEntry,
     clipboard,
     setRunningPrompt,
+    setPromptLoading,
     setModelThoughts,
     existingThoughts,
     onStreamComplete,
@@ -48,7 +50,9 @@ export async function streamToFile(
   };
 
   try {
+    setPromptLoading(true);
     const responseStream = await ollama.chat(request);
+    setPromptLoading(false);
     setRunningPrompt(responseStream);
 
     // Track if we've received any thinking content
@@ -91,6 +95,7 @@ export async function streamToFile(
       return streamToFileWithoutThinking(options);
     }
 
+    setPromptLoading(false);
     setRunningPrompt(null);
     console.error("Error processing chat response:", error);
     throw error;
@@ -111,6 +116,7 @@ async function streamToFileWithoutThinking(
     targetEntry,
     clipboard,
     setRunningPrompt,
+    setPromptLoading,
     onStreamComplete,
   } = options;
 
@@ -121,7 +127,9 @@ async function streamToFileWithoutThinking(
   };
 
   try {
+    setPromptLoading(true);
     const responseStream = await ollama.chat(request);
+    setPromptLoading(false);
     setRunningPrompt(responseStream);
 
     for await (const response of responseStream) {
@@ -134,6 +142,7 @@ async function streamToFileWithoutThinking(
       }
     }
   } catch (error) {
+    setPromptLoading(false);
     setRunningPrompt(null);
     console.error("Error processing chat response:", error);
     throw error;

@@ -57,4 +57,8 @@ export interface PromptState {
   // Running state for abort functionality
   runningPrompt: Accessor<AbortableAsyncIterator<ChatResponse> | null>;
   setRunningPrompt: Setter<AbortableAsyncIterator<ChatResponse> | null>;
+
+  // Loading state (true between prompt submit and first stream response)
+  promptLoading: Accessor<boolean>;
+  setPromptLoading: Setter<boolean>;
 }

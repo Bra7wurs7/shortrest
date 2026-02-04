@@ -248,6 +248,7 @@ function App(): JSXElement {
     );
   const [runningPrompt, setRunningPrompt] =
     createSignal<AbortableAsyncIterator<ChatResponse> | null>(null);
+  const [promptLoading, setPromptLoading] = createSignal(false);
 
   // Bundle prompt state for passing to components
   const promptState: PromptState = {
@@ -291,6 +292,8 @@ function App(): JSXElement {
     setReducedFileContentUnit,
     runningPrompt,
     setRunningPrompt,
+    promptLoading,
+    setPromptLoading,
   };
 
   // ============================================
@@ -650,6 +653,7 @@ function App(): JSXElement {
       targetEntry,
       clipboard,
       setRunningPrompt,
+      setPromptLoading,
       setModelThoughts,
       existingThoughts,
       onStreamComplete: autoSummarize()
@@ -697,6 +701,7 @@ function App(): JSXElement {
       messages,
       setTargetSignal: setModelThoughts,
       setRunningPrompt,
+      setPromptLoading,
     });
   }
 
@@ -733,6 +738,7 @@ function App(): JSXElement {
       messages: [{ role: "user", content: prompt }],
       setTargetSignal: setRollingSummary,
       setRunningPrompt,
+      setPromptLoading,
     });
   }
 
@@ -1089,19 +1095,26 @@ function App(): JSXElement {
                                   class="button_icon"
                                   onclick={(e) => {
                                     e.stopImmediatePropagation();
-                                    onSaveClipboardFile(
-                                      index(),
-                                      clipboard,
-                                      setClipboard,
-                                      directoryNames,
-                                      setDirectoryNames,
-                                      activeDirectoryParsedFileNames,
-                                      setActiveDirectoryParsedFileNames,
-                                      activeDirectoryName,
-                                      viewedFile,
-                                      setViewedFile,
-                                      setRightClickedClipboardFile,
-                                    );
+                                    const clipboardIndex =
+                                      clipboard().findIndex(
+                                        (c) => c.name() === parsedName.fullName,
+                                      );
+                                    if (clipboardIndex !== -1) {
+                                      onSaveClipboardFile(
+                                        clipboardIndex,
+                                        clipboard,
+                                        setClipboard,
+                                        directoryNames,
+                                        setDirectoryNames,
+                                        activeDirectoryParsedFileNames,
+                                        setActiveDirectoryParsedFileNames,
+                                        activeDirectoryName,
+                                        viewedFile,
+                                        setViewedFile,
+                                        setRightClickedClipboardFile,
+                                        setIdbFileContent,
+                                      );
+                                    }
                                   }}
                                 >
                                   <i class="bx bx-save"></i>
@@ -1116,16 +1129,22 @@ function App(): JSXElement {
                                   }
                                   onclick={(e) => {
                                     e.stopImmediatePropagation();
-                                    onDiscardClipboardFile(
-                                      index(),
-                                      clipboard,
-                                      setClipboard,
-                                      viewedFile,
-                                      setViewedFile,
-                                      confirmAction,
-                                      setConfirmAction,
-                                      setRightClickedClipboardFile,
-                                    ).then();
+                                    const clipboardIndex =
+                                      clipboard().findIndex(
+                                        (c) => c.name() === parsedName.fullName,
+                                      );
+                                    if (clipboardIndex !== -1) {
+                                      onDiscardClipboardFile(
+                                        clipboardIndex,
+                                        clipboard,
+                                        setClipboard,
+                                        viewedFile,
+                                        setViewedFile,
+                                        confirmAction,
+                                        setConfirmAction,
+                                        setRightClickedClipboardFile,
+                                      ).then();
+                                    }
                                   }}
                                 >
                                   <i class="bx bx-x-circle"></i>
@@ -1421,20 +1440,41 @@ function App(): JSXElement {
         </div>
         <Switch>
           <Match when={fileViewerMode() === FileViewerMode.AiWriter}>
-            <Show
-              when={viewedFile()}
-              keyed
-              fallback={<div id="CODEMIRROR_EDITOR" />}
-            >
-              {(vf) => (
-                <CodeMirrorEditor
-                  content={displayedFileContent}
-                  onInput={(value) => handleTextareaInput(value)}
-                  enableMarkdown={parseFileName(vf.fileName).ext.startsWith(
-                    ".md",
-                  )}
-                />
-              )}
+            <Show when={viewedFile()} fallback={<div id="CODEMIRROR_EDITOR" />}>
+              <CodeMirrorEditor
+                content={displayedFileContent}
+                onInput={(value) => handleTextareaInput(value)}
+                enableMarkdown={
+                  !!viewedFile() &&
+                  parseFileName(viewedFile()!.fileName).ext.startsWith(".md")
+                }
+                inputValue={inputValue}
+                setInputValue={setInputValue}
+                filteredClipboardFileNames={filteredParsedClipboardFileNames}
+                filteredDirectoryFileNames={filteredParsedDirectoryFileNames}
+                onSave={async () => {
+                  const entry = currentClipboardEntry();
+                  if (entry) {
+                    const index = clipboard().indexOf(entry);
+                    if (index !== -1) {
+                      await onSaveClipboardFile(
+                        index,
+                        clipboard,
+                        setClipboard,
+                        directoryNames,
+                        setDirectoryNames,
+                        activeDirectoryParsedFileNames,
+                        setActiveDirectoryParsedFileNames,
+                        activeDirectoryName,
+                        viewedFile,
+                        setViewedFile,
+                        setRightClickedClipboardFile,
+                        setIdbFileContent,
+                      );
+                    }
+                  }
+                }}
+              />
             </Show>
           </Match>
           <Match when={fileViewerMode() === FileViewerMode.MdReader}>
@@ -1549,17 +1589,38 @@ function App(): JSXElement {
         </div>
       </div>
       <div id="RIGHT_SIDE_BUTTONS">
-        <button
-          class="user_action"
-          title="Read from and write to the active file"
-          onClick={handlePromptSubmit}
+        <Switch
+          fallback={
+            <button
+              class="user_action"
+              title="Read from and write to the active file"
+              onClick={handlePromptSubmit}
+            >
+              Continue Text
+              <i class="bx bx-play-circle" />
+            </button>
+          }
         >
-          Continue Text
-          <i class="bx bx-play-circle" />
-        </button>
+          <Match when={promptLoading()}>
+            <button class="user_action" disabled>
+              Loading
+              <i class="bx bx-loader-alt bx-spin" />
+            </button>
+          </Match>
+          <Match when={runningPrompt() !== null}>
+            <button
+              class="user_action yellow_border"
+              onClick={() => runningPrompt()?.abort()}
+            >
+              Abort
+              <i class="bx bx-block yellow_dim" />
+            </button>
+          </Match>
+        </Switch>
         <button
           class="user_action fixed_width_icon"
           title="Have the LLM think about the active file"
+          disabled={promptLoading() || runningPrompt() !== null}
           onClick={handleThinkSubmit}
         >
           <i class="bx bx-network-chart" />

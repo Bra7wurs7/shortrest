@@ -8,6 +8,7 @@ export interface StreamToSignalOptions {
   messages: Message[];
   setTargetSignal: Setter<string>;
   setRunningPrompt: Setter<AbortableAsyncIterator<ChatResponse> | null>;
+  setPromptLoading: Setter<boolean>;
 }
 
 /**
@@ -18,8 +19,14 @@ export interface StreamToSignalOptions {
 export async function streamToSignal(
   options: StreamToSignalOptions,
 ): Promise<void> {
-  const { ollama, model, messages, setTargetSignal, setRunningPrompt } =
-    options;
+  const {
+    ollama,
+    model,
+    messages,
+    setTargetSignal,
+    setRunningPrompt,
+    setPromptLoading,
+  } = options;
 
   // First, try with native thinking enabled
   const request: ChatRequest & { stream: true } = {
@@ -30,7 +37,9 @@ export async function streamToSignal(
   };
 
   try {
+    setPromptLoading(true);
     const responseStream = await ollama.chat(request);
+    setPromptLoading(false);
     setRunningPrompt(responseStream);
 
     setTargetSignal(""); // Clear before streaming
@@ -92,6 +101,7 @@ export async function streamToSignal(
       return streamToSignalWithStopSequence(options);
     }
 
+    setPromptLoading(false);
     setRunningPrompt(null);
     console.error("Error processing chat response:", error);
     throw error;
@@ -106,8 +116,14 @@ export async function streamToSignal(
 async function streamToSignalWithStopSequence(
   options: StreamToSignalOptions,
 ): Promise<void> {
-  const { ollama, model, messages, setTargetSignal, setRunningPrompt } =
-    options;
+  const {
+    ollama,
+    model,
+    messages,
+    setTargetSignal,
+    setRunningPrompt,
+    setPromptLoading,
+  } = options;
 
   const request: ChatRequest & { stream: true } = {
     model,
@@ -117,7 +133,9 @@ async function streamToSignalWithStopSequence(
   };
 
   try {
+    setPromptLoading(true);
     const responseStream = await ollama.chat(request);
+    setPromptLoading(false);
     setRunningPrompt(responseStream);
 
     setTargetSignal(""); // Clear before streaming
@@ -136,6 +154,7 @@ async function streamToSignalWithStopSequence(
       }
     }
   } catch (error) {
+    setPromptLoading(false);
     setRunningPrompt(null);
     console.error("Error processing chat response:", error);
     throw error;

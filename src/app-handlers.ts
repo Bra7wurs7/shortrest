@@ -267,6 +267,7 @@ export async function onSaveClipboardFile(
   viewedFile: Accessor<ViewedFile | null>,
   setViewedFile: Setter<ViewedFile | null>,
   setRightClickedClipboardFile: Setter<string | null>,
+  setIdbFileContent?: Setter<string>,
 ) {
   const entry = clipboard()[index];
   const activeDirName = activeDirectoryName();
@@ -274,14 +275,15 @@ export async function onSaveClipboardFile(
 
   if (!entry || !activeDirName) return;
 
-  const targetDir = entry.sourceDirectory ?? activeDirName;
+  const targetDir = activeDirName;
   const fileName = entry.name();
+  const savedContent = entry.content();
   const fileAlreadyExists =
     activeDirFileNames?.some((f) => f.fullName === fileName) ?? false;
 
   await writeFileToDirectory(targetDir, {
     name: fileName,
-    content: entry.content(),
+    content: savedContent,
   });
 
   // Update directory file list if new file
@@ -299,9 +301,12 @@ export async function onSaveClipboardFile(
   storeClipboard(clipboard);
   setRightClickedClipboardFile(null);
 
-  // Switch view to IDB source
+  // Switch view to IDB source, pre-filling the content to avoid an empty flash
   const vf = viewedFile();
   if (vf?.source === "clipboard" && vf.fileName === fileName) {
+    if (setIdbFileContent) {
+      setIdbFileContent(savedContent);
+    }
     const newViewedFile: ViewedFile = {
       source: "idb",
       directoryName: targetDir,

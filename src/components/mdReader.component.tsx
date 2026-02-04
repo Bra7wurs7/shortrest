@@ -29,8 +29,8 @@ export function MdReader(props: MdReaderProps): JSXElement {
 
     e.preventDefault();
 
-    // The href is the filename to look for
-    const fileName = href;
+    // The href is the filename to look for (decode URL-encoded characters like %20 for spaces)
+    const fileName = decodeURI(href);
 
     // First check clipboard
     const clipboardEntry = props.clipboard().find((c) => c.name() === fileName);

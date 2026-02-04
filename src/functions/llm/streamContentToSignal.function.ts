@@ -8,6 +8,7 @@ export interface StreamContentToSignalOptions {
   messages: Message[];
   setTargetSignal: Setter<string>;
   setRunningPrompt: Setter<AbortableAsyncIterator<ChatResponse> | null>;
+  setPromptLoading: Setter<boolean>;
 }
 
 /**
@@ -19,8 +20,14 @@ export interface StreamContentToSignalOptions {
 export async function streamContentToSignal(
   options: StreamContentToSignalOptions,
 ): Promise<void> {
-  const { ollama, model, messages, setTargetSignal, setRunningPrompt } =
-    options;
+  const {
+    ollama,
+    model,
+    messages,
+    setTargetSignal,
+    setRunningPrompt,
+    setPromptLoading,
+  } = options;
 
   const request: ChatRequest & { stream: true } = {
     model,
@@ -30,7 +37,9 @@ export async function streamContentToSignal(
   };
 
   try {
+    setPromptLoading(true);
     const responseStream = await ollama.chat(request);
+    setPromptLoading(false);
     setRunningPrompt(responseStream);
 
     setTargetSignal(""); // Clear before streaming
@@ -60,6 +69,7 @@ export async function streamContentToSignal(
       return streamContentToSignalWithoutThinking(options);
     }
 
+    setPromptLoading(false);
     setRunningPrompt(null);
     console.error("Error processing chat response:", error);
     throw error;
@@ -73,8 +83,14 @@ export async function streamContentToSignal(
 async function streamContentToSignalWithoutThinking(
   options: StreamContentToSignalOptions,
 ): Promise<void> {
-  const { ollama, model, messages, setTargetSignal, setRunningPrompt } =
-    options;
+  const {
+    ollama,
+    model,
+    messages,
+    setTargetSignal,
+    setRunningPrompt,
+    setPromptLoading,
+  } = options;
 
   const request: ChatRequest & { stream: true } = {
     model,
@@ -83,7 +99,9 @@ async function streamContentToSignalWithoutThinking(
   };
 
   try {
+    setPromptLoading(true);
     const responseStream = await ollama.chat(request);
+    setPromptLoading(false);
     setRunningPrompt(responseStream);
 
     setTargetSignal(""); // Clear before streaming
@@ -98,6 +116,7 @@ async function streamContentToSignalWithoutThinking(
       }
     }
   } catch (error) {
+    setPromptLoading(false);
     setRunningPrompt(null);
     console.error("Error processing chat response:", error);
     throw error;

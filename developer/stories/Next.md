@@ -14,7 +14,3 @@
 ## CodeMirror
 - Add syntax support for .json and .yaml
 - Is there any way to access and set the selection and pointer of codemirror as a signal?
-- Is it possible to have a 100% signal interface between codemirror and shortrest?
-- Is it possible to highlight certain areas of the
-# Right Action
-- Make continue text button become abort button and add "pending" and "running" animation.
