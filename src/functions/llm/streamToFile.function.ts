@@ -10,6 +10,7 @@ export interface StreamToFileOptions {
   messages: Message[];
   targetEntry: ClipboardEntry;
   clipboard: Accessor<ClipboardEntry[]>;
+  setClipboard: Setter<ClipboardEntry[]>;
   setRunningPrompt: Setter<AbortableAsyncIterator<ChatResponse> | null>;
   setPromptLoading: Setter<boolean>;
   setModelThoughts: Setter<string>;
@@ -32,6 +33,7 @@ export async function streamToFile(
     messages,
     targetEntry,
     clipboard,
+    setClipboard,
     setRunningPrompt,
     setPromptLoading,
     setModelThoughts,
@@ -75,6 +77,10 @@ export async function streamToFile(
       }
 
       if (response.done) {
+        // Ensure the entry is still in the clipboard (user may have saved/discarded it during streaming)
+        if (!clipboard().includes(targetEntry)) {
+          setClipboard([...clipboard(), targetEntry]);
+        }
         storeClipboard(clipboard);
         setRunningPrompt(null);
         onStreamComplete?.();
@@ -115,6 +121,7 @@ async function streamToFileWithoutThinking(
     messages,
     targetEntry,
     clipboard,
+    setClipboard,
     setRunningPrompt,
     setPromptLoading,
     onStreamComplete,
@@ -136,6 +143,10 @@ async function streamToFileWithoutThinking(
       targetEntry.setContent((prev) => prev + response.message.content);
 
       if (response.done) {
+        // Ensure the entry is still in the clipboard (user may have saved/discarded it during streaming)
+        if (!clipboard().includes(targetEntry)) {
+          setClipboard([...clipboard(), targetEntry]);
+        }
         storeClipboard(clipboard);
         setRunningPrompt(null);
         onStreamComplete?.();

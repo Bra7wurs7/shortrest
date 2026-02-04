@@ -294,9 +294,12 @@ export async function onSaveClipboardFile(
     ]);
   }
 
-  // Remove from clipboard
+  // Remove from clipboard (re-find by reference since index may be stale after await)
   const currentClipboard = clipboard();
-  currentClipboard.splice(index, 1);
+  const currentIndex = currentClipboard.indexOf(entry);
+  if (currentIndex !== -1) {
+    currentClipboard.splice(currentIndex, 1);
+  }
   setClipboard([...currentClipboard]);
   storeClipboard(clipboard);
   setRightClickedClipboardFile(null);
@@ -316,7 +319,11 @@ export async function onSaveClipboardFile(
     storeViewedFile(newViewedFile);
   }
 
-  await onUpdateDirectory(directoryNames, setDirectoryNames);
+  await onUpdateDirectory(
+    directoryNames,
+    setDirectoryNames,
+    activeDirectoryName,
+  );
 }
 
 export async function onClickTrashSavedFile(
@@ -344,7 +351,11 @@ export async function onClickTrashSavedFile(
         parseFileName(fn),
       ),
     );
-    await onUpdateDirectory(directoryNames, setDirectoryNames);
+    await onUpdateDirectory(
+      directoryNames,
+      setDirectoryNames,
+      activeDirectoryName,
+    );
     setConfirmAction(null);
     setRightClickedSavedFile(null);
   } else {
@@ -437,7 +448,9 @@ export function onInputKeyUp(
 export async function onUpdateDirectory(
   directoryNames: Accessor<string[]>,
   setDirectoryNames: Setter<string[]>,
+  activeDirectoryName?: Accessor<string | null>,
 ) {
+  const activeDirName = activeDirectoryName?.();
   const directoryNamesAndSize: { name: string; count: number }[] =
     await Promise.all(
       directoryNames().map(async (name) => {
@@ -447,7 +460,10 @@ export async function onUpdateDirectory(
   let foundEmptyDirectory: string | null = null;
   for (const dns of directoryNamesAndSize) {
     if (dns.count === 0) {
-      if (foundEmptyDirectory) {
+      // Prefer keeping the active directory as the empty slot
+      if (dns.name === activeDirName && !foundEmptyDirectory) {
+        foundEmptyDirectory = dns.name;
+      } else if (foundEmptyDirectory) {
         await removeDirectory(dns.name);
       } else {
         foundEmptyDirectory = dns.name;
@@ -502,6 +518,7 @@ export function onClickDownloadClipboardFile(
 export function onClickUploadDirectory(
   directoryNames: Accessor<string[]>,
   setDirectoryNames: Setter<string[]>,
+  activeDirectoryName: Accessor<string | null>,
 ) {
   const input = document.createElement("input");
   input.type = "file";
@@ -514,21 +531,36 @@ export function onClickUploadDirectory(
     const directoryName = uuidv4();
     await addDirectory(directoryName);
 
+    const writePromises: Promise<void>[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const reader = new FileReader();
-
-      reader.readAsText(file);
-      reader.onload = async () => {
-        const content = reader.result as string;
-        await writeFileToDirectory(directoryName, {
-          name: file.name,
-          content,
-        });
-      };
+      writePromises.push(
+        new Promise<void>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = async () => {
+            try {
+              const content = reader.result as string;
+              await writeFileToDirectory(directoryName, {
+                name: file.name,
+                content,
+              });
+              resolve();
+            } catch (e) {
+              reject(e);
+            }
+          };
+          reader.onerror = () => reject(reader.error);
+          reader.readAsText(file);
+        }),
+      );
     }
 
-    onUpdateDirectory(directoryNames, setDirectoryNames).then();
+    await Promise.all(writePromises);
+    await onUpdateDirectory(
+      directoryNames,
+      setDirectoryNames,
+      activeDirectoryName,
+    );
   };
 
   input.click();

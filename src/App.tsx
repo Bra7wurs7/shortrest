@@ -17,6 +17,7 @@ import {
   loadClipboard,
   storeClipboard,
   loadViewedFile,
+  storeViewedFile,
 } from "./functions/storage.functions";
 import {
   getFileContent,
@@ -589,7 +590,11 @@ function App(): JSXElement {
   // ============================================
   listAllDirectories().then((names) => {
     setDirectoryNames(names);
-    onUpdateDirectory(directoryNames, setDirectoryNames).then(() => {
+    onUpdateDirectory(
+      directoryNames,
+      setDirectoryNames,
+      activeDirectoryName,
+    ).then(() => {
       const storedDirName = activeDirectoryName();
       const currentDirNames = directoryNames();
 
@@ -599,6 +604,17 @@ function App(): JSXElement {
           setActiveDirectoryName(emptyDirectory);
           localStorage.setItem(localStorageActiveDirectoryName, emptyDirectory);
         }
+      }
+
+      // Validate viewed file: if it points to a directory that no longer exists, clear it
+      const vf = viewedFile();
+      if (
+        vf?.source === "idb" &&
+        vf.directoryName &&
+        !currentDirNames.includes(vf.directoryName)
+      ) {
+        setViewedFile(null);
+        storeViewedFile(null);
       }
     });
   });
@@ -652,6 +668,7 @@ function App(): JSXElement {
       messages,
       targetEntry,
       clipboard,
+      setClipboard,
       setRunningPrompt,
       setPromptLoading,
       setModelThoughts,
@@ -872,7 +889,11 @@ function App(): JSXElement {
               class="button_icon"
               onclick={(e) => {
                 e.stopPropagation();
-                onClickUploadDirectory(directoryNames, setDirectoryNames);
+                onClickUploadDirectory(
+                  directoryNames,
+                  setDirectoryNames,
+                  activeDirectoryName,
+                );
               }}
             >
               <i class="bx bx-upload"></i>
