@@ -185,48 +185,6 @@ export function AiWriter(props: AiWriterProps): JSXElement {
           settingsSlot={
             <>
               <div class="settings_row">
-                <input
-                  id="A_S_SUMMARY_MAX_LENGTH"
-                  type="number"
-                  value={ps.summaryMaxLength()}
-                  step={50}
-                  min={0}
-                  onInput={(e) => {
-                    ps.setSummaryMaxLength(Number(e.currentTarget.value));
-                  }}
-                  title="Maximum length for the generated summary"
-                />
-                <select
-                  id="A_S_SUMMARY_MAX_LENGTH_UNIT"
-                  value={ps.summaryMaxLengthUnit()}
-                  onChange={(e) => {
-                    ps.setSummaryMaxLengthUnit(
-                      e.currentTarget.value as TextUnits,
-                    );
-                  }}
-                  title="Unit for the maximum summary length (words, sentences, or paragraphs)"
-                >
-                  <option value={TextUnits.Words}>Words</option>
-                  <option value={TextUnits.Sentences}>Sentences</option>
-                  <option value={TextUnits.Paragraphs}>Paragraphs</option>
-                </select>
-                <select
-                  id="A_S_SUMMARY_STYLE"
-                  value={ps.summaryStyle()}
-                  onChange={(e) => {
-                    ps.setSummaryStyle(e.currentTarget.value as SummaryStyle);
-                  }}
-                  title="Writing style for the summary: Narrative (prose), Bullets (list), Key Events (chronological), or Characters (focus on people)"
-                >
-                  <option value={SummaryStyle.Narrative}>Narrative</option>
-                  <option value={SummaryStyle.Bullets}>Bullets</option>
-                  <option value={SummaryStyle.KeyEvents}>Key Events</option>
-                  <option value={SummaryStyle.CharacterFocused}>
-                    Characters
-                  </option>
-                </select>
-              </div>
-              <div class="settings_row">
                 <button
                   onclick={() => props.onGenerateSummary("generate")}
                   title="Generate a new summary from the current file context, replacing any existing summary"
@@ -258,6 +216,23 @@ export function AiWriter(props: AiWriterProps): JSXElement {
                 >
                   <i class="bx bx-bot" />
                 </button>
+              </div>
+              <div class="settings_row">
+                <select
+                  id="A_S_SUMMARY_STYLE"
+                  value={ps.summaryStyle()}
+                  onChange={(e) => {
+                    ps.setSummaryStyle(e.currentTarget.value as SummaryStyle);
+                  }}
+                  title="Writing style for the summary: Narrative (prose), Bullets (list), Key Events (chronological), or Characters (focus on people)"
+                >
+                  <option value={SummaryStyle.Narrative}>Narrative</option>
+                  <option value={SummaryStyle.Bullets}>Bullets</option>
+                  <option value={SummaryStyle.KeyEvents}>Key Events</option>
+                  <option value={SummaryStyle.CharacterFocused}>
+                    Characters
+                  </option>
+                </select>
               </div>
             </>
           }

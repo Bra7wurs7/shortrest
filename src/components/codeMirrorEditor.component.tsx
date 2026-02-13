@@ -15,46 +15,54 @@ import { keymap } from "@codemirror/view";
 import { extractParenQuery } from "../functions/extractParenQuery.function";
 import { longestCommonPrefix } from "../functions/longestCommonPrefix.function";
 
-const gruvboxTheme = EditorView.theme({
-  "&": {
-    backgroundColor: "var(--color_background_soft)",
-    color: "var(--color_foreground_hard)",
-    fontFamily: "var(--sans)",
-    fontSize: "inherit",
-    flexGrow: "1",
-    border: "var(--size_border) var(--style_border) transparent",
-    transition: "var(--transition_border_color)",
-  },
-  "&.cm-focused": {
-    outline: "none",
-    borderColor: "var(--color_foreground_soft)",
-  },
-  ".cm-content": {
-    padding: "var(--size_padding_large)",
-    caretColor: "var(--color_foreground_hard)",
-  },
-  ".cm-cursor, .cm-dropCursor": {
-    borderLeftColor: "var(--color_foreground_hard)",
-  },
-  "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground":
-    {
+const gruvboxTheme = EditorView.theme(
+  {
+    "&": {
+      backgroundColor: "var(--color_background_soft)",
+      color: "var(--color_foreground_hard)",
+      fontFamily: "var(--sans)",
+      fontSize: "inherit",
+      flexGrow: "1",
+      border: "var(--size_border) var(--style_border) transparent",
+    },
+    "&:hover": {
+      borderColor: "var(--color_border_light)",
+    },
+    "&.cm-focused": {
+      outline: "none",
+      borderColor: "var(--color_foreground_soft)",
+    },
+    ".cm-content": {
+      padding: "var(--size_padding_large)",
+      caretColor: "var(--color_foreground_hard)",
+      backgroundColor: "var(--color_background_hard)",
+    },
+    ".cm-cursor, .cm-dropCursor": {
+      borderLeftColor: "var(--color_foreground_hard)",
+    },
+    "&.cm-focused .cm-selectionBackground": {
       backgroundColor: "var(--dark2)",
     },
-  ".cm-gutters": {
-    backgroundColor: "var(--color_background_hard)",
-    color: "var(--dark4)",
-    border: "none",
+    ".cm-selectionBackground": {
+      backgroundColor: "var(--dark2)",
+    },
+    ".cm-gutters": {
+      backgroundColor: "var(--color_background)",
+      color: "var(--dark4)",
+      border: "none",
+    },
+    ".cm-activeLineGutter": {
+      backgroundColor: "var(--color_background_soft)",
+    },
+    ".cm-activeLine": {
+      backgroundColor: "transparent",
+    },
+    ".cm-scroller": {
+      overflow: "auto",
+    },
   },
-  ".cm-activeLineGutter": {
-    backgroundColor: "var(--color_background)",
-  },
-  ".cm-activeLine": {
-    backgroundColor: "transparent",
-  },
-  ".cm-scroller": {
-    overflow: "auto",
-  },
-});
+  { dark: true },
+);
 
 const gruvboxHighlighting = HighlightStyle.define([
   { tag: t.heading1, color: "var(--red)", fontWeight: "bold" },

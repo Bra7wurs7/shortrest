@@ -70,8 +70,6 @@ import {
   localStorageChatAssistentPromptUnit,
   localStorageChatModelThoughts,
   localStorageRollingSummary,
-  localStorageSummaryMaxLength,
-  localStorageSummaryMaxLengthUnit,
   localStorageSummaryStyle,
   localStorageAutoSummarize,
   sessionStorageDisabledTags,
@@ -186,14 +184,7 @@ function App(): JSXElement {
   );
   const [disabledRollingSummary, setDisabledRollingSummary] =
     createSignal<boolean>(false);
-  const [summaryMaxLength, setSummaryMaxLength] = createSignal<number>(
-    Number(localStorage.getItem(localStorageSummaryMaxLength)) || 500,
-  );
-  const [summaryMaxLengthUnit, setSummaryMaxLengthUnit] =
-    createSignal<TextUnits>(
-      (localStorage.getItem(localStorageSummaryMaxLengthUnit) ??
-        TextUnits.Words) as TextUnits,
-    );
+
   const [summaryStyle, setSummaryStyle] = createSignal<SummaryStyle>(
     (localStorage.getItem(localStorageSummaryStyle) ??
       SummaryStyle.Narrative) as SummaryStyle,
@@ -263,10 +254,7 @@ function App(): JSXElement {
     setRollingSummary,
     disabledRollingSummary,
     setDisabledRollingSummary,
-    summaryMaxLength,
-    setSummaryMaxLength,
-    summaryMaxLengthUnit,
-    setSummaryMaxLengthUnit,
+
     summaryStyle,
     setSummaryStyle,
     autoSummarize,
@@ -404,18 +392,7 @@ function App(): JSXElement {
   createEffect(() => {
     localStorage.setItem(localStorageRollingSummary, rollingSummary());
   });
-  createEffect(() => {
-    localStorage.setItem(
-      localStorageSummaryMaxLength,
-      String(summaryMaxLength()),
-    );
-  });
-  createEffect(() => {
-    localStorage.setItem(
-      localStorageSummaryMaxLengthUnit,
-      summaryMaxLengthUnit(),
-    );
-  });
+
   createEffect(() => {
     localStorage.setItem(localStorageSummaryStyle, summaryStyle());
   });
@@ -744,8 +721,6 @@ function App(): JSXElement {
       fileContent: content,
       existingSummary: rollingSummary(),
       summaryStyle: summaryStyle(),
-      maxLength: summaryMaxLength(),
-      maxLengthUnit: summaryMaxLengthUnit(),
       mode,
     });
 

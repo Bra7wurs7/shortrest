@@ -5,8 +5,8 @@ export interface SummaryPromptConfig {
   fileContent: string;
   existingSummary: string;
   summaryStyle: SummaryStyle;
-  maxLength: number;
-  maxLengthUnit: TextUnits;
+  maxLength?: number;
+  maxLengthUnit?: TextUnits;
   mode: "generate" | "extend";
 }
 
@@ -56,19 +56,7 @@ function getStyleInstructions(style: SummaryStyle): string {
   }
 }
 
-function getLengthInstruction(length: number, unit: TextUnits): string {
-  if (length === 0 || unit === TextUnits.All) {
-    return "";
-  }
-
-  const unitLabel =
-    unit === TextUnits.Words
-      ? "words"
-      : unit === TextUnits.Sentences
-        ? "sentences"
-        : unit === TextUnits.Paragraphs
-          ? "paragraphs"
-          : "words";
-
-  return `Keep the summary under ${length} ${unitLabel}.`;
+function getLengthInstruction(length?: number, unit?: TextUnits): string {
+  // Always return empty string since we've removed length limitations
+  return "";
 }

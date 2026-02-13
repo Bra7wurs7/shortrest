@@ -21,10 +21,6 @@ export interface PromptState {
   setRollingSummary: Setter<string>;
   disabledRollingSummary: Accessor<boolean>;
   setDisabledRollingSummary: Setter<boolean>;
-  summaryMaxLength: Accessor<number>;
-  setSummaryMaxLength: Setter<number>;
-  summaryMaxLengthUnit: Accessor<TextUnits>;
-  setSummaryMaxLengthUnit: Setter<TextUnits>;
   summaryStyle: Accessor<SummaryStyle>;
   setSummaryStyle: Setter<SummaryStyle>;
   autoSummarize: Accessor<boolean>;
