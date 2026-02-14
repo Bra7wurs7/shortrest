@@ -35,6 +35,9 @@ const gruvboxTheme = EditorView.theme(
     ".cm-content": {
       padding: "var(--size_padding_large)",
       caretColor: "var(--color_foreground_hard)",
+    },
+    ".cm-scroller": {
+      overflow: "auto",
       backgroundColor: "var(--color_background_hard)",
     },
     ".cm-cursor, .cm-dropCursor": {
@@ -56,9 +59,6 @@ const gruvboxTheme = EditorView.theme(
     },
     ".cm-activeLine": {
       backgroundColor: "transparent",
-    },
-    ".cm-scroller": {
-      overflow: "auto",
     },
   },
   { dark: true },
