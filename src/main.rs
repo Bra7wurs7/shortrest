@@ -1,3 +1,5 @@
+#![cfg_attr(target_os = "windows", windows_subsystem = "windows")]
+
 use axum::{
     Router,
     body::Body,
@@ -120,14 +122,27 @@ fn main() {
 
     #[cfg(target_os = "windows")]
     {
-        // Windows: Simple message loop
+        use windows_sys::Win32::UI::WindowsAndMessaging::{
+            DispatchMessageW, GetMessageW, MSG, TranslateMessage,
+        };
+
         let menu_receiver = MenuEvent::receiver();
+        let mut msg: MSG = unsafe { std::mem::zeroed() };
         loop {
-            if let Ok(event) = menu_receiver.recv_timeout(std::time::Duration::from_millis(100)) {
-                if event.id == open_id {
-                    let _ = webbrowser::open(&server_url);
-                } else if event.id == quit_id {
-                    std::process::exit(0);
+            // Pump Win32 messages so the tray icon can process clicks
+            while unsafe { GetMessageW(&mut msg, 0, 0, 0) } > 0 {
+                unsafe {
+                    TranslateMessage(&msg);
+                    DispatchMessageW(&msg);
+                }
+
+                // Check for menu events after each message
+                if let Ok(event) = menu_receiver.try_recv() {
+                    if event.id == open_id {
+                        let _ = webbrowser::open(&server_url);
+                    } else if event.id == quit_id {
+                        std::process::exit(0);
+                    }
                 }
             }
         }
