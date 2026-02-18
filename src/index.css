@@ -737,6 +737,14 @@
         .button_icon:first-of-type {
             border-top-right-radius: var(--size_toolbar_width_half);
         }
+
+        .button_icon:last-of-type {
+            border-bottom-right-radius: var(--size_toolbar_width_half);
+        }
+
+        .toolbar_spacer {
+            flex: 1;
+        }
     }
 
     :is(#AIWRITER_SIDEBAR, #PIPELINE_SIDEBAR) {
@@ -1025,6 +1033,21 @@
 
         .ollama_node .prompt_header {
             background-color: var(--color_background_soft);
+        }
+
+        .node_header_actions {
+            gap: var(--size_margin);
+            align-items: center;
+            .bx {
+                cursor: pointer;
+                &:hover {
+                    color: var(--color_foreground);
+                }
+                &.dim {
+                    color: var(--dark2);
+                    cursor: default;
+                }
+            }
         }
 
         .node_run_btn {

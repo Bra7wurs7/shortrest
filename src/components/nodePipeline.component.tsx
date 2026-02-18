@@ -1,9 +1,5 @@
 import { Accessor, For, JSXElement, Setter } from "solid-js";
-import {
-  AbortableAsyncIterator,
-  ChatResponse,
-  ModelResponse,
-} from "ollama";
+import { AbortableAsyncIterator, ChatResponse, ModelResponse } from "ollama";
 import { MessageNodeConfig } from "../types/messageNode.interface";
 import { ParsedFileName } from "../types/parsedFileName.interface";
 import { ClipboardEntry } from "../types/clipboardEntry.interface";
@@ -17,8 +13,6 @@ export interface NodePipelineProps {
   onUpdateNode: (id: string, updates: Partial<MessageNodeConfig>) => void;
   onRemoveNode: (id: string) => void;
   onMoveNode: (id: string, direction: "up" | "down") => void;
-  onAddNode: (index?: number) => void;
-
   // Ollama node
   ollamaNodeCollapsed: Accessor<boolean>;
   setOllamaNodeCollapsed: Setter<boolean>;
@@ -62,13 +56,6 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
             />
           )}
         </For>
-        <button
-          class="add_node_btn"
-          onclick={() => props.onAddNode(props.messageNodes().length)}
-          title="Add message node"
-        >
-          <i class="bx bx-plus" />
-        </button>
         <OllamaNode
           collapsed={props.ollamaNodeCollapsed}
           setCollapsed={props.setOllamaNodeCollapsed}

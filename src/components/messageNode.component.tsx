@@ -97,17 +97,35 @@ export function MessageNode(props: MessageNodeProps): JSXElement {
           <i class={"bx " + roleIcon()} />
           <span>
             {roleLabel()}
-            <Show when={node().acquisitionMode === "direct"}>
-              {" "}
-              (prompt)
-            </Show>
+            <Show when={node().acquisitionMode === "direct"}> (prompt)</Show>
             <Show when={node().acquisitionMode === "file"}>
               {" "}
               [{node().fileName || "..."}]
             </Show>
           </span>
         </div>
-        <div class="right" onclick={(e) => e.stopPropagation()}>
+        <div
+          class="right node_header_actions"
+          onclick={(e) => e.stopPropagation()}
+        >
+          <i
+            class={"bx bx-chevron-up" + (props.index === 0 ? " dim" : "")}
+            onclick={() => props.onMove(node().id, "up")}
+            title="Move up"
+          />
+          <i
+            class={
+              "bx bx-chevron-down" +
+              (props.index === props.totalNodes - 1 ? " dim" : "")
+            }
+            onclick={() => props.onMove(node().id, "down")}
+            title="Move down"
+          />
+          <i
+            class="bx bx-x"
+            onclick={() => props.onRemove(node().id)}
+            title="Remove node"
+          />
           <div
             class="toggle"
             onclick={() =>
@@ -153,35 +171,13 @@ export function MessageNode(props: MessageNodeProps): JSXElement {
               <option value="prepared">Text</option>
               <option value="file">File</option>
             </select>
-            <button
-              onclick={() => props.onMove(node().id, "up")}
-              disabled={props.index === 0}
-              title="Move up"
-            >
-              <i class="bx bx-chevron-up" />
-            </button>
-            <button
-              onclick={() => props.onMove(node().id, "down")}
-              disabled={props.index === props.totalNodes - 1}
-              title="Move down"
-            >
-              <i class="bx bx-chevron-down" />
-            </button>
-            <button
-              onclick={() => props.onRemove(node().id)}
-              title="Remove node"
-            >
-              <i class="bx bx-x" />
-            </button>
           </div>
         </div>
         <div class="prompt_body">
           <Switch>
             <Match when={node().acquisitionMode === "direct"}>
               <div
-                class={
-                  "readonly_prompt" + (node().disabled ? " disabled" : "")
-                }
+                class={"readonly_prompt" + (node().disabled ? " disabled" : "")}
               >
                 Uses central prompt input
               </div>

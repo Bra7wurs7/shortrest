@@ -1,9 +1,5 @@
 import { Accessor, createEffect, createSignal, Setter } from "solid-js";
-import {
-  MessageAcquisitionMode,
-  MessageNodeConfig,
-  MessageRole,
-} from "../types/messageNode.interface";
+import { MessageNodeConfig, MessageRole } from "../types/messageNode.interface";
 
 const localStorageMessageNodes = "pipelineMessageNodes";
 const localStorageOllamaNodeCollapsed = "pipelineOllamaNodeCollapsed";
@@ -56,7 +52,7 @@ export interface UsePipelineStateReturn {
   modelOutput: Accessor<string>;
   setModelOutput: Setter<string>;
 
-  addNode: (index?: number) => void;
+  addNode: (role: MessageRole) => void;
   removeNode: (id: string) => void;
   moveNode: (id: string, direction: "up" | "down") => void;
   updateNode: (id: string, updates: Partial<MessageNodeConfig>) => void;
@@ -88,23 +84,17 @@ export function usePipelineState(): UsePipelineStateReturn {
     );
   });
 
-  function addNode(index?: number) {
+  function addNode(role: MessageRole) {
     const newNode: MessageNodeConfig = {
       id: generateId(),
-      role: "user",
-      acquisitionMode: "prepared",
+      role,
+      acquisitionMode: role === "user" ? "direct" : "prepared",
       preparedContent: "",
       fileName: "",
       collapsed: false,
       disabled: false,
     };
-    const nodes = [...messageNodes()];
-    if (index !== undefined && index >= 0 && index <= nodes.length) {
-      nodes.splice(index, 0, newNode);
-    } else {
-      nodes.push(newNode);
-    }
-    setMessageNodes(nodes);
+    setMessageNodes([...messageNodes(), newNode]);
   }
 
   function removeNode(id: string) {

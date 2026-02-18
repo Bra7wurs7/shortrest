@@ -694,7 +694,6 @@ function App(): JSXElement {
               onUpdateNode={pipeline.updateNode}
               onRemoveNode={pipeline.removeNode}
               onMoveNode={pipeline.moveNode}
-              onAddNode={pipeline.addNode}
               ollamaNodeCollapsed={pipeline.ollamaNodeCollapsed}
               setOllamaNodeCollapsed={pipeline.setOllamaNodeCollapsed}
               ollamaUrl={ollamaUrl}
@@ -751,6 +750,28 @@ function App(): JSXElement {
             }}
           >
             <i class="bx bx-test-tube"></i>
+          </button>
+          <div class="toolbar_spacer" />
+          <button
+            class="button_icon"
+            onclick={() => pipeline.addNode("system")}
+            title="Add System node"
+          >
+            <i class="bx bx-info-circle"></i>
+          </button>
+          <button
+            class="button_icon"
+            onclick={() => pipeline.addNode("assistant")}
+            title="Add Assistant node"
+          >
+            <i class="bx bx-bot"></i>
+          </button>
+          <button
+            class="button_icon"
+            onclick={() => pipeline.addNode("user")}
+            title="Add User node"
+          >
+            <i class="bx bxs-user-voice"></i>
           </button>
         </div>
       </div>
