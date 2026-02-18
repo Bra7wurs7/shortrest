@@ -1076,12 +1076,10 @@
 
         .node_controls {
             gap: 0;
-            button {
-                border-color: transparent;
-                &:disabled {
-                    color: var(--color_border);
-                    cursor: default;
-                }
+
+            select {
+                flex: 1;
+                min-width: 0;
             }
         }
 
