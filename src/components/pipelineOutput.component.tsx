@@ -5,56 +5,41 @@ import { gfm, gfmHtml } from "micromark-extension-gfm";
 export interface PipelineOutputProps {
   modelThoughts: Accessor<string>;
   modelOutput: Accessor<string>;
-  thoughtsCollapsed: Accessor<boolean>;
-  setThoughtsCollapsed: (v: boolean) => void;
+}
+
+function renderMarkdown(text: string): string {
+  if (!text) return "";
+  try {
+    return micromark(text, {
+      extensions: [gfm()],
+      htmlExtensions: [gfmHtml()],
+    });
+  } catch {
+    return `<pre>${text}</pre>`;
+  }
 }
 
 export function PipelineOutput(props: PipelineOutputProps): JSXElement {
-  const renderedMarkdown = createMemo(() => {
-    const output = props.modelOutput();
-    if (!output) return "";
-    try {
-      return micromark(output, {
-        extensions: [gfm()],
-        htmlExtensions: [gfmHtml()],
-      });
-    } catch {
-      return `<pre>${output}</pre>`;
-    }
-  });
+  const renderedThoughts = createMemo(() =>
+    renderMarkdown(props.modelThoughts()),
+  );
+  const renderedOutput = createMemo(() => renderMarkdown(props.modelOutput()));
 
   return (
     <div id="PIPELINE_OUTPUT">
       <Show when={props.modelThoughts()}>
-        <div class="pipeline_output_section">
-          <div
-            class="prompt_header"
-            onclick={() =>
-              props.setThoughtsCollapsed(!props.thoughtsCollapsed())
-            }
-          >
-            <div class="left">
-              <i
-                class={
-                  "bx " +
-                  (props.thoughtsCollapsed()
-                    ? "bx-chevron-right"
-                    : "bx-chevron-down")
-                }
-              />
-              <i class="bx bx-network-chart" />
-              <span>Thoughts</span>
-            </div>
-          </div>
-          <Show when={!props.thoughtsCollapsed()}>
-            <div class="pipeline_thoughts">{props.modelThoughts()}</div>
-          </Show>
+        <div class="pipeline_section_label thoughts_label">
+          <i class="bx bx-brain" />
+          thoughts
         </div>
+        <div class="pipeline_thoughts" innerHTML={renderedThoughts()} />
       </Show>
       <Show when={props.modelOutput()}>
-        <div class="pipeline_output_section">
-          <div class="pipeline_markdown" innerHTML={renderedMarkdown()} />
+        <div class="pipeline_section_label output_label">
+          <i class="bx bx-comment-detail" />
+          output
         </div>
+        <div class="pipeline_markdown" innerHTML={renderedOutput()} />
       </Show>
     </div>
   );

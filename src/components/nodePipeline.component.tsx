@@ -1,4 +1,4 @@
-import { Accessor, For, JSXElement, Setter } from "solid-js";
+import { Accessor, Index, JSXElement, Setter } from "solid-js";
 import { AbortableAsyncIterator, ChatResponse, ModelResponse } from "ollama";
 import { MessageNodeConfig } from "../types/messageNode.interface";
 import { ParsedFileName } from "../types/parsedFileName.interface";
@@ -28,8 +28,6 @@ export interface NodePipelineProps {
   // Output
   modelThoughts: Accessor<string>;
   modelOutput: Accessor<string>;
-  thoughtsCollapsed: Accessor<boolean>;
-  setThoughtsCollapsed: (v: boolean) => void;
 
   // File autocompletion data
   clipboard: Accessor<ClipboardEntry[]>;
@@ -40,11 +38,11 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
   return (
     <div id="PIPELINE_SIDEBAR">
       <div id="P_S_TOP">
-        <For each={props.messageNodes()}>
+        <Index each={props.messageNodes()}>
           {(node, index) => (
             <MessageNode
               node={node}
-              index={index()}
+              index={index}
               totalNodes={props.messageNodes().length}
               onUpdate={props.onUpdateNode}
               onRemove={props.onRemoveNode}
@@ -55,7 +53,7 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
               }
             />
           )}
-        </For>
+        </Index>
         <OllamaNode
           collapsed={props.ollamaNodeCollapsed}
           setCollapsed={props.setOllamaNodeCollapsed}
@@ -73,8 +71,6 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
         <PipelineOutput
           modelThoughts={props.modelThoughts}
           modelOutput={props.modelOutput}
-          thoughtsCollapsed={props.thoughtsCollapsed}
-          setThoughtsCollapsed={props.setThoughtsCollapsed}
         />
       </div>
     </div>

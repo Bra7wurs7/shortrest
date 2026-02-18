@@ -9,7 +9,7 @@ import { ClipboardEntry } from "../types/clipboardEntry.interface";
 import { longestCommonPrefix } from "../functions/longestCommonPrefix.function";
 
 export interface MessageNodeProps {
-  node: MessageNodeConfig;
+  node: Accessor<MessageNodeConfig>;
   index: number;
   totalNodes: number;
   onUpdate: (id: string, updates: Partial<MessageNodeConfig>) => void;
@@ -22,7 +22,7 @@ export interface MessageNodeProps {
 }
 
 export function MessageNode(props: MessageNodeProps): JSXElement {
-  const node = () => props.node;
+  const node = props.node;
 
   function getAllFileNames(): string[] {
     const clipNames = props.clipboard().map((e) => e.name());

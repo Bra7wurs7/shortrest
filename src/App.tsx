@@ -2,6 +2,7 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  For,
   Match,
   Switch,
   untrack,
@@ -32,19 +33,13 @@ import {
   getOrCreateEditableFile,
   ensureEmptyClipboardFile,
 } from "./app-handlers";
-import {
-  AbortableAsyncIterator,
-  ChatResponse,
-  ModelResponse,
-  Ollama,
-} from "ollama";
+import { ModelResponse, Ollama } from "ollama";
 
 import { resolveNodeMessages } from "./functions/llm/resolveNodeMessages.function";
 import { NodePipeline } from "./components/nodePipeline.component";
-import { usePipelineState } from "./hooks/usePipelineState";
+import { usePipelineManager } from "./hooks/usePipelineState";
 import {
   localStorageChatUserPrompt,
-  localStorageChatModelThoughts,
   localStorageActiveDirectoryName,
   localStorageFileViewerMode,
   localStorageOllamaModel,
@@ -138,16 +133,9 @@ function App(): JSXElement {
   const [userPrompt, setUserPrompt] = createSignal<string>(
     localStorage.getItem(localStorageChatUserPrompt) ?? "",
   );
-  const [modelThoughts, setModelThoughts] = createSignal<string>(
-    localStorage.getItem(localStorageChatModelThoughts) ?? "",
-  );
-  const [runningPrompt, setRunningPrompt] =
-    createSignal<AbortableAsyncIterator<ChatResponse> | null>(null);
-  const [promptLoading, setPromptLoading] = createSignal(false);
-  const [thoughtsCollapsed, setThoughtsCollapsed] = createSignal(false);
 
-  // Pipeline node state
-  const pipeline = usePipelineState();
+  // Pipeline manager (multiple pipelines)
+  const pipelineMgr = usePipelineManager();
 
   // ============================================
   // Directory file name signals
@@ -220,9 +208,6 @@ function App(): JSXElement {
   // ============================================
   createEffect(() => {
     localStorage.setItem(localStorageChatUserPrompt, userPrompt());
-  });
-  createEffect(() => {
-    localStorage.setItem(localStorageChatModelThoughts, modelThoughts());
   });
 
   // ============================================
@@ -380,8 +365,11 @@ function App(): JSXElement {
       return;
     }
 
+    // Capture the active pipeline at submit time so it streams to the right instance
+    const p = pipelineMgr.activePipeline();
+
     const messages = await resolveNodeMessages({
-      nodes: pipeline.messageNodes(),
+      nodes: p.messageNodes(),
       directInputValue: userPrompt(),
       clipboard: clipboard(),
       activeDirectoryName: activeDirectoryName(),
@@ -393,8 +381,8 @@ function App(): JSXElement {
     }
 
     // Clear previous output
-    pipeline.setModelOutput("");
-    setModelThoughts("");
+    p.setModelOutput("");
+    p.setModelThoughts("");
 
     const request = {
       model: model.model,
@@ -404,26 +392,26 @@ function App(): JSXElement {
     };
 
     try {
-      setPromptLoading(true);
+      p.setPromptLoading(true);
       const responseStream = await ollama.chat(request);
-      setPromptLoading(false);
-      setRunningPrompt(responseStream);
+      p.setPromptLoading(false);
+      p.setRunningPrompt(responseStream);
 
       let hasReceivedThinking = false;
 
       for await (const response of responseStream) {
         if (response.message.thinking) {
           if (!hasReceivedThinking) {
-            setModelThoughts("");
+            p.setModelThoughts("");
             hasReceivedThinking = true;
           }
-          setModelThoughts((prev) => prev + response.message.thinking);
+          p.setModelThoughts((prev) => prev + response.message.thinking);
         }
         if (response.message.content) {
-          pipeline.setModelOutput((prev) => prev + response.message.content);
+          p.setModelOutput((prev) => prev + response.message.content);
         }
         if (response.done) {
-          setRunningPrompt(null);
+          p.setRunningPrompt(null);
         }
       }
     } catch (error: unknown) {
@@ -434,35 +422,33 @@ function App(): JSXElement {
 
       if (isThinkingError) {
         // Retry without thinking
-        pipeline.setModelOutput("");
+        p.setModelOutput("");
         try {
-          setPromptLoading(true);
+          p.setPromptLoading(true);
           const responseStream = await ollama.chat({
             model: model.model,
             stream: true as const,
             messages,
           });
-          setPromptLoading(false);
-          setRunningPrompt(responseStream);
+          p.setPromptLoading(false);
+          p.setRunningPrompt(responseStream);
 
           for await (const response of responseStream) {
             if (response.message.content) {
-              pipeline.setModelOutput(
-                (prev) => prev + response.message.content,
-              );
+              p.setModelOutput((prev) => prev + response.message.content);
             }
             if (response.done) {
-              setRunningPrompt(null);
+              p.setRunningPrompt(null);
             }
           }
         } catch (retryError) {
-          setPromptLoading(false);
-          setRunningPrompt(null);
+          p.setPromptLoading(false);
+          p.setRunningPrompt(null);
           console.error("Error processing chat response:", retryError);
         }
       } else {
-        setPromptLoading(false);
-        setRunningPrompt(null);
+        p.setPromptLoading(false);
+        p.setRunningPrompt(null);
         console.error("Error processing chat response:", error);
       }
     }
@@ -690,24 +676,30 @@ function App(): JSXElement {
         <Switch>
           <Match when={rightSidebarMode() === RightSidebarMode.AiWriter}>
             <NodePipeline
-              messageNodes={pipeline.messageNodes}
-              onUpdateNode={pipeline.updateNode}
-              onRemoveNode={pipeline.removeNode}
-              onMoveNode={pipeline.moveNode}
-              ollamaNodeCollapsed={pipeline.ollamaNodeCollapsed}
-              setOllamaNodeCollapsed={pipeline.setOllamaNodeCollapsed}
+              messageNodes={() => pipelineMgr.activePipeline().messageNodes()}
+              onUpdateNode={pipelineMgr.updateNode}
+              onRemoveNode={pipelineMgr.removeNode}
+              onMoveNode={pipelineMgr.moveNode}
+              ollamaNodeCollapsed={() =>
+                pipelineMgr.activePipeline().ollamaNodeCollapsed()
+              }
+              setOllamaNodeCollapsed={(v) => {
+                const val =
+                  typeof v === "function"
+                    ? v(pipelineMgr.activePipeline().ollamaNodeCollapsed())
+                    : v;
+                pipelineMgr.activePipeline().setOllamaNodeCollapsed(() => val);
+              }}
               ollamaUrl={ollamaUrl}
               setOllamaUrl={setOllamaUrl}
               ollamaModels={ollamaModels}
               ollamaModel={ollamaModel}
               setOllamaModel={setOllamaModel}
-              promptLoading={promptLoading}
-              runningPrompt={runningPrompt}
+              promptLoading={() => pipelineMgr.activePipeline().promptLoading()}
+              runningPrompt={() => pipelineMgr.activePipeline().runningPrompt()}
               onSubmit={handlePipelineSubmit}
-              modelThoughts={modelThoughts}
-              modelOutput={pipeline.modelOutput}
-              thoughtsCollapsed={thoughtsCollapsed}
-              setThoughtsCollapsed={setThoughtsCollapsed}
+              modelThoughts={() => pipelineMgr.activePipeline().modelThoughts()}
+              modelOutput={() => pipelineMgr.activePipeline().modelOutput()}
               clipboard={clipboard}
               activeDirectoryParsedFileNames={activeDirectoryParsedFileNames}
             />
@@ -717,6 +709,35 @@ function App(): JSXElement {
           </Match>
         </Switch>
         <div id="RIGHT_TOOLBAR">
+          <For each={pipelineMgr.pipelines()}>
+            {(p, index) => (
+              <button
+                class={
+                  "button_icon pipeline_btn" +
+                  (pipelineMgr.activePipelineId() === p.id ? " active" : "") +
+                  (p.runningPrompt() !== null ? " running" : "")
+                }
+                onclick={() => pipelineMgr.setActivePipelineId(p.id)}
+                oncontextmenu={(e) => {
+                  e.preventDefault();
+                  if (pipelineMgr.pipelines().length > 1) {
+                    pipelineMgr.removePipeline(p.id);
+                  }
+                }}
+                title={`Pipeline ${index() + 1}${p.runningPrompt() !== null ? " (running)" : ""} — right-click to remove`}
+              >
+                {index() + 1}
+              </button>
+            )}
+          </For>
+          <button
+            class="button_icon"
+            onclick={() => pipelineMgr.addPipeline()}
+            title="Add pipeline"
+          >
+            <i class="bx bx-plus"></i>
+          </button>
+          <div class="toolbar_spacer" />
           <button
             class={
               "button_icon" +
@@ -754,21 +775,21 @@ function App(): JSXElement {
           <div class="toolbar_spacer" />
           <button
             class="button_icon"
-            onclick={() => pipeline.addNode("system")}
+            onclick={() => pipelineMgr.addNode("system")}
             title="Add System node"
           >
             <i class="bx bx-info-circle"></i>
           </button>
           <button
             class="button_icon"
-            onclick={() => pipeline.addNode("assistant")}
+            onclick={() => pipelineMgr.addNode("assistant")}
             title="Add Assistant node"
           >
             <i class="bx bx-bot"></i>
           </button>
           <button
             class="button_icon"
-            onclick={() => pipeline.addNode("user")}
+            onclick={() => pipelineMgr.addNode("user")}
             title="Add User node"
           >
             <i class="bx bxs-user-voice"></i>
