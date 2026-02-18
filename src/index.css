@@ -718,16 +718,12 @@
     }
 
     #RIGHT_SIDE {
-        grid-area: 1 / 8 / 7 / 10;
+        grid-area: 1 / 8 / 8 / 10;
         display: flex;
         flex-direction: row;
         box-shadow: var(--shadow);
         border-radius: var(--size_toolbar_width_half);
         justify-content: right;
-    }
-
-    #A_S_SUMMARY_STYLE {
-        width: 100%;
     }
 
     #RIGHT_TOOLBAR {
@@ -743,23 +739,7 @@
         }
     }
 
-    #RIGHT_SIDE_BUTTONS {
-        grid-area: 7 / 8 / 8 / 10;
-        display: flex;
-        flex-direction: row;
-    }
-
-    #RIGHT_ACTION_BUTTON {
-        grid-area: 7 / 8 / 8 / 9;
-        border-radius: var(--size_toolbar_width_half);
-    }
-
-    #SECOND_RIGHT_ACTION_BUTTON {
-        grid-area: 7 / 9 / 8 / 10;
-        border-radius: var(--size_toolbar_width_half);
-    }
-
-    #AIWRITER_SIDEBAR {
+    :is(#AIWRITER_SIDEBAR, #PIPELINE_SIDEBAR) {
         display: flex;
         flex-direction: column;
         justify-content: space-between;
@@ -843,6 +823,10 @@
             .settings_row {
                 display: flex;
                 flex-direction: row;
+
+                button {
+                    border-color: transparent;
+                }
 
                 button.active {
                     border-color: var(--green);
@@ -1004,6 +988,226 @@
             display: flex;
             flex-direction: column;
             flex: 0 0 auto;
+        }
+    }
+
+    #PIPELINE_SIDEBAR {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        overflow-y: hidden;
+        background-color: var(--color_background);
+        border-top-left-radius: var(--size_toolbar_width_half);
+        border-bottom-left-radius: var(--size_toolbar_width_half);
+        width: 100%;
+
+        .pipeline_node {
+            &:first-of-type .prompt_header {
+                border-top-left-radius: var(--size_toolbar_width_half);
+            }
+        }
+
+        .add_node_btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--color_background_soft);
+            border: var(--size_border) var(--style_border) var(--color_border);
+            color: var(--color_border_light);
+            cursor: pointer;
+            padding: var(--size_padding);
+            transition: var(--transition_border_color);
+            &:hover {
+                border-color: var(--color_border_light);
+                color: var(--color_foreground_soft);
+            }
+        }
+
+        .ollama_node .prompt_header {
+            background-color: var(--color_background_soft);
+        }
+
+        .node_run_btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: transparent;
+            border: var(--size_border) var(--style_border) var(--color_border);
+            color: var(--color_foreground);
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: small;
+            &:hover {
+                border-color: var(--color_border_light);
+            }
+            &.abort {
+                border-color: var(--yellow-dim);
+                color: var(--yellow);
+            }
+            &:disabled {
+                cursor: default;
+                color: var(--color_border_light);
+            }
+        }
+
+        .node_controls {
+            gap: 0;
+            button {
+                border-color: transparent;
+                &:disabled {
+                    color: var(--color_border);
+                    cursor: default;
+                }
+            }
+        }
+
+        .file_input {
+            min-height: unset;
+            font-size: small;
+            padding: var(--size_padding);
+        }
+
+        .file_suggestions {
+            display: flex;
+            flex-direction: column;
+            border: var(--size_border) var(--style_border) var(--color_border);
+            border-top: 0;
+            .suggestion {
+                padding: var(--size_padding);
+                font-size: small;
+                color: var(--color_foreground_soft);
+                cursor: pointer;
+                &:hover {
+                    background-color: var(--color_background_soft);
+                    color: var(--color_foreground);
+                }
+            }
+        }
+
+        .no_models_message {
+            padding: var(--size_padding_large);
+            font-size: small;
+            color: var(--color_foreground_soft);
+            p {
+                margin: 4px 0;
+            }
+            a {
+                color: var(--blue);
+                &:hover {
+                    color: var(--aqua);
+                }
+            }
+            code {
+                font-family: var(--mono);
+                background-color: var(--color_background_hard);
+                padding: 1px 4px;
+                border-radius: 3px;
+            }
+        }
+
+        .model_select {
+            width: 100%;
+            background-color: var(--color_background);
+            color: var(--color_foreground);
+            border: var(--size_border) var(--style_border) var(--color_border);
+            padding: var(--size_padding);
+            &:hover {
+                border-color: var(--color_border_light);
+            }
+            &:focus {
+                outline: none;
+                border-color: var(--color_foreground);
+            }
+        }
+
+        #P_S_TOP {
+            display: flex;
+            flex-direction: column;
+            overflow-y: scroll;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        #P_S_BOTTOM {
+            display: flex;
+            flex-direction: column;
+            flex: 0 0 auto;
+            max-height: 40%;
+            overflow-y: auto;
+        }
+
+        #PIPELINE_OUTPUT {
+            display: flex;
+            flex-direction: column;
+
+            .pipeline_output_section {
+                border-top: var(--size_border) var(--style_border)
+                    var(--color_border);
+            }
+
+            .pipeline_thoughts {
+                padding: var(--size_padding);
+                font-size: small;
+                color: var(--color_border_light);
+                font-family: var(--mono);
+                white-space: pre-wrap;
+                max-height: 150px;
+                overflow-y: auto;
+            }
+
+            .pipeline_markdown {
+                padding: var(--size_padding_large);
+                font-size: small;
+                color: var(--color_foreground);
+                overflow-y: auto;
+                max-height: 300px;
+
+                h1,
+                h2,
+                h3,
+                h4,
+                h5,
+                h6 {
+                    margin: 8px 0 4px 0;
+                    color: var(--color_foreground_hard);
+                }
+                p {
+                    margin: 4px 0;
+                }
+                code {
+                    font-family: var(--mono);
+                    background-color: var(--color_background_hard);
+                    padding: 1px 4px;
+                    border-radius: 3px;
+                }
+                pre {
+                    background-color: var(--color_background_hard);
+                    padding: var(--size_padding);
+                    border-radius: 3px;
+                    overflow-x: auto;
+                    code {
+                        background-color: transparent;
+                        padding: 0;
+                    }
+                }
+                a {
+                    color: var(--blue);
+                    &:hover {
+                        color: var(--aqua);
+                    }
+                }
+                ul,
+                ol {
+                    padding-left: 20px;
+                }
+                blockquote {
+                    border-left: 3px solid var(--color_border_light);
+                    padding-left: 8px;
+                    margin-left: 0;
+                    color: var(--color_border_light);
+                }
+            }
         }
     }
 

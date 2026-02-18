@@ -24,7 +24,7 @@ import {
 import { ConfirmAction } from "./types/confirmAction.enum";
 import { parseFileName } from "./functions/parseFileName.function";
 import { ParsedFileName } from "./types/parsedFileName.interface";
-import { BasicFile } from "./types/basicFile.interface";
+
 import {
   onSaveClipboardFile,
   onInputKeyUp,
@@ -32,7 +32,6 @@ import {
   getOrCreateEditableFile,
   ensureEmptyClipboardFile,
 } from "./app-handlers";
-import { AiWriter } from "./components/aiWriter.component";
 import {
   AbortableAsyncIterator,
   ChatResponse,
@@ -40,31 +39,12 @@ import {
   Ollama,
 } from "ollama";
 
-import { buildMessages } from "./functions/llm/buildMessages.function";
-import { streamToFile } from "./functions/llm/streamToFile.function";
-import { streamToSignal } from "./functions/llm/streamToSignal.function";
-import { streamContentToSignal } from "./functions/llm/streamContentToSignal.function";
-import { buildSummaryPrompt } from "./functions/llm/buildSummaryPrompt.function";
-import { TextUnits } from "./types/textUnits.enum";
-import { SummaryStyle } from "./types/summaryStyle.enum";
-import { PromptState } from "./types/promptState.interface";
+import { resolveNodeMessages } from "./functions/llm/resolveNodeMessages.function";
+import { NodePipeline } from "./components/nodePipeline.component";
+import { usePipelineState } from "./hooks/usePipelineState";
 import {
   localStorageChatUserPrompt,
-  localStorageChatSystemPrompt,
-  localStorageChatAssistentPromptLength,
-  localStorageChatAssistentPromptUnit,
   localStorageChatModelThoughts,
-  localStorageRollingSummary,
-  localStorageSummaryStyle,
-  localStorageAutoSummarize,
-  sessionStorageDisabledTags,
-  sessionStorageDisabledFiles,
-  sessionStorageDisabledSysPrompt,
-  sessionStorageDisabledAllTags,
-  sessionStorageDisabledFileContext,
-  sessionStorageDisabledAllFiles,
-  sessionStorageDisabledThoughts,
-  sessionStorageDisabledUserPrompt,
   localStorageActiveDirectoryName,
   localStorageFileViewerMode,
   localStorageOllamaModel,
@@ -76,7 +56,7 @@ import { RightSidebarMode } from "./types/rightSidebarMode.enum";
 import { TestBench } from "./components/testBench.component";
 import { extractBracketQuery } from "./functions/extractBracketQuery.function";
 import { longestCommonPrefix } from "./functions/longestCommonPrefix.function";
-import { ActionButtons } from "./components/actionButtons.component";
+
 import { LeftSidebar } from "./components/leftSidebar.component";
 import { LeftToolbar } from "./components/leftToolbar.component";
 import { CenterPanel } from "./components/centerPanel.component";
@@ -153,134 +133,21 @@ function App(): JSXElement {
     createSignal<ModelResponse | null>(null);
 
   // ============================================
-  // Prompt state signals (explicit, no context)
+  // Prompt / pipeline state
   // ============================================
   const [userPrompt, setUserPrompt] = createSignal<string>(
     localStorage.getItem(localStorageChatUserPrompt) ?? "",
   );
-  const [systemPrompt, setSystemPrompt] = createSignal<string>(
-    localStorage.getItem(localStorageChatSystemPrompt) ?? "",
-  );
   const [modelThoughts, setModelThoughts] = createSignal<string>(
     localStorage.getItem(localStorageChatModelThoughts) ?? "",
   );
-
-  // Rolling summary signals
-  const [rollingSummary, setRollingSummary] = createSignal<string>(
-    localStorage.getItem(localStorageRollingSummary) ?? "",
-  );
-  const [disabledRollingSummary, setDisabledRollingSummary] =
-    createSignal<boolean>(false);
-
-  const [summaryStyle, setSummaryStyle] = createSignal<SummaryStyle>(
-    (localStorage.getItem(localStorageSummaryStyle) ??
-      SummaryStyle.Narrative) as SummaryStyle,
-  );
-  const [autoSummarize, setAutoSummarize] = createSignal<boolean>(
-    JSON.parse(localStorage.getItem(localStorageAutoSummarize) ?? "false"),
-  );
-
-  const [disabledTags, setDisabledTags] = createSignal<string[]>(
-    JSON.parse(sessionStorage.getItem(sessionStorageDisabledTags) ?? "[]"),
-  );
-  const [disabledFiles, setDisabledFiles] = createSignal<string[]>(
-    JSON.parse(sessionStorage.getItem(sessionStorageDisabledFiles) ?? "[]"),
-  );
-  const [disabledSystemPrompt, setDisabledSystemPrompt] = createSignal<boolean>(
-    JSON.parse(
-      sessionStorage.getItem(sessionStorageDisabledSysPrompt) ?? "false",
-    ),
-  );
-  const [disabledAllTags, setDisabledAllTags] = createSignal<boolean>(
-    JSON.parse(
-      sessionStorage.getItem(sessionStorageDisabledAllTags) ?? "false",
-    ),
-  );
-  const [disabledFileContext, setDisabledFileContext] = createSignal<boolean>(
-    JSON.parse(
-      sessionStorage.getItem(sessionStorageDisabledFileContext) ?? "false",
-    ),
-  );
-  const [disabledAllFiles, setDisabledAllFiles] = createSignal<boolean>(
-    JSON.parse(
-      sessionStorage.getItem(sessionStorageDisabledAllFiles) ?? "false",
-    ),
-  );
-  const [disabledThoughts, setDisabledThoughts] = createSignal<boolean>(
-    JSON.parse(
-      sessionStorage.getItem(sessionStorageDisabledThoughts) ?? "false",
-    ),
-  );
-  const [disabledUserPrompt, setDisabledUserPrompt] = createSignal<boolean>(
-    JSON.parse(
-      sessionStorage.getItem(sessionStorageDisabledUserPrompt) ?? "false",
-    ),
-  );
-  const [reducedFileContentLength, setReducedFileContentLength] =
-    createSignal<number>(
-      Number(localStorage.getItem(localStorageChatAssistentPromptLength)) || 0,
-    );
-  const [reducedFileContentUnit, setReducedFileContentUnit] =
-    createSignal<TextUnits>(
-      (localStorage.getItem(localStorageChatAssistentPromptUnit) ??
-        TextUnits.Sentences) as TextUnits,
-    );
   const [runningPrompt, setRunningPrompt] =
     createSignal<AbortableAsyncIterator<ChatResponse> | null>(null);
   const [promptLoading, setPromptLoading] = createSignal(false);
+  const [thoughtsCollapsed, setThoughtsCollapsed] = createSignal(false);
 
-  // Bundle prompt state for passing to components
-  const promptState: PromptState = {
-    userPrompt,
-    setUserPrompt,
-    systemPrompt,
-    setSystemPrompt,
-    modelThoughts,
-    setModelThoughts,
-    rollingSummary,
-    setRollingSummary,
-    disabledRollingSummary,
-    setDisabledRollingSummary,
-
-    summaryStyle,
-    setSummaryStyle,
-    autoSummarize,
-    setAutoSummarize,
-    disabledTags,
-    setDisabledTags,
-    disabledFiles,
-    setDisabledFiles,
-    disabledSystemPrompt,
-    setDisabledSystemPrompt,
-    disabledAllTags,
-    setDisabledAllTags,
-    disabledFileContext,
-    setDisabledFileContext,
-    disabledAllFiles,
-    setDisabledAllFiles,
-    disabledThoughts,
-    setDisabledThoughts,
-    disabledUserPrompt,
-    setDisabledUserPrompt,
-    reducedFileContentLength,
-    setReducedFileContentLength,
-    reducedFileContentUnit,
-    setReducedFileContentUnit,
-    runningPrompt,
-    setRunningPrompt,
-    promptLoading,
-    setPromptLoading,
-  };
-
-  // ============================================
-  // Derived data from AiWriter (set via callbacks)
-  // ============================================
-  const [reducedFileContent, setReducedFileContent] = createSignal<string>("");
-  const [referencedFilesContents, setReferencedFilesContents] = createSignal<
-    BasicFile[]
-  >([]);
-  const [referencedTagFileContents, setReferencedTagFileContents] =
-    createSignal<BasicFile[]>([]);
+  // Pipeline node state
+  const pipeline = usePipelineState();
 
   // ============================================
   // Directory file name signals
@@ -351,93 +218,11 @@ function App(): JSXElement {
   // ============================================
   // Effects - Persistence
   // ============================================
-
-  // Prompt persistence to localStorage
   createEffect(() => {
     localStorage.setItem(localStorageChatUserPrompt, userPrompt());
   });
   createEffect(() => {
-    localStorage.setItem(localStorageChatSystemPrompt, systemPrompt());
-  });
-  createEffect(() => {
     localStorage.setItem(localStorageChatModelThoughts, modelThoughts());
-  });
-  createEffect(() => {
-    localStorage.setItem(
-      localStorageChatAssistentPromptLength,
-      String(reducedFileContentLength()),
-    );
-  });
-  createEffect(() => {
-    localStorage.setItem(
-      localStorageChatAssistentPromptUnit,
-      reducedFileContentUnit(),
-    );
-  });
-
-  // Rolling summary persistence to localStorage
-  createEffect(() => {
-    localStorage.setItem(localStorageRollingSummary, rollingSummary());
-  });
-
-  createEffect(() => {
-    localStorage.setItem(localStorageSummaryStyle, summaryStyle());
-  });
-  createEffect(() => {
-    localStorage.setItem(
-      localStorageAutoSummarize,
-      JSON.stringify(autoSummarize()),
-    );
-  });
-
-  // Toggle persistence to sessionStorage
-  createEffect(() => {
-    sessionStorage.setItem(
-      sessionStorageDisabledTags,
-      JSON.stringify(disabledTags()),
-    );
-  });
-  createEffect(() => {
-    sessionStorage.setItem(
-      sessionStorageDisabledFiles,
-      JSON.stringify(disabledFiles()),
-    );
-  });
-  createEffect(() => {
-    sessionStorage.setItem(
-      sessionStorageDisabledSysPrompt,
-      JSON.stringify(disabledSystemPrompt()),
-    );
-  });
-  createEffect(() => {
-    sessionStorage.setItem(
-      sessionStorageDisabledAllTags,
-      JSON.stringify(disabledAllTags()),
-    );
-  });
-  createEffect(() => {
-    sessionStorage.setItem(
-      sessionStorageDisabledFileContext,
-      JSON.stringify(disabledFileContext()),
-    );
-  });
-  createEffect(() => {
-    sessionStorage.setItem(
-      sessionStorageDisabledAllFiles,
-      JSON.stringify(disabledAllFiles()),
-    );
-  });
-  createEffect(() => {
-    sessionStorage.setItem(
-      sessionStorageDisabledThoughts,
-      JSON.stringify(disabledThoughts()),
-    );
-  });
-  createEffect(() => {
-    sessionStorage.setItem(
-      sessionStorageDisabledUserPrompt,
-      JSON.stringify(disabledUserPrompt()),
-    );
   });
 
   // ============================================
@@ -584,141 +369,103 @@ function App(): JSXElement {
   });
 
   // ============================================
-  // LLM prompt handlers
+  // LLM pipeline handler
   // ============================================
-  async function handlePromptSubmit() {
+  async function handlePipelineSubmit() {
     const ollama = ollamaConnection();
     const model = ollamaModel();
 
     if (!ollama || !model) {
-      console.warn("Cannot submit prompt: missing ollama or model");
+      console.warn("Cannot submit pipeline: missing ollama or model");
       return;
     }
 
-    // Get or create an editable clipboard entry
-    const targetEntry = getOrCreateEditableFile(
-      viewedFile,
-      setViewedFile,
-      clipboard,
-      setClipboard,
-      idbFileContent,
-      activeDirectoryName,
-    );
-
-    // Determine existing thoughts (only if not disabled)
-    const existingThoughts = disabledThoughts() ? "" : modelThoughts();
-
-    const messages = buildMessages({
-      systemPrompt: systemPrompt(),
-      userPrompt: userPrompt(),
-      fileContent: reducedFileContent(),
-      modelThoughts: existingThoughts,
-      rollingSummary: rollingSummary(),
-      tagFileContents: referencedTagFileContents(),
-      referencedFileContents: referencedFilesContents(),
-      disabledTags: disabledTags(),
-      disabledFiles: disabledFiles(),
-      disabledAllTags: disabledAllTags(),
-      disabledAllFiles: disabledAllFiles(),
-      disabledSystemPrompt: disabledSystemPrompt(),
-      disabledRollingSummary: disabledRollingSummary(),
-      disabledFileContext: disabledFileContext(),
-      disabledThoughts: disabledThoughts(),
+    const messages = await resolveNodeMessages({
+      nodes: pipeline.messageNodes(),
+      directInputValue: userPrompt(),
+      clipboard: clipboard(),
+      activeDirectoryName: activeDirectoryName(),
     });
 
-    await streamToFile({
-      ollama,
+    if (messages.length === 0) {
+      console.warn("Cannot submit pipeline: no messages resolved");
+      return;
+    }
+
+    // Clear previous output
+    pipeline.setModelOutput("");
+    setModelThoughts("");
+
+    const request = {
       model: model.model,
+      stream: true as const,
+      think: true,
       messages,
-      targetEntry,
-      clipboard,
-      setClipboard,
-      setRunningPrompt,
-      setPromptLoading,
-      setModelThoughts,
-      existingThoughts,
-      onStreamComplete: autoSummarize()
-        ? () => {
-            // Trigger auto-summarize when generation completes
-            const hasSummary = rollingSummary().trim().length > 0;
-            handleSummaryGenerate(hasSummary ? "extend" : "generate");
+    };
+
+    try {
+      setPromptLoading(true);
+      const responseStream = await ollama.chat(request);
+      setPromptLoading(false);
+      setRunningPrompt(responseStream);
+
+      let hasReceivedThinking = false;
+
+      for await (const response of responseStream) {
+        if (response.message.thinking) {
+          if (!hasReceivedThinking) {
+            setModelThoughts("");
+            hasReceivedThinking = true;
           }
-        : undefined,
-    });
-  }
+          setModelThoughts((prev) => prev + response.message.thinking);
+        }
+        if (response.message.content) {
+          pipeline.setModelOutput((prev) => prev + response.message.content);
+        }
+        if (response.done) {
+          setRunningPrompt(null);
+        }
+      }
+    } catch (error: unknown) {
+      const isThinkingError =
+        error instanceof Error &&
+        (error.message.includes("400") ||
+          error.message.toLowerCase().includes("think"));
 
-  async function handleThinkSubmit() {
-    const ollama = ollamaConnection();
-    const model = ollamaModel();
+      if (isThinkingError) {
+        // Retry without thinking
+        pipeline.setModelOutput("");
+        try {
+          setPromptLoading(true);
+          const responseStream = await ollama.chat({
+            model: model.model,
+            stream: true as const,
+            messages,
+          });
+          setPromptLoading(false);
+          setRunningPrompt(responseStream);
 
-    if (!ollama || !model) {
-      console.warn("Cannot submit think: missing ollama or model");
-      return;
+          for await (const response of responseStream) {
+            if (response.message.content) {
+              pipeline.setModelOutput(
+                (prev) => prev + response.message.content,
+              );
+            }
+            if (response.done) {
+              setRunningPrompt(null);
+            }
+          }
+        } catch (retryError) {
+          setPromptLoading(false);
+          setRunningPrompt(null);
+          console.error("Error processing chat response:", retryError);
+        }
+      } else {
+        setPromptLoading(false);
+        setRunningPrompt(null);
+        console.error("Error processing chat response:", error);
+      }
     }
-
-    // For think-only, we don't include existing thoughts in the messages
-    // because we want the model to generate fresh thinking
-    const messages = buildMessages({
-      systemPrompt: systemPrompt(),
-      userPrompt: userPrompt(),
-      fileContent: reducedFileContent(),
-      modelThoughts: "", // Don't include existing thoughts for think-only
-      rollingSummary: rollingSummary(),
-      tagFileContents: referencedTagFileContents(),
-      referencedFileContents: referencedFilesContents(),
-      disabledTags: disabledTags(),
-      disabledFiles: disabledFiles(),
-      disabledAllTags: disabledAllTags(),
-      disabledAllFiles: disabledAllFiles(),
-      disabledSystemPrompt: disabledSystemPrompt(),
-      disabledRollingSummary: disabledRollingSummary(),
-      disabledFileContext: disabledFileContext(),
-      disabledThoughts: true, // Always disable thoughts in the prompt for think-only
-    });
-
-    await streamToSignal({
-      ollama,
-      model: model.model,
-      messages,
-      setTargetSignal: setModelThoughts,
-      setRunningPrompt,
-      setPromptLoading,
-    });
-  }
-
-  /**
-   * Generate or extend the rolling summary based on current file content.
-   */
-  async function handleSummaryGenerate(mode: "generate" | "extend") {
-    const ollama = ollamaConnection();
-    const model = ollamaModel();
-
-    if (!ollama || !model) {
-      console.warn("Cannot generate summary: missing ollama or model");
-      return;
-    }
-
-    const content = reducedFileContent();
-    if (!content) {
-      console.warn("Cannot generate summary: no file content");
-      return;
-    }
-
-    const prompt = buildSummaryPrompt({
-      fileContent: content,
-      existingSummary: rollingSummary(),
-      summaryStyle: summaryStyle(),
-      mode,
-    });
-
-    await streamContentToSignal({
-      ollama,
-      model: model.model,
-      messages: [{ role: "user", content: prompt }],
-      setTargetSignal: setRollingSummary,
-      setRunningPrompt,
-      setPromptLoading,
-    });
   }
 
   function handleCentralInputKeyDown(
@@ -783,7 +530,7 @@ function App(): JSXElement {
     e: KeyboardEvent & { currentTarget: HTMLInputElement },
   ) {
     if (e.key === "Enter") {
-      handlePromptSubmit();
+      handlePipelineSubmit();
     }
     if (e.key === "]" && bracketMode()) {
       setBracketMode(false);
@@ -942,16 +689,28 @@ function App(): JSXElement {
       <div id="RIGHT_SIDE">
         <Switch>
           <Match when={rightSidebarMode() === RightSidebarMode.AiWriter}>
-            <AiWriter
-              displayedFileContent={displayedFileContent}
-              displayedFileName={displayedFileName}
+            <NodePipeline
+              messageNodes={pipeline.messageNodes}
+              onUpdateNode={pipeline.updateNode}
+              onRemoveNode={pipeline.removeNode}
+              onMoveNode={pipeline.moveNode}
+              onAddNode={pipeline.addNode}
+              ollamaNodeCollapsed={pipeline.ollamaNodeCollapsed}
+              setOllamaNodeCollapsed={pipeline.setOllamaNodeCollapsed}
+              ollamaUrl={ollamaUrl}
+              setOllamaUrl={setOllamaUrl}
+              ollamaModels={ollamaModels}
+              ollamaModel={ollamaModel}
+              setOllamaModel={setOllamaModel}
+              promptLoading={promptLoading}
+              runningPrompt={runningPrompt}
+              onSubmit={handlePipelineSubmit}
+              modelThoughts={modelThoughts}
+              modelOutput={pipeline.modelOutput}
+              thoughtsCollapsed={thoughtsCollapsed}
+              setThoughtsCollapsed={setThoughtsCollapsed}
+              clipboard={clipboard}
               activeDirectoryParsedFileNames={activeDirectoryParsedFileNames}
-              activeDirectoryName={activeDirectoryName}
-              promptState={promptState}
-              setReducedFileContent={setReducedFileContent}
-              setReferencedFilesContents={setReferencedFilesContents}
-              setReferencedTagFileContents={setReferencedTagFileContents}
-              onGenerateSummary={handleSummaryGenerate}
             />
           </Match>
           <Match when={rightSidebarMode() === RightSidebarMode.TestBench}>
@@ -995,12 +754,6 @@ function App(): JSXElement {
           </button>
         </div>
       </div>
-      <ActionButtons
-        promptLoading={promptLoading}
-        runningPrompt={runningPrompt}
-        onPromptSubmit={handlePromptSubmit}
-        onThinkSubmit={handleThinkSubmit}
-      />
     </div>
   );
 }
