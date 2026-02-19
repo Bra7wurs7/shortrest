@@ -15,10 +15,10 @@ export interface ResolveNodeMessagesOptions {
   activeDirectoryName: string | null;
   /** Currently displayed file content (for "viewed-file" acquisition mode) */
   displayedFileContent: string;
-  /** All pipeline instances (for "pipeline-output" and "history" acquisition modes) */
+  /** All pipeline instances (for "pipeline-output" acquisition mode) */
   pipelines: PipelineInstance[];
-  /** The pipeline that owns these nodes (used as fallback when sourcePipelineId is empty) */
-  ownPipelineId: string;
+  /** History turns from the owning pipeline, injected by history nodes */
+  ownHistory: HistoryTurn[];
 }
 
 /**
@@ -35,7 +35,7 @@ export async function resolveNodeMessages(
     activeDirectoryName,
     displayedFileContent,
     pipelines,
-    ownPipelineId,
+    ownHistory,
   } = options;
 
   const messages: Message[] = [];
@@ -45,9 +45,7 @@ export async function resolveNodeMessages(
 
     // History nodes expand into multiple messages and are handled separately
     if (node.acquisitionMode === "history") {
-      const source = pipelines.find((p) => p.id === ownPipelineId);
-      const turns: HistoryTurn[] = source?.history() ?? [];
-      for (const turn of turns) {
+      for (const turn of ownHistory) {
         if (turn.user) messages.push({ role: "user", content: turn.user });
         if (turn.assistant)
           messages.push({ role: "assistant", content: turn.assistant });

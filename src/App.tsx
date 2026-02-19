@@ -307,7 +307,7 @@ function App(): JSXElement {
       activeDirectoryName: activeDirectoryName(),
       displayedFileContent: displayedFileContent(),
       pipelines: pipelineMgr.pipelines(),
-      ownPipelineId: p.id,
+      ownHistory: p.history(),
     });
 
     if (messages.length === 0) {
