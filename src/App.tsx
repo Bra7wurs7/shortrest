@@ -319,8 +319,7 @@ function App(): JSXElement {
     const lastUserMessage =
       [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
 
-    function recordHistoryTurn() {
-      const output = p.modelOutput();
+    function recordHistoryTurn(output: string) {
       if (lastUserMessage && output) {
         p.setHistory((prev) => [
           ...prev,
@@ -347,6 +346,7 @@ function App(): JSXElement {
       p.setRunningPrompt(responseStream);
 
       let hasReceivedThinking = false;
+      let accumulatedOutput = "";
 
       for await (const response of responseStream) {
         if (response.message.thinking) {
@@ -357,13 +357,12 @@ function App(): JSXElement {
           p.setModelThoughts((prev) => prev + response.message.thinking);
         }
         if (response.message.content) {
+          accumulatedOutput += response.message.content;
           p.setModelOutput((prev) => prev + response.message.content);
         }
-        if (response.done) {
-          p.setRunningPrompt(null);
-          recordHistoryTurn();
-        }
       }
+      p.setRunningPrompt(null);
+      recordHistoryTurn(accumulatedOutput);
     } catch (error: unknown) {
       const isThinkingError =
         error instanceof Error &&
@@ -383,15 +382,15 @@ function App(): JSXElement {
           p.setPromptLoading(false);
           p.setRunningPrompt(responseStream);
 
+          let accumulatedOutput = "";
           for await (const response of responseStream) {
             if (response.message.content) {
+              accumulatedOutput += response.message.content;
               p.setModelOutput((prev) => prev + response.message.content);
             }
-            if (response.done) {
-              p.setRunningPrompt(null);
-              recordHistoryTurn();
-            }
           }
+          p.setRunningPrompt(null);
+          recordHistoryTurn(accumulatedOutput);
         } catch (retryError) {
           p.setPromptLoading(false);
           p.setRunningPrompt(null);
