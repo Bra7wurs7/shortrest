@@ -50,8 +50,11 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
               <Match when={node().acquisitionMode === "history"}>
                 <HistoryNode
                   node={node}
+                  index={index}
+                  totalNodes={props.messageNodes().length}
                   onUpdate={props.onUpdateNode}
                   onRemove={props.onRemoveNode}
+                  onMove={props.onMoveNode}
                   pipelines={props.pipelines}
                   ownPipelineId={props.ownPipelineId}
                 />

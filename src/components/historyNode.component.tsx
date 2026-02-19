@@ -3,8 +3,11 @@ import { HistoryTurn, PipelineInstance } from "../hooks/usePipelineState";
 
 export interface HistoryNodeProps {
   node: Accessor<{ id: string; collapsed: boolean; disabled: boolean }>;
+  index: number;
+  totalNodes: number;
   onUpdate: (id: string, updates: { collapsed?: boolean; disabled?: boolean }) => void;
   onRemove: (id: string) => void;
+  onMove: (id: string, direction: "up" | "down") => void;
   pipelines: Accessor<PipelineInstance[]>;
   ownPipelineId: string;
 }
@@ -53,7 +56,17 @@ export function HistoryNode(props: HistoryNodeProps): JSXElement {
             title="Clear history"
           />
           <i
-            class="bx bx-trash"
+            class={"bx bx-chevron-up" + (props.index === 0 ? " dim" : "")}
+            onclick={() => props.onMove(node().id, "up")}
+            title="Move up"
+          />
+          <i
+            class={"bx bx-chevron-down" + (props.index === props.totalNodes - 1 ? " dim" : "")}
+            onclick={() => props.onMove(node().id, "down")}
+            title="Move down"
+          />
+          <i
+            class="bx bx-x"
             onclick={() => props.onRemove(node().id)}
             title="Remove node"
           />
