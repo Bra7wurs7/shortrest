@@ -5,7 +5,6 @@ import {
   For,
   Match,
   Switch,
-  untrack,
   type JSXElement,
 } from "solid-js";
 import { FileViewerMode } from "./types/fileViewerMode.enum";
@@ -33,7 +32,7 @@ import {
   getOrCreateEditableFile,
   ensureEmptyClipboardFile,
 } from "./app-handlers";
-import { ModelResponse, Ollama } from "ollama";
+import { useOllamaConnection } from "./hooks/useOllamaConnection";
 
 import { resolveNodeMessages } from "./functions/llm/resolveNodeMessages.function";
 import { NodePipeline } from "./components/nodePipeline.component";
@@ -42,9 +41,6 @@ import {
   localStorageChatUserPrompt,
   localStorageActiveDirectoryName,
   localStorageFileViewerMode,
-  localStorageOllamaModel,
-  localStorageOllamaSummaryModel,
-  localStorageOllamaUrl,
   localStorageRightSidebarMode,
 } from "./constants/storageKeys";
 import { RightSidebarMode } from "./types/rightSidebarMode.enum";
@@ -110,22 +106,20 @@ function App(): JSXElement {
   const [directoryCollapsed, setDirectoryCollapsed] = createSignal(false);
 
   // ============================================
-  // Ollama connection signals
+  // Ollama connection
   // ============================================
-  const [ollamaConnection, setOllamaConnection] = createSignal<Ollama | null>(
-    new Ollama(),
-  );
-  const [ollamaUrl, setOllamaUrl] = createSignal<string>(
-    localStorage.getItem(localStorageOllamaUrl) || "127.0.0.1:11434",
-  );
-  const [ollamaModels, setOllamaModels] = createSignal<ModelResponse[] | null>(
-    null,
-  );
-  const [ollamaModel, setOllamaModel] = createSignal<ModelResponse | null>(
-    null,
-  );
-  const [ollamaSummaryModel, setOllamaSummaryModel] =
-    createSignal<ModelResponse | null>(null);
+  const {
+    ollamaConnection,
+    setOllamaConnection,
+    ollamaUrl,
+    setOllamaUrl,
+    ollamaModels,
+    setOllamaModels,
+    ollamaModel,
+    setOllamaModel,
+    ollamaSummaryModel,
+    setOllamaSummaryModel,
+  } = useOllamaConnection();
 
   // ============================================
   // Prompt / pipeline state
@@ -208,68 +202,6 @@ function App(): JSXElement {
   // ============================================
   createEffect(() => {
     localStorage.setItem(localStorageChatUserPrompt, userPrompt());
-  });
-
-  // ============================================
-  // Effects - Ollama
-  // ============================================
-  createEffect(() => {
-    setOllamaConnection(new Ollama({ host: ollamaUrl() }));
-  });
-  createEffect(() => {
-    ollamaConnection()
-      ?.list()
-      .then((m) => {
-        setOllamaModels(m.models);
-      })
-      .catch((e) => {
-        setOllamaModels(null);
-      });
-  });
-  createEffect(() => {
-    const llmModel = ollamaModel();
-    if (llmModel !== null) {
-      localStorage.setItem(localStorageOllamaModel, llmModel.model);
-    }
-  });
-  createEffect(() => {
-    localStorage.setItem(localStorageOllamaUrl, ollamaUrl());
-  });
-  createEffect(() => {
-    const llmModel = untrack(ollamaModel);
-    const allLlmModels = ollamaModels();
-    if (allLlmModels && allLlmModels.length > 0 && llmModel === null) {
-      const localStorageModelName = localStorage.getItem(
-        localStorageOllamaModel,
-      );
-      const model = allLlmModels.find((m) => m.model === localStorageModelName);
-      if (model !== undefined) {
-        setOllamaModel(model);
-      } else {
-        setOllamaModel(allLlmModels[0] ?? null);
-      }
-    }
-  });
-  createEffect(() => {
-    const llmModel = ollamaSummaryModel();
-    if (llmModel !== null) {
-      localStorage.setItem(localStorageOllamaSummaryModel, llmModel.model);
-    }
-  });
-  createEffect(() => {
-    const llmModel = untrack(ollamaSummaryModel);
-    const allLlmModels = ollamaModels();
-    if (allLlmModels && allLlmModels.length > 0 && llmModel === null) {
-      const localStorageModelName = localStorage.getItem(
-        localStorageOllamaSummaryModel,
-      );
-      const model = allLlmModels.find((m) => m.model === localStorageModelName);
-      if (model !== undefined) {
-        setOllamaSummaryModel(model);
-      } else {
-        setOllamaSummaryModel(allLlmModels[0] ?? null);
-      }
-    }
   });
 
   // ============================================
