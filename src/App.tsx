@@ -61,7 +61,7 @@ function App(): JSXElement {
   );
   const [rightSidebarMode, setRightSidebarMode] =
     createSignal<RightSidebarMode>(
-      localStorage.getItem(localStorageRightSidebarMode) as RightSidebarMode,
+      (() => { const v = localStorage.getItem(localStorageRightSidebarMode); return (v === "pipeline" || v === "testbench") ? v as RightSidebarMode : RightSidebarMode.Pipeline; })(),
     );
   const [directoryNames, setDirectoryNames] = createSignal<string[]>([]);
   const [activeDirectoryName, setActiveDirectoryName] = createSignal<
@@ -305,6 +305,8 @@ function App(): JSXElement {
       directInputValue: userPrompt(),
       clipboard: clipboard(),
       activeDirectoryName: activeDirectoryName(),
+      displayedFileContent: displayedFileContent(),
+      pipelines: pipelineMgr.pipelines(),
     });
 
     if (messages.length === 0) {
@@ -606,7 +608,7 @@ function App(): JSXElement {
       />
       <div id="RIGHT_SIDE">
         <Switch>
-          <Match when={rightSidebarMode() === RightSidebarMode.AiWriter}>
+          <Match when={rightSidebarMode() === RightSidebarMode.Pipeline}>
             <NodePipeline
               messageNodes={() => pipelineMgr.activePipeline().messageNodes()}
               onUpdateNode={pipelineMgr.updateNode}
@@ -634,6 +636,8 @@ function App(): JSXElement {
               modelOutput={() => pipelineMgr.activePipeline().modelOutput()}
               clipboard={clipboard}
               activeDirectoryParsedFileNames={activeDirectoryParsedFileNames}
+              pipelines={pipelineMgr.pipelines}
+              ownPipelineId={pipelineMgr.activePipeline().id}
             />
           </Match>
           <Match when={rightSidebarMode() === RightSidebarMode.TestBench}>
@@ -673,15 +677,15 @@ function App(): JSXElement {
           <button
             class={
               "button_icon" +
-              (rightSidebarMode() === RightSidebarMode.AiWriter
+              (rightSidebarMode() === RightSidebarMode.Pipeline
                 ? " active"
                 : "")
             }
             onclick={() => {
-              setRightSidebarMode(RightSidebarMode.AiWriter);
+              setRightSidebarMode(RightSidebarMode.Pipeline);
               localStorage.setItem(
                 localStorageRightSidebarMode,
-                RightSidebarMode.AiWriter,
+                RightSidebarMode.Pipeline,
               );
             }}
           >

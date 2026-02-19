@@ -1168,8 +1168,6 @@
             flex-direction: column;
             flex: 0 0 40%;
             min-height: 0;
-            border-top: var(--size_border) var(--style_border)
-                var(--color_border);
         }
 
         #PIPELINE_OUTPUT {

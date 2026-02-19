@@ -3,6 +3,7 @@ import { AbortableAsyncIterator, ChatResponse, ModelResponse } from "ollama";
 import { MessageNodeConfig } from "../types/messageNode.interface";
 import { ParsedFileName } from "../types/parsedFileName.interface";
 import { ClipboardEntry } from "../types/clipboardEntry.interface";
+import { PipelineInstance } from "../hooks/usePipelineState";
 import { MessageNode } from "./messageNode.component";
 import { OllamaNode } from "./ollamaNode.component";
 import { PipelineOutput } from "./pipelineOutput.component";
@@ -32,6 +33,10 @@ export interface NodePipelineProps {
   // File autocompletion data
   clipboard: Accessor<ClipboardEntry[]>;
   activeDirectoryParsedFileNames: Accessor<ParsedFileName[] | null>;
+
+  // Pipeline cross-reference data
+  pipelines: Accessor<PipelineInstance[]>;
+  ownPipelineId: string;
 }
 
 export function NodePipeline(props: NodePipelineProps): JSXElement {
@@ -51,6 +56,8 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
               activeDirectoryParsedFileNames={
                 props.activeDirectoryParsedFileNames
               }
+              pipelines={props.pipelines}
+              ownPipelineId={props.ownPipelineId}
             />
           )}
         </Index>

@@ -1,4 +1,4 @@
 export enum RightSidebarMode {
-  AiWriter = "aiwriter",
+  Pipeline = "pipeline",
   TestBench = "testbench",
 }

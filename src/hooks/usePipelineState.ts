@@ -23,6 +23,9 @@ function createDefaultNodes(): MessageNodeConfig[] {
       acquisitionMode: "prepared",
       preparedContent: "",
       fileName: "",
+      truncateLength: 0,
+      truncateUnit: "all",
+      sourcePipelineId: "",
       collapsed: false,
       disabled: false,
     },
@@ -32,6 +35,9 @@ function createDefaultNodes(): MessageNodeConfig[] {
       acquisitionMode: "direct",
       preparedContent: "",
       fileName: "",
+      truncateLength: 0,
+      truncateUnit: "all",
+      sourcePipelineId: "",
       collapsed: false,
       disabled: false,
     },
@@ -100,12 +106,33 @@ function serializePipeline(instance: PipelineInstance): PipelineData {
   };
 }
 
+function migrateNode(raw: unknown): MessageNodeConfig {
+  const node = raw as Partial<MessageNodeConfig>;
+  return {
+    id: node.id ?? "",
+    role: node.role ?? "user",
+    acquisitionMode: node.acquisitionMode ?? "prepared",
+    preparedContent: node.preparedContent ?? "",
+    fileName: node.fileName ?? "",
+    truncateLength: node.truncateLength ?? 0,
+    truncateUnit: node.truncateUnit ?? "all",
+    sourcePipelineId: node.sourcePipelineId ?? "",
+    collapsed: node.collapsed ?? false,
+    disabled: node.disabled ?? false,
+  };
+}
+
 function loadPipelines(): PipelineData[] {
   const stored = localStorage.getItem(localStoragePipelines);
   if (stored) {
     try {
       const parsed = JSON.parse(stored);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((p: PipelineData) => ({
+          ...p,
+          nodes: p.nodes.map(migrateNode),
+        }));
+      }
     } catch {
       // fall through
     }
@@ -201,6 +228,9 @@ export function usePipelineManager(): UsePipelineManagerReturn {
       acquisitionMode: role === "user" ? "direct" : "prepared",
       preparedContent: "",
       fileName: "",
+      truncateLength: 0,
+      truncateUnit: "all",
+      sourcePipelineId: "",
       collapsed: false,
       disabled: false,
     };

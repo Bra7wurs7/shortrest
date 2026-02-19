@@ -1,4 +1,4 @@
-import { Accessor, JSXElement, Match, Show, Switch } from "solid-js";
+import { Accessor, For, JSXElement, Match, Show, Switch } from "solid-js";
 import {
   MessageAcquisitionMode,
   MessageNodeConfig,
@@ -6,6 +6,7 @@ import {
 } from "../types/messageNode.interface";
 import { ParsedFileName } from "../types/parsedFileName.interface";
 import { ClipboardEntry } from "../types/clipboardEntry.interface";
+import { PipelineInstance } from "../hooks/usePipelineState";
 import { longestCommonPrefix } from "../functions/longestCommonPrefix.function";
 
 export interface MessageNodeProps {
@@ -19,6 +20,10 @@ export interface MessageNodeProps {
   clipboard: Accessor<ClipboardEntry[]>;
   /** All directory file names for file-mode autocompletion */
   activeDirectoryParsedFileNames: Accessor<ParsedFileName[] | null>;
+  /** All pipeline instances for pipeline-output mode */
+  pipelines: Accessor<PipelineInstance[]>;
+  /** This node's own pipeline id (excluded from pipeline-output selection) */
+  ownPipelineId: string;
 }
 
 export function MessageNode(props: MessageNodeProps): JSXElement {
@@ -102,6 +107,18 @@ export function MessageNode(props: MessageNodeProps): JSXElement {
               {" "}
               [{node().fileName || "..."}]
             </Show>
+            <Show when={node().acquisitionMode === "viewed-file"}>
+              {" "}
+              (viewed file)
+            </Show>
+            <Show when={node().acquisitionMode === "pipeline-output"}>
+              {" "}
+              (pipeline{" "}
+              {props
+                .pipelines()
+                .findIndex((p) => p.id === node().sourcePipelineId) + 1 || "?"}
+              )
+            </Show>
           </span>
         </div>
         <div
@@ -170,6 +187,8 @@ export function MessageNode(props: MessageNodeProps): JSXElement {
               <option value="direct">Prompt Input</option>
               <option value="prepared">Text</option>
               <option value="file">File</option>
+              <option value="viewed-file">Viewed File</option>
+              <option value="pipeline-output">Pipeline Output</option>
             </select>
           </div>
         </div>
@@ -226,6 +245,74 @@ export function MessageNode(props: MessageNodeProps): JSXElement {
                     ))}
                 </div>
               </Show>
+            </Match>
+            <Match when={node().acquisitionMode === "viewed-file"}>
+              <div class="prompt_settings">
+                <div class="settings_row">
+                  <input
+                    type="number"
+                    value={node().truncateLength}
+                    min={0}
+                    step={1}
+                    title="Max units to include from the end of the file (0 = all)"
+                    onInput={(e) =>
+                      props.onUpdate(node().id, {
+                        truncateLength: Number(e.currentTarget.value),
+                      })
+                    }
+                  />
+                  <select
+                    value={node().truncateUnit}
+                    onChange={(e) =>
+                      props.onUpdate(node().id, {
+                        truncateUnit: e.currentTarget.value as
+                          | "words"
+                          | "sentences"
+                          | "paragraphs"
+                          | "all",
+                      })
+                    }
+                  >
+                    <option value="all">All</option>
+                    <option value="words">Words</option>
+                    <option value="sentences">Sentences</option>
+                    <option value="paragraphs">Paragraphs</option>
+                  </select>
+                </div>
+              </div>
+              <div
+                class={"readonly_prompt" + (node().disabled ? " disabled" : "")}
+              >
+                Uses currently viewed file
+              </div>
+            </Match>
+            <Match when={node().acquisitionMode === "pipeline-output"}>
+              <div class="prompt_settings">
+                <div class="settings_row">
+                  <select
+                    value={node().sourcePipelineId}
+                    onChange={(e) =>
+                      props.onUpdate(node().id, {
+                        sourcePipelineId: e.currentTarget.value,
+                      })
+                    }
+                  >
+                    <option value="">— select pipeline —</option>
+                    <For each={props.pipelines()}>
+                      {(p, i) => (
+                        <Show when={p.id !== props.ownPipelineId}>
+                          <option value={p.id}>Pipeline {i() + 1}</option>
+                        </Show>
+                      )}
+                    </For>
+                  </select>
+                </div>
+              </div>
+              <div
+                class={"readonly_prompt" + (node().disabled ? " disabled" : "")}
+              >
+                Uses output of selected pipeline
+              </div>
             </Match>
           </Switch>
         </div>
