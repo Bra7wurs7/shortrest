@@ -307,11 +307,26 @@ function App(): JSXElement {
       activeDirectoryName: activeDirectoryName(),
       displayedFileContent: displayedFileContent(),
       pipelines: pipelineMgr.pipelines(),
+      ownPipelineId: p.id,
     });
 
     if (messages.length === 0) {
       console.warn("Cannot submit pipeline: no messages resolved");
       return;
+    }
+
+    // The last user-role message is what we record as the "user" side of the turn
+    const lastUserMessage =
+      [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+
+    function recordHistoryTurn() {
+      const output = p.modelOutput();
+      if (lastUserMessage && output) {
+        p.setHistory((prev) => [
+          ...prev,
+          { user: lastUserMessage, assistant: output },
+        ]);
+      }
     }
 
     // Clear previous output
@@ -346,6 +361,7 @@ function App(): JSXElement {
         }
         if (response.done) {
           p.setRunningPrompt(null);
+          recordHistoryTurn();
         }
       }
     } catch (error: unknown) {
@@ -373,6 +389,7 @@ function App(): JSXElement {
             }
             if (response.done) {
               p.setRunningPrompt(null);
+              recordHistoryTurn();
             }
           }
         } catch (retryError) {
@@ -729,6 +746,13 @@ function App(): JSXElement {
             title="Add User node"
           >
             <i class="bx bxs-user-voice"></i>
+          </button>
+          <button
+            class="button_icon"
+            onclick={() => pipelineMgr.addHistoryNode()}
+            title="Add History node"
+          >
+            <i class="bx bx-history"></i>
           </button>
         </div>
       </div>

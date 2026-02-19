@@ -8,6 +8,11 @@ import {
 import { AbortableAsyncIterator, ChatResponse } from "ollama";
 import { MessageNodeConfig, MessageRole } from "../types/messageNode.interface";
 
+export interface HistoryTurn {
+  user: string;
+  assistant: string;
+}
+
 const localStoragePipelines = "pipelines";
 const localStorageActivePipelineId = "activePipelineId";
 
@@ -49,6 +54,7 @@ interface PipelineData {
   id: string;
   nodes: MessageNodeConfig[];
   ollamaNodeCollapsed: boolean;
+  history?: HistoryTurn[];
 }
 
 /** Full runtime pipeline instance with reactive signals */
@@ -66,6 +72,8 @@ export interface PipelineInstance {
   setRunningPrompt: Setter<AbortableAsyncIterator<ChatResponse> | null>;
   promptLoading: Accessor<boolean>;
   setPromptLoading: Setter<boolean>;
+  history: Accessor<HistoryTurn[]>;
+  setHistory: Setter<HistoryTurn[]>;
 }
 
 function createPipelineInstance(data: PipelineData): PipelineInstance {
@@ -80,6 +88,9 @@ function createPipelineInstance(data: PipelineData): PipelineInstance {
   const [runningPrompt, setRunningPrompt] =
     createSignal<AbortableAsyncIterator<ChatResponse> | null>(null);
   const [promptLoading, setPromptLoading] = createSignal(false);
+  const [history, setHistory] = createSignal<HistoryTurn[]>(
+    data.history ?? [],
+  );
 
   return {
     id: data.id,
@@ -95,6 +106,8 @@ function createPipelineInstance(data: PipelineData): PipelineInstance {
     setRunningPrompt,
     promptLoading,
     setPromptLoading,
+    history,
+    setHistory,
   };
 }
 
@@ -103,6 +116,7 @@ function serializePipeline(instance: PipelineInstance): PipelineData {
     id: instance.id,
     nodes: instance.messageNodes(),
     ollamaNodeCollapsed: instance.ollamaNodeCollapsed(),
+    history: instance.history(),
   };
 }
 
@@ -157,6 +171,7 @@ export interface UsePipelineManagerReturn {
 
   // Node CRUD delegated to active pipeline
   addNode: (role: MessageRole) => void;
+  addHistoryNode: () => void;
   removeNode: (id: string) => void;
   moveNode: (id: string, direction: "up" | "down") => void;
   updateNode: (id: string, updates: Partial<MessageNodeConfig>) => void;
@@ -237,6 +252,23 @@ export function usePipelineManager(): UsePipelineManagerReturn {
     p.setMessageNodes([...p.messageNodes(), newNode]);
   }
 
+  function addHistoryNode() {
+    const p = activePipeline();
+    const newNode: MessageNodeConfig = {
+      id: generateId(),
+      role: "user",
+      acquisitionMode: "history",
+      preparedContent: "",
+      fileName: "",
+      truncateLength: 0,
+      truncateUnit: "all",
+      sourcePipelineId: "",
+      collapsed: false,
+      disabled: false,
+    };
+    p.setMessageNodes([...p.messageNodes(), newNode]);
+  }
+
   function removeNode(id: string) {
     const p = activePipeline();
     p.setMessageNodes(p.messageNodes().filter((n) => n.id !== id));
@@ -270,6 +302,7 @@ export function usePipelineManager(): UsePipelineManagerReturn {
     addPipeline,
     removePipeline,
     addNode,
+    addHistoryNode,
     removeNode,
     moveNode,
     updateNode,

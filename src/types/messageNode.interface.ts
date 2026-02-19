@@ -4,7 +4,8 @@ export type MessageAcquisitionMode =
   | "prepared"
   | "file"
   | "viewed-file"
-  | "pipeline-output";
+  | "pipeline-output"
+  | "history";
 
 export interface MessageNodeConfig {
   id: string;

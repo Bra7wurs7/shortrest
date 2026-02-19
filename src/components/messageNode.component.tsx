@@ -250,6 +250,7 @@ export function MessageNode(props: MessageNodeProps): JSXElement {
               <div class="prompt_settings">
                 <div class="settings_row">
                   <input
+                    class="truncate_length_input"
                     type="number"
                     value={node().truncateLength}
                     min={0}

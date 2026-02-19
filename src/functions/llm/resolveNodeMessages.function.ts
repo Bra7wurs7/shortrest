@@ -1,7 +1,7 @@
 import { Message } from "ollama";
 import { MessageNodeConfig } from "../../types/messageNode.interface";
 import { ClipboardEntry } from "../../types/clipboardEntry.interface";
-import { PipelineInstance } from "../../hooks/usePipelineState";
+import { HistoryTurn, PipelineInstance } from "../../hooks/usePipelineState";
 import { getFileContent } from "../dbFilesInterface.functions";
 import { truncateContent } from "../truncateContent.function";
 
@@ -15,8 +15,10 @@ export interface ResolveNodeMessagesOptions {
   activeDirectoryName: string | null;
   /** Currently displayed file content (for "viewed-file" acquisition mode) */
   displayedFileContent: string;
-  /** All pipeline instances (for "pipeline-output" acquisition mode) */
+  /** All pipeline instances (for "pipeline-output" and "history" acquisition modes) */
   pipelines: PipelineInstance[];
+  /** The pipeline that owns these nodes (used as fallback when sourcePipelineId is empty) */
+  ownPipelineId: string;
 }
 
 /**
@@ -33,12 +35,25 @@ export async function resolveNodeMessages(
     activeDirectoryName,
     displayedFileContent,
     pipelines,
+    ownPipelineId,
   } = options;
 
   const messages: Message[] = [];
 
   for (const node of nodes) {
     if (node.disabled) continue;
+
+    // History nodes expand into multiple messages and are handled separately
+    if (node.acquisitionMode === "history") {
+      const source = pipelines.find((p) => p.id === ownPipelineId);
+      const turns: HistoryTurn[] = source?.history() ?? [];
+      for (const turn of turns) {
+        if (turn.user) messages.push({ role: "user", content: turn.user });
+        if (turn.assistant)
+          messages.push({ role: "assistant", content: turn.assistant });
+      }
+      continue;
+    }
 
     let content = "";
 

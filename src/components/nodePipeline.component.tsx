@@ -1,10 +1,11 @@
-import { Accessor, Index, JSXElement, Setter } from "solid-js";
+import { Accessor, Index, JSXElement, Match, Setter, Switch } from "solid-js";
 import { AbortableAsyncIterator, ChatResponse, ModelResponse } from "ollama";
 import { MessageNodeConfig } from "../types/messageNode.interface";
 import { ParsedFileName } from "../types/parsedFileName.interface";
 import { ClipboardEntry } from "../types/clipboardEntry.interface";
 import { PipelineInstance } from "../hooks/usePipelineState";
 import { MessageNode } from "./messageNode.component";
+import { HistoryNode } from "./historyNode.component";
 import { OllamaNode } from "./ollamaNode.component";
 import { PipelineOutput } from "./pipelineOutput.component";
 
@@ -45,20 +46,33 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
       <div id="P_S_TOP">
         <Index each={props.messageNodes()}>
           {(node, index) => (
-            <MessageNode
-              node={node}
-              index={index}
-              totalNodes={props.messageNodes().length}
-              onUpdate={props.onUpdateNode}
-              onRemove={props.onRemoveNode}
-              onMove={props.onMoveNode}
-              clipboard={props.clipboard}
-              activeDirectoryParsedFileNames={
-                props.activeDirectoryParsedFileNames
-              }
-              pipelines={props.pipelines}
-              ownPipelineId={props.ownPipelineId}
-            />
+            <Switch>
+              <Match when={node().acquisitionMode === "history"}>
+                <HistoryNode
+                  node={node}
+                  onUpdate={props.onUpdateNode}
+                  onRemove={props.onRemoveNode}
+                  pipelines={props.pipelines}
+                  ownPipelineId={props.ownPipelineId}
+                />
+              </Match>
+              <Match when={node().acquisitionMode !== "history"}>
+                <MessageNode
+                  node={node}
+                  index={index}
+                  totalNodes={props.messageNodes().length}
+                  onUpdate={props.onUpdateNode}
+                  onRemove={props.onRemoveNode}
+                  onMove={props.onMoveNode}
+                  clipboard={props.clipboard}
+                  activeDirectoryParsedFileNames={
+                    props.activeDirectoryParsedFileNames
+                  }
+                  pipelines={props.pipelines}
+                  ownPipelineId={props.ownPipelineId}
+                />
+              </Match>
+            </Switch>
           )}
         </Index>
         <OllamaNode
