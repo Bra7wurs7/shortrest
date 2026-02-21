@@ -16,7 +16,7 @@ export interface OllamaNodeProps {
   setOllamaUrl: Setter<string>;
   ollamaModels: Accessor<ModelResponse[] | null>;
   ollamaModel: Accessor<ModelResponse | null>;
-  setOllamaModel: Setter<ModelResponse | null>;
+  setOllamaModel: (model: ModelResponse | null) => void;
   promptLoading: Accessor<boolean>;
   runningPrompt: Accessor<AbortableAsyncIterator<ChatResponse> | null>;
   onSubmit: () => void;

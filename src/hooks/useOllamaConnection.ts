@@ -1,7 +1,6 @@
 import { Accessor, createEffect, createSignal, Setter, untrack } from "solid-js";
 import { ModelResponse, Ollama } from "ollama";
 import {
-  localStorageOllamaModel,
   localStorageOllamaSummaryModel,
   localStorageOllamaUrl,
 } from "../constants/storageKeys";
@@ -13,8 +12,6 @@ export interface UseOllamaConnectionReturn {
   setOllamaUrl: Setter<string>;
   ollamaModels: Accessor<ModelResponse[] | null>;
   setOllamaModels: Setter<ModelResponse[] | null>;
-  ollamaModel: Accessor<ModelResponse | null>;
-  setOllamaModel: Setter<ModelResponse | null>;
   ollamaSummaryModel: Accessor<ModelResponse | null>;
   setOllamaSummaryModel: Setter<ModelResponse | null>;
 }
@@ -27,9 +24,6 @@ export function useOllamaConnection(): UseOllamaConnectionReturn {
     localStorage.getItem(localStorageOllamaUrl) || "127.0.0.1:11434",
   );
   const [ollamaModels, setOllamaModels] = createSignal<ModelResponse[] | null>(
-    null,
-  );
-  const [ollamaModel, setOllamaModel] = createSignal<ModelResponse | null>(
     null,
   );
   const [ollamaSummaryModel, setOllamaSummaryModel] =
@@ -52,27 +46,6 @@ export function useOllamaConnection(): UseOllamaConnectionReturn {
 
   createEffect(() => {
     localStorage.setItem(localStorageOllamaUrl, ollamaUrl());
-  });
-
-  createEffect(() => {
-    const llmModel = ollamaModel();
-    if (llmModel !== null) {
-      localStorage.setItem(localStorageOllamaModel, llmModel.model);
-    }
-  });
-
-  createEffect(() => {
-    const llmModel = untrack(ollamaModel);
-    const allLlmModels = ollamaModels();
-    if (allLlmModels && allLlmModels.length > 0 && llmModel === null) {
-      const localStorageModelName = localStorage.getItem(localStorageOllamaModel);
-      const model = allLlmModels.find((m) => m.model === localStorageModelName);
-      if (model !== undefined) {
-        setOllamaModel(model);
-      } else {
-        setOllamaModel(allLlmModels[0] ?? null);
-      }
-    }
   });
 
   createEffect(() => {
@@ -105,8 +78,6 @@ export function useOllamaConnection(): UseOllamaConnectionReturn {
     setOllamaUrl,
     ollamaModels,
     setOllamaModels,
-    ollamaModel,
-    setOllamaModel,
     ollamaSummaryModel,
     setOllamaSummaryModel,
   };

@@ -3,6 +3,7 @@ import {
   MessageAcquisitionMode,
   MessageNodeConfig,
   MessageRole,
+  SubPipelineParam,
 } from "../types/messageNode.interface";
 import { ParsedFileName } from "../types/parsedFileName.interface";
 import { ClipboardEntry } from "../types/clipboardEntry.interface";
@@ -80,10 +81,20 @@ export function MessageNode(props: MessageNodeProps): JSXElement {
     }
   };
 
+  const isSubPipelineRunning = () =>
+    node().acquisitionMode === "sub-pipeline" &&
+    !!props
+      .pipelines()
+      .find((p) => p.id === node().sourcePipelineId)
+      ?.subPipelineRunning();
+
   return (
     <div
       class={
-        "ai_section pipeline_node" + (node().collapsed ? " collapsed" : "")
+        "ai_section pipeline_node" +
+        (node().collapsed ? " collapsed" : "") +
+        (node().acquisitionMode === "sub-pipeline" ? " sub_pipeline_node" : "") +
+        (isSubPipelineRunning() ? " sub_running" : "")
       }
     >
       <div
@@ -119,7 +130,18 @@ export function MessageNode(props: MessageNodeProps): JSXElement {
                 .findIndex((p) => p.id === node().sourcePipelineId) + 1 || "?"}
               )
             </Show>
+            <Show when={node().acquisitionMode === "sub-pipeline"}>
+              {" "}
+              (sub-pipeline{" "}
+              {props
+                .pipelines()
+                .findIndex((p) => p.id === node().sourcePipelineId) + 1 || "?"}
+              )
+            </Show>
           </span>
+          <Show when={isSubPipelineRunning()}>
+            <i class="bx bx-loader-alt bx-spin" />
+          </Show>
         </div>
         <div
           class="right node_header_actions"
@@ -189,6 +211,7 @@ export function MessageNode(props: MessageNodeProps): JSXElement {
               <option value="file">File</option>
               <option value="viewed-file">Viewed File</option>
               <option value="pipeline-output">Pipeline Output</option>
+              <option value="sub-pipeline">Sub-Pipeline</option>
             </select>
           </div>
         </div>
@@ -313,6 +336,95 @@ export function MessageNode(props: MessageNodeProps): JSXElement {
                 class={"readonly_prompt" + (node().disabled ? " disabled" : "")}
               >
                 Uses output of selected pipeline
+              </div>
+            </Match>
+            <Match when={node().acquisitionMode === "sub-pipeline"}>
+              <div class="prompt_settings">
+                <div class="settings_row">
+                  <select
+                    value={node().sourcePipelineId}
+                    onChange={(e) =>
+                      props.onUpdate(node().id, {
+                        sourcePipelineId: e.currentTarget.value,
+                      })
+                    }
+                  >
+                    <option value="">— select pipeline —</option>
+                    <For each={props.pipelines()}>
+                      {(p, i) => (
+                        <Show when={p.id !== props.ownPipelineId}>
+                          <option value={p.id}>Pipeline {i() + 1}</option>
+                        </Show>
+                      )}
+                    </For>
+                  </select>
+                </div>
+              </div>
+              <Show when={node().sourcePipelineId}>
+                {() => {
+                  const subPipeline = () =>
+                    props
+                      .pipelines()
+                      .find((p) => p.id === node().sourcePipelineId);
+                  const subNodes = () =>
+                    subPipeline()?.messageNodes().filter(
+                      (n) => n.acquisitionMode !== "history",
+                    ) ?? [];
+
+                  return (
+                    <Show when={subNodes().length > 0}>
+                      <div class="sub_pipeline_params">
+                        <div class="params_label">Parameter overrides</div>
+                        <For each={subNodes()}>
+                          {(subNode) => {
+                            const existingParam = () =>
+                              node().subPipelineParams.find(
+                                (p) => p.targetNodeId === subNode.id,
+                              );
+                            const preview =
+                              subNode.preparedContent.trim().slice(0, 40) ||
+                              subNode.acquisitionMode;
+
+                            return (
+                              <div class="param_row">
+                                <span class="param_node_label">
+                                  {subNode.role} · {preview}
+                                </span>
+                                <input
+                                  type="text"
+                                  class="param_value_input"
+                                  placeholder="Leave blank to use sub-pipeline default"
+                                  value={existingParam()?.value ?? ""}
+                                  onInput={(e) => {
+                                    const val = e.currentTarget.value;
+                                    const updated: SubPipelineParam[] =
+                                      node().subPipelineParams.filter(
+                                        (p) => p.targetNodeId !== subNode.id,
+                                      );
+                                    if (val) {
+                                      updated.push({
+                                        targetNodeId: subNode.id,
+                                        value: val,
+                                      });
+                                    }
+                                    props.onUpdate(node().id, {
+                                      subPipelineParams: updated,
+                                    });
+                                  }}
+                                />
+                              </div>
+                            );
+                          }}
+                        </For>
+                      </div>
+                    </Show>
+                  );
+                }}
+              </Show>
+              <div
+                class={"readonly_prompt" + (node().disabled ? " disabled" : "")}
+              >
+                Executes selected pipeline and uses its output
               </div>
             </Match>
           </Switch>

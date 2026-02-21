@@ -22,7 +22,7 @@ export interface NodePipelineProps {
   setOllamaUrl: Setter<string>;
   ollamaModels: Accessor<ModelResponse[] | null>;
   ollamaModel: Accessor<ModelResponse | null>;
-  setOllamaModel: Setter<ModelResponse | null>;
+  setOllamaModel: (model: ModelResponse | null) => void;
   promptLoading: Accessor<boolean>;
   runningPrompt: Accessor<AbortableAsyncIterator<ChatResponse> | null>;
   onSubmit: () => void;
@@ -38,11 +38,15 @@ export interface NodePipelineProps {
   // Pipeline cross-reference data
   pipelines: Accessor<PipelineInstance[]>;
   ownPipelineId: string;
+
+  // Running state for border highlight
+  isRunning: Accessor<boolean>;
+  onAbortSubPipeline: (pipelineId: string) => void;
 }
 
 export function NodePipeline(props: NodePipelineProps): JSXElement {
   return (
-    <div id="PIPELINE_SIDEBAR">
+    <div id="PIPELINE_SIDEBAR" class={props.isRunning() ? "running" : ""}>
       <div id="P_S_TOP">
         <Index each={props.messageNodes()}>
           {(node, index) => (
@@ -95,6 +99,9 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
         <PipelineOutput
           modelThoughts={props.modelThoughts}
           modelOutput={props.modelOutput}
+          messageNodes={props.messageNodes}
+          pipelines={props.pipelines}
+          onAbortSubPipeline={props.onAbortSubPipeline}
         />
       </div>
     </div>

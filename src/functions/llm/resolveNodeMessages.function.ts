@@ -1,9 +1,10 @@
-import { Message } from "ollama";
+import { AbortableAsyncIterator, ChatResponse, Message, Ollama, ModelResponse } from "ollama";
 import { MessageNodeConfig } from "../../types/messageNode.interface";
 import { ClipboardEntry } from "../../types/clipboardEntry.interface";
 import { HistoryTurn, PipelineInstance } from "../../hooks/usePipelineState";
 import { getFileContent } from "../dbFilesInterface.functions";
 import { truncateContent } from "../truncateContent.function";
+import { runSubPipeline } from "./runSubPipeline.function";
 
 export interface ResolveNodeMessagesOptions {
   nodes: MessageNodeConfig[];
@@ -15,10 +16,28 @@ export interface ResolveNodeMessagesOptions {
   activeDirectoryName: string | null;
   /** Currently displayed file content (for "viewed-file" acquisition mode) */
   displayedFileContent: string;
-  /** All pipeline instances (for "pipeline-output" acquisition mode) */
+  /** All pipeline instances (for "pipeline-output" and "sub-pipeline" acquisition modes) */
   pipelines: PipelineInstance[];
   /** History turns from the owning pipeline, injected by history nodes */
   ownHistory: HistoryTurn[];
+  /** Ollama connection — required for "sub-pipeline" mode */
+  ollama: Ollama | null;
+  /** Selected model — required for "sub-pipeline" mode */
+  model: ModelResponse | null;
+  /** ID of the pipeline that owns these nodes — used for cycle detection */
+  ownPipelineId?: string;
+  /** Internal: pipeline IDs currently on the call stack, for cycle detection */
+  _callStack?: ReadonlySet<string>;
+  /**
+   * Called when a sub-pipeline starts or finishes.
+   * On start: running=true, stream=the live iterator (can be aborted).
+   * On finish: running=false, output=accumulated result string.
+   */
+  onSubPipelineStateChange?: (
+    pipelineId: string,
+    running: boolean,
+    streamOrOutput: AbortableAsyncIterator<ChatResponse> | string,
+  ) => void;
 }
 
 /**
@@ -37,6 +56,13 @@ export async function resolveNodeMessages(
     pipelines,
     ownHistory,
   } = options;
+
+  // Build call stack for cycle detection: seed with own pipeline ID if provided
+  const callStack: ReadonlySet<string> =
+    options._callStack ??
+    (options.ownPipelineId
+      ? new Set([options.ownPipelineId])
+      : new Set<string>());
 
   const messages: Message[] = [];
 
@@ -86,6 +112,86 @@ export async function resolveNodeMessages(
       case "pipeline-output": {
         const source = pipelines.find((p) => p.id === node.sourcePipelineId);
         content = source?.modelOutput() ?? "";
+        break;
+      }
+      case "sub-pipeline": {
+        if (!options.ollama || !options.model) break;
+
+        const subPipeline = pipelines.find(
+          (p) => p.id === node.sourcePipelineId,
+        );
+        if (!subPipeline) break;
+
+        // Cycle detection
+        if (callStack.has(subPipeline.id)) {
+          console.warn(
+            `Sub-pipeline cycle detected: pipeline "${subPipeline.id}" is already in the call stack. Skipping.`,
+          );
+          break;
+        }
+
+        // Apply parameter overrides: replace overridden nodes with prepared content
+        const overrides = new Map(
+          node.subPipelineParams.map((p) => [p.targetNodeId, p.value]),
+        );
+        const subNodes = subPipeline.messageNodes().map(
+          (n): MessageNodeConfig => {
+            const override = overrides.get(n.id);
+            if (override !== undefined) {
+              return {
+                ...n,
+                acquisitionMode: "prepared",
+                preparedContent: override,
+              };
+            }
+            return n;
+          },
+        );
+
+        // Recursively resolve sub-pipeline messages.
+        // Always pass empty history — sub-pipelines are stateless function calls;
+        // their accumulated interactive history must not bleed into programmatic execution.
+        // Pass through directInputValue so "direct" mode nodes receive the parent's prompt.
+        const subMessages = await resolveNodeMessages({
+          nodes: subNodes,
+          directInputValue: options.directInputValue,
+          clipboard: options.clipboard,
+          activeDirectoryName: options.activeDirectoryName,
+          displayedFileContent: options.displayedFileContent,
+          pipelines: options.pipelines,
+          ownHistory: [],
+          ollama: options.ollama,
+          model: options.model,
+          ownPipelineId: subPipeline.id,
+          _callStack: new Set([...callStack, subPipeline.id]),
+          onSubPipelineStateChange: options.onSubPipelineStateChange,
+        });
+
+        if (subMessages.length === 0) {
+          console.warn(
+            `Sub-pipeline "${subPipeline.id}" resolved to no messages — check that its nodes have non-empty content or are overridden via subPipelineParams. Skipping.`,
+          );
+          break;
+        }
+
+        // Use the sub-pipeline's own model if set, otherwise fall back to the calling model
+        const subModel = subPipeline.ollamaModel() ?? options.model;
+        if (!subModel) break;
+
+        try {
+          content = await runSubPipeline({
+            ollama: options.ollama,
+            model: subModel,
+            messages: subMessages,
+            onStream: (stream) => {
+              options.onSubPipelineStateChange?.(subPipeline.id, true, stream);
+            },
+          });
+          options.onSubPipelineStateChange?.(subPipeline.id, false, content);
+        } catch (e) {
+          options.onSubPipelineStateChange?.(subPipeline.id, false, "");
+          throw e;
+        }
         break;
       }
     }

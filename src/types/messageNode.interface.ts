@@ -5,7 +5,16 @@ export type MessageAcquisitionMode =
   | "file"
   | "viewed-file"
   | "pipeline-output"
-  | "history";
+  | "history"
+  | "sub-pipeline";
+
+/** A parameter override for a sub-pipeline node execution */
+export interface SubPipelineParam {
+  /** The node ID in the sub-pipeline whose content is overridden */
+  targetNodeId: string;
+  /** The static text to inject as that node's content */
+  value: string;
+}
 
 export interface MessageNodeConfig {
   id: string;
@@ -19,8 +28,10 @@ export interface MessageNodeConfig {
   truncateLength: number;
   /** For "viewed-file" mode: unit for truncation */
   truncateUnit: "words" | "sentences" | "paragraphs" | "all";
-  /** For "pipeline-output" mode: the ID of the pipeline whose output to use */
+  /** For "pipeline-output" and "sub-pipeline" modes: the ID of the pipeline to reference */
   sourcePipelineId: string;
+  /** For "sub-pipeline" mode: parameter overrides passed to the sub-pipeline's nodes */
+  subPipelineParams: SubPipelineParam[];
   collapsed: boolean;
   disabled: boolean;
 }

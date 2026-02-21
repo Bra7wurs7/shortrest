@@ -100,8 +100,6 @@ function ModelEntry(props: ModelEntryProps): JSXElement {
 export function SettingsComponent(
   ollamaConnection: Accessor<Ollama | null>,
   setOllamaConnection: Setter<Ollama | null>,
-  ollamaModel: Accessor<ModelResponse | null>,
-  setOllamaModel: Setter<ModelResponse | null>,
   ollamaSummaryModel: Accessor<ModelResponse | null>,
   setOllamaSummaryModel: Setter<ModelResponse | null>,
   ollamaModels: Accessor<ModelResponse[] | null>,
@@ -129,15 +127,6 @@ export function SettingsComponent(
           </div>
         </div>
         <div class="group_children">
-          <ModelEntry
-            title="Primary Model"
-            description="General purpose LLM for writing and chat"
-            icon="bx-bot"
-            ollamaConnection={ollamaConnection}
-            ollamaModels={ollamaModels}
-            selectedModel={ollamaModel}
-            setSelectedModel={setOllamaModel}
-          />
           <ModelEntry
             title="Summary Model"
             description="Smaller model for rolling summaries"

@@ -33,6 +33,7 @@ import {
   ensureEmptyClipboardFile,
 } from "./app-handlers";
 import { useOllamaConnection } from "./hooks/useOllamaConnection";
+import type { AbortableAsyncIterator, ChatResponse } from "ollama";
 
 import { resolveNodeMessages } from "./functions/llm/resolveNodeMessages.function";
 import { NodePipeline } from "./components/nodePipeline.component";
@@ -115,8 +116,6 @@ function App(): JSXElement {
     setOllamaUrl,
     ollamaModels,
     setOllamaModels,
-    ollamaModel,
-    setOllamaModel,
     ollamaSummaryModel,
     setOllamaSummaryModel,
   } = useOllamaConnection();
@@ -130,6 +129,15 @@ function App(): JSXElement {
 
   // Pipeline manager (multiple pipelines)
   const pipelineMgr = usePipelineManager();
+
+  // Resolve each pipeline's model when the model list loads or when pipelines change
+  createEffect(() => {
+    const models = ollamaModels();
+    pipelineMgr.pipelines(); // track pipeline list so new pipelines get resolved too
+    if (models && models.length > 0) {
+      pipelineMgr.resolveModels(models);
+    }
+  });
 
   // ============================================
   // Directory file name signals
@@ -290,15 +298,28 @@ function App(): JSXElement {
   // ============================================
   async function handlePipelineSubmit() {
     const ollama = ollamaConnection();
-    const model = ollamaModel();
+
+    // Capture the active pipeline at submit time so it streams to the right instance
+    const p = pipelineMgr.activePipeline();
+    const model = p.ollamaModel();
 
     if (!ollama || !model) {
       console.warn("Cannot submit pipeline: missing ollama or model");
       return;
     }
 
-    // Capture the active pipeline at submit time so it streams to the right instance
-    const p = pipelineMgr.activePipeline();
+    // Clear stale output from any sub-pipelines referenced by this pipeline's nodes
+    // so that if a sub-pipeline doesn't run this time, its output area shows nothing.
+    const allPipelines = pipelineMgr.pipelines();
+    for (const node of p.messageNodes()) {
+      if (node.acquisitionMode === "sub-pipeline" && !node.disabled && node.sourcePipelineId) {
+        const subP = allPipelines.find((q) => q.id === node.sourcePipelineId);
+        if (subP) {
+          subP.setModelOutput("");
+          subP.setSubPipelineRunning(false);
+        }
+      }
+    }
 
     const messages = await resolveNodeMessages({
       nodes: p.messageNodes(),
@@ -308,6 +329,21 @@ function App(): JSXElement {
       displayedFileContent: displayedFileContent(),
       pipelines: pipelineMgr.pipelines(),
       ownHistory: p.history(),
+      ollama,
+      model,
+      ownPipelineId: p.id,
+      onSubPipelineStateChange: (pipelineId, running, streamOrOutput) => {
+        const target = pipelineMgr.pipelines().find((p) => p.id === pipelineId);
+        if (!target) return;
+        target.setSubPipelineRunning(running);
+        if (running) {
+          // streamOrOutput is the AbortableAsyncIterator — store it so it can be aborted
+          target.setRunningPrompt(streamOrOutput as AbortableAsyncIterator<ChatResponse>);
+        } else {
+          target.setRunningPrompt(null);
+          target.setModelOutput(streamOrOutput as string);
+        }
+      },
     });
 
     if (messages.length === 0) {
@@ -613,8 +649,6 @@ function App(): JSXElement {
         setViewedFile={setViewedFile}
         ollamaConnection={ollamaConnection}
         setOllamaConnection={setOllamaConnection}
-        ollamaModel={ollamaModel}
-        setOllamaModel={setOllamaModel}
         ollamaSummaryModel={ollamaSummaryModel}
         setOllamaSummaryModel={setOllamaSummaryModel}
         ollamaModels={ollamaModels}
@@ -643,8 +677,8 @@ function App(): JSXElement {
               ollamaUrl={ollamaUrl}
               setOllamaUrl={setOllamaUrl}
               ollamaModels={ollamaModels}
-              ollamaModel={ollamaModel}
-              setOllamaModel={setOllamaModel}
+              ollamaModel={() => pipelineMgr.activePipeline().ollamaModel()}
+              setOllamaModel={(v) => pipelineMgr.activePipeline().setOllamaModel(v)}
               promptLoading={() => pipelineMgr.activePipeline().promptLoading()}
               runningPrompt={() => pipelineMgr.activePipeline().runningPrompt()}
               onSubmit={handlePipelineSubmit}
@@ -654,6 +688,14 @@ function App(): JSXElement {
               activeDirectoryParsedFileNames={activeDirectoryParsedFileNames}
               pipelines={pipelineMgr.pipelines}
               ownPipelineId={pipelineMgr.activePipeline().id}
+              isRunning={() =>
+                pipelineMgr.activePipeline().promptLoading() ||
+                pipelineMgr.activePipeline().runningPrompt() !== null
+              }
+              onAbortSubPipeline={(pipelineId) => {
+                const target = pipelineMgr.pipelines().find((p) => p.id === pipelineId);
+                target?.runningPrompt()?.abort();
+              }}
             />
           </Match>
           <Match when={rightSidebarMode() === RightSidebarMode.TestBench}>
@@ -667,7 +709,8 @@ function App(): JSXElement {
                 class={
                   "button_icon pipeline_btn" +
                   (pipelineMgr.activePipelineId() === p.id ? " active" : "") +
-                  (p.runningPrompt() !== null ? " running" : "")
+                  (p.runningPrompt() !== null ? " running" : "") +
+                  (p.subPipelineRunning() ? " sub_running" : "")
                 }
                 onclick={() => pipelineMgr.setActivePipelineId(p.id)}
                 oncontextmenu={(e) => {
@@ -676,7 +719,7 @@ function App(): JSXElement {
                     pipelineMgr.removePipeline(p.id);
                   }
                 }}
-                title={`Pipeline ${index() + 1}${p.runningPrompt() !== null ? " (running)" : ""} — right-click to remove`}
+                title={`Pipeline ${index() + 1}${p.runningPrompt() !== null ? " (running)" : ""}${p.subPipelineRunning() ? " (sub-pipeline running)" : ""} — right-click to remove`}
               >
                 {index() + 1}
               </button>

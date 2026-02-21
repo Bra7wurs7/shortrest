@@ -5,7 +5,7 @@ import {
   createSignal,
   Setter,
 } from "solid-js";
-import { AbortableAsyncIterator, ChatResponse } from "ollama";
+import { AbortableAsyncIterator, ChatResponse, ModelResponse } from "ollama";
 import { MessageNodeConfig, MessageRole } from "../types/messageNode.interface";
 
 export interface HistoryTurn {
@@ -15,6 +15,7 @@ export interface HistoryTurn {
 
 const localStoragePipelines = "pipelines";
 const localStorageActivePipelineId = "activePipelineId";
+const localStorageOllamaModel = "ollamaModel"; // legacy key — used once for migration
 
 function generateId(): string {
   return crypto.randomUUID();
@@ -31,6 +32,7 @@ function createDefaultNodes(): MessageNodeConfig[] {
       truncateLength: 0,
       truncateUnit: "all",
       sourcePipelineId: "",
+      subPipelineParams: [],
       collapsed: false,
       disabled: false,
     },
@@ -43,6 +45,7 @@ function createDefaultNodes(): MessageNodeConfig[] {
       truncateLength: 0,
       truncateUnit: "all",
       sourcePipelineId: "",
+      subPipelineParams: [],
       collapsed: false,
       disabled: false,
     },
@@ -55,6 +58,8 @@ interface PipelineData {
   nodes: MessageNodeConfig[];
   ollamaNodeCollapsed: boolean;
   history?: HistoryTurn[];
+  /** Persisted model name for this pipeline (model.model string) */
+  ollamaModelName?: string;
 }
 
 /** Full runtime pipeline instance with reactive signals */
@@ -74,6 +79,14 @@ export interface PipelineInstance {
   setPromptLoading: Setter<boolean>;
   history: Accessor<HistoryTurn[]>;
   setHistory: Setter<HistoryTurn[]>;
+  /** True while this pipeline is executing as a sub-pipeline inside another pipeline */
+  subPipelineRunning: Accessor<boolean>;
+  setSubPipelineRunning: Setter<boolean>;
+  /** The model selected for this pipeline. Null until models are loaded. */
+  ollamaModel: Accessor<ModelResponse | null>;
+  setOllamaModel: Setter<ModelResponse | null>;
+  /** The persisted model name (model.model string), restored before models are loaded */
+  ollamaModelName: Accessor<string | null>;
 }
 
 function createPipelineInstance(data: PipelineData): PipelineInstance {
@@ -91,6 +104,9 @@ function createPipelineInstance(data: PipelineData): PipelineInstance {
   const [history, setHistory] = createSignal<HistoryTurn[]>(
     data.history ?? [],
   );
+  const [subPipelineRunning, setSubPipelineRunning] = createSignal(false);
+  const [ollamaModel, setOllamaModel] = createSignal<ModelResponse | null>(null);
+  const ollamaModelName = () => data.ollamaModelName ?? null;
 
   return {
     id: data.id,
@@ -108,6 +124,11 @@ function createPipelineInstance(data: PipelineData): PipelineInstance {
     setPromptLoading,
     history,
     setHistory,
+    subPipelineRunning,
+    setSubPipelineRunning,
+    ollamaModel,
+    setOllamaModel,
+    ollamaModelName,
   };
 }
 
@@ -117,6 +138,7 @@ function serializePipeline(instance: PipelineInstance): PipelineData {
     nodes: instance.messageNodes(),
     ollamaNodeCollapsed: instance.ollamaNodeCollapsed(),
     history: instance.history(),
+    ollamaModelName: instance.ollamaModel()?.model ?? instance.ollamaModelName() ?? undefined,
   };
 }
 
@@ -131,12 +153,16 @@ function migrateNode(raw: unknown): MessageNodeConfig {
     truncateLength: node.truncateLength ?? 0,
     truncateUnit: node.truncateUnit ?? "all",
     sourcePipelineId: node.sourcePipelineId ?? "",
+    subPipelineParams: node.subPipelineParams ?? [],
     collapsed: node.collapsed ?? false,
     disabled: node.disabled ?? false,
   };
 }
 
 function loadPipelines(): PipelineData[] {
+  // Migrate legacy global model selection to per-pipeline on first load
+  const legacyModelName = localStorage.getItem(localStorageOllamaModel);
+
   const stored = localStorage.getItem(localStoragePipelines);
   if (stored) {
     try {
@@ -145,6 +171,8 @@ function loadPipelines(): PipelineData[] {
         return parsed.map((p: PipelineData) => ({
           ...p,
           nodes: p.nodes.map(migrateNode),
+          // Migrate: if no per-pipeline model yet, seed from legacy global key
+          ollamaModelName: p.ollamaModelName ?? legacyModelName ?? undefined,
         }));
       }
     } catch {
@@ -156,6 +184,7 @@ function loadPipelines(): PipelineData[] {
       id: generateId(),
       nodes: createDefaultNodes(),
       ollamaNodeCollapsed: false,
+      ollamaModelName: legacyModelName ?? undefined,
     },
   ];
 }
@@ -175,6 +204,13 @@ export interface UsePipelineManagerReturn {
   removeNode: (id: string) => void;
   moveNode: (id: string, direction: "up" | "down") => void;
   updateNode: (id: string, updates: Partial<MessageNodeConfig>) => void;
+
+  /**
+   * Called when the available models list loads or changes.
+   * Resolves each pipeline's saved model name to a ModelResponse,
+   * falling back to the first available model if the saved name is not found.
+   */
+  resolveModels: (models: ModelResponse[]) => void;
 }
 
 export function usePipelineManager(): UsePipelineManagerReturn {
@@ -246,6 +282,7 @@ export function usePipelineManager(): UsePipelineManagerReturn {
       truncateLength: 0,
       truncateUnit: "all",
       sourcePipelineId: "",
+      subPipelineParams: [],
       collapsed: false,
       disabled: false,
     };
@@ -263,6 +300,7 @@ export function usePipelineManager(): UsePipelineManagerReturn {
       truncateLength: 0,
       truncateUnit: "all",
       sourcePipelineId: "",
+      subPipelineParams: [],
       collapsed: false,
       disabled: false,
     };
@@ -294,6 +332,17 @@ export function usePipelineManager(): UsePipelineManagerReturn {
     );
   }
 
+  function resolveModels(models: ModelResponse[]) {
+    for (const p of pipelines()) {
+      if (p.ollamaModel() !== null) continue; // already resolved
+      const savedName = p.ollamaModelName();
+      const match = savedName
+        ? (models.find((m) => m.model === savedName) ?? models[0] ?? null)
+        : (models[0] ?? null);
+      p.setOllamaModel(match);
+    }
+  }
+
   return {
     pipelines,
     activePipelineId,
@@ -306,5 +355,6 @@ export function usePipelineManager(): UsePipelineManagerReturn {
     removeNode,
     moveNode,
     updateNode,
+    resolveModels,
   };
 }

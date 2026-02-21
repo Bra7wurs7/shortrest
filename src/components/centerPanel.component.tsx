@@ -47,8 +47,6 @@ export interface CenterPanelProps {
   // Settings (Ollama)
   ollamaConnection: Accessor<Ollama | null>;
   setOllamaConnection: Setter<Ollama | null>;
-  ollamaModel: Accessor<ModelResponse | null>;
-  setOllamaModel: Setter<ModelResponse | null>;
   ollamaSummaryModel: Accessor<ModelResponse | null>;
   setOllamaSummaryModel: Setter<ModelResponse | null>;
   ollamaModels: Accessor<ModelResponse[] | null>;
@@ -122,8 +120,6 @@ export function CenterPanel(props: CenterPanelProps): JSXElement {
           {SettingsComponent(
             props.ollamaConnection,
             props.setOllamaConnection,
-            props.ollamaModel,
-            props.setOllamaModel,
             props.ollamaSummaryModel,
             props.setOllamaSummaryModel,
             props.ollamaModels,
