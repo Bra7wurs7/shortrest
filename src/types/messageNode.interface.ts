@@ -6,7 +6,15 @@ export type MessageAcquisitionMode =
   | "viewed-file"
   | "pipeline-output"
   | "history"
-  | "sub-pipeline";
+  | "sub-pipeline"
+  | "toolbelt";
+
+export interface ToolbeltToolConfig {
+  /** Whether the LLM is allowed to use this tool */
+  enabled: boolean;
+  /** Whether the LLM is given a usage explanation for this tool */
+  explained: boolean;
+}
 
 /** A parameter override for a sub-pipeline node execution */
 export interface SubPipelineParam {
@@ -34,4 +42,6 @@ export interface MessageNodeConfig {
   subPipelineParams: SubPipelineParam[];
   collapsed: boolean;
   disabled: boolean;
+  /** For "toolbelt" mode: per-tool configuration keyed by tool name */
+  toolbeltTools: Record<string, ToolbeltToolConfig>;
 }

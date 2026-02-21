@@ -1,5 +1,5 @@
 import { AbortableAsyncIterator, ChatResponse, Message, Ollama, ModelResponse } from "ollama";
-import { MessageNodeConfig } from "../../types/messageNode.interface";
+import { MessageNodeConfig, ToolbeltToolConfig } from "../../types/messageNode.interface";
 import { ClipboardEntry } from "../../types/clipboardEntry.interface";
 import { HistoryTurn, PipelineInstance } from "../../hooks/usePipelineState";
 import { getFileContent } from "../dbFilesInterface.functions";
@@ -38,6 +38,61 @@ export interface ResolveNodeMessagesOptions {
     running: boolean,
     streamOrOutput: AbortableAsyncIterator<ChatResponse> | string,
   ) => void;
+}
+
+interface ToolDefinition {
+  name: string;
+  description: string;
+  usage: string;
+}
+
+const TOOLBELT_DEFINITIONS: ToolDefinition[] = [
+  {
+    name: "readFile",
+    description: "Returns the full content of a file given its name.",
+    usage: 'To read a file, output exactly: <tool>readFile</tool><arg>filename</arg>',
+  },
+  {
+    name: "listFiles",
+    description: "Returns a list of all readable file names.",
+    usage: 'To list files, output exactly: <tool>listFiles</tool>',
+  },
+  {
+    name: "write",
+    description: "Appends text to the end of the currently viewed file.",
+    usage: 'To append to the viewed file, output exactly: <tool>write</tool><arg>text to append</arg>',
+  },
+];
+
+function buildToolbeltMessage(tools: Record<string, ToolbeltToolConfig>): string {
+  const enabledTools = TOOLBELT_DEFINITIONS.filter(
+    (t) => tools[t.name]?.enabled,
+  );
+  const explainedTools = TOOLBELT_DEFINITIONS.filter(
+    (t) => tools[t.name]?.explained,
+  );
+
+  if (enabledTools.length === 0) return "";
+
+  const lines: string[] = [];
+  lines.push("You have access to the following tools:");
+  lines.push("");
+
+  for (const tool of enabledTools) {
+    lines.push(`- ${tool.name}: ${tool.description}`);
+  }
+
+  if (explainedTools.length > 0) {
+    lines.push("");
+    lines.push("Usage:");
+    for (const tool of explainedTools) {
+      if (tools[tool.name]?.enabled) {
+        lines.push(`  ${tool.usage}`);
+      }
+    }
+  }
+
+  return lines.join("\n");
 }
 
 /**
@@ -114,6 +169,9 @@ export async function resolveNodeMessages(
         content = source?.modelOutput() ?? "";
         break;
       }
+      case "toolbelt":
+        content = buildToolbeltMessage(node.toolbeltTools ?? {});
+        break;
       case "sub-pipeline": {
         if (!options.ollama || !options.model) break;
 

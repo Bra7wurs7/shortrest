@@ -6,7 +6,7 @@ import {
   Setter,
 } from "solid-js";
 import { AbortableAsyncIterator, ChatResponse, ModelResponse } from "ollama";
-import { MessageNodeConfig, MessageRole } from "../types/messageNode.interface";
+import { MessageNodeConfig, MessageRole, ToolbeltToolConfig } from "../types/messageNode.interface";
 
 export interface HistoryTurn {
   user: string;
@@ -35,6 +35,7 @@ function createDefaultNodes(): MessageNodeConfig[] {
       subPipelineParams: [],
       collapsed: false,
       disabled: false,
+      toolbeltTools: {},
     },
     {
       id: generateId(),
@@ -48,6 +49,7 @@ function createDefaultNodes(): MessageNodeConfig[] {
       subPipelineParams: [],
       collapsed: false,
       disabled: false,
+      toolbeltTools: {},
     },
   ];
 }
@@ -156,6 +158,7 @@ function migrateNode(raw: unknown): MessageNodeConfig {
     subPipelineParams: node.subPipelineParams ?? [],
     collapsed: node.collapsed ?? false,
     disabled: node.disabled ?? false,
+    toolbeltTools: (node.toolbeltTools as Record<string, ToolbeltToolConfig>) ?? {},
   };
 }
 
@@ -201,6 +204,7 @@ export interface UsePipelineManagerReturn {
   // Node CRUD delegated to active pipeline
   addNode: (role: MessageRole) => void;
   addHistoryNode: () => void;
+  addToolbeltNode: () => void;
   removeNode: (id: string) => void;
   moveNode: (id: string, direction: "up" | "down") => void;
   updateNode: (id: string, updates: Partial<MessageNodeConfig>) => void;
@@ -296,6 +300,7 @@ export function usePipelineManager(): UsePipelineManagerReturn {
       subPipelineParams: [],
       collapsed: false,
       disabled: false,
+      toolbeltTools: {},
     };
     p.setMessageNodes([...p.messageNodes(), newNode]);
   }
@@ -314,6 +319,30 @@ export function usePipelineManager(): UsePipelineManagerReturn {
       subPipelineParams: [],
       collapsed: false,
       disabled: false,
+      toolbeltTools: {},
+    };
+    p.setMessageNodes([...p.messageNodes(), newNode]);
+  }
+
+  function addToolbeltNode() {
+    const p = activePipeline();
+    const newNode: MessageNodeConfig = {
+      id: generateId(),
+      role: "system",
+      acquisitionMode: "toolbelt",
+      preparedContent: "",
+      fileName: "",
+      truncateLength: 0,
+      truncateUnit: "all",
+      sourcePipelineId: "",
+      subPipelineParams: [],
+      collapsed: false,
+      disabled: false,
+      toolbeltTools: {
+        readFile: { enabled: true, explained: true },
+        listFiles: { enabled: true, explained: true },
+        write: { enabled: true, explained: true },
+      },
     };
     p.setMessageNodes([...p.messageNodes(), newNode]);
   }
@@ -363,6 +392,7 @@ export function usePipelineManager(): UsePipelineManagerReturn {
     removePipeline,
     addNode,
     addHistoryNode,
+    addToolbeltNode,
     removeNode,
     moveNode,
     updateNode,

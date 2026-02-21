@@ -6,6 +6,7 @@ import { ClipboardEntry } from "../types/clipboardEntry.interface";
 import { PipelineInstance } from "../hooks/usePipelineState";
 import { MessageNode } from "./messageNode.component";
 import { HistoryNode } from "./historyNode.component";
+import { ToolbeltNode } from "./toolbeltNode.component";
 import { OllamaNode } from "./ollamaNode.component";
 import { PipelineOutput } from "./pipelineOutput.component";
 
@@ -63,7 +64,17 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
                   ownPipelineId={props.ownPipelineId}
                 />
               </Match>
-              <Match when={node().acquisitionMode !== "history"}>
+              <Match when={node().acquisitionMode === "toolbelt"}>
+                <ToolbeltNode
+                  node={node}
+                  index={index}
+                  totalNodes={props.messageNodes().length}
+                  onUpdate={props.onUpdateNode}
+                  onRemove={props.onRemoveNode}
+                  onMove={props.onMoveNode}
+                />
+              </Match>
+              <Match when={node().acquisitionMode !== "history" && node().acquisitionMode !== "toolbelt"}>
                 <MessageNode
                   node={node}
                   index={index}

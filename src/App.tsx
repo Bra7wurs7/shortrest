@@ -36,6 +36,8 @@ import { useOllamaConnection } from "./hooks/useOllamaConnection";
 import type { AbortableAsyncIterator, ChatResponse } from "ollama";
 
 import { resolveNodeMessages } from "./functions/llm/resolveNodeMessages.function";
+import { runWithTools } from "./functions/llm/runWithTools.function";
+import { hasEnabledToolbelt } from "./functions/llm/toolbeltExecutor.function";
 import { NodePipeline } from "./components/nodePipeline.component";
 import { usePipelineManager } from "./hooks/usePipelineState";
 import {
@@ -307,6 +309,9 @@ function App(): JSXElement {
       console.warn("Cannot submit pipeline: missing ollama or model");
       return;
     }
+    // Non-null aliases so TypeScript doesn't lose the narrowing in nested functions
+    const ollamaNonNull = ollama;
+    const modelNonNull = model;
 
     // Clear stale output from any sub-pipelines referenced by this pipeline's nodes
     // so that if a sub-pipeline doesn't run this time, its output area shows nothing.
@@ -321,7 +326,8 @@ function App(): JSXElement {
       }
     }
 
-    const messages = await resolveNodeMessages({
+    // Extracted so the tool loop can re-resolve on every agent iteration
+    const resolveCurrentMessages = () => resolveNodeMessages({
       nodes: p.messageNodes(),
       directInputValue: userPrompt(),
       clipboard: clipboard(),
@@ -346,6 +352,8 @@ function App(): JSXElement {
       },
     });
 
+    const messages = await resolveCurrentMessages();
+
     if (messages.length === 0) {
       console.warn("Cannot submit pipeline: no messages resolved");
       return;
@@ -368,75 +376,99 @@ function App(): JSXElement {
     p.setModelOutput("");
     p.setModelThoughts("");
 
-    const request = {
-      model: model.model,
-      stream: true as const,
-      think: true,
-      messages,
-    };
+    const useToolLoop = hasEnabledToolbelt(p.messageNodes());
 
     try {
       p.setPromptLoading(true);
-      const responseStream = await ollama.chat(request);
-      p.setPromptLoading(false);
-      p.setRunningPrompt(responseStream);
 
-      let hasReceivedThinking = false;
-      let accumulatedOutput = "";
-
-      for await (const response of responseStream) {
-        if (response.message.thinking) {
-          if (!hasReceivedThinking) {
-            p.setModelThoughts("");
-            hasReceivedThinking = true;
-          }
-          p.setModelThoughts((prev) => prev + response.message.thinking);
-        }
-        if (response.message.content) {
-          accumulatedOutput += response.message.content;
-          p.setModelOutput((prev) => prev + response.message.content);
-        }
-      }
-      p.setRunningPrompt(null);
-      recordHistoryTurn(accumulatedOutput);
-    } catch (error: unknown) {
-      const isThinkingError =
-        error instanceof Error &&
-        (error.message.includes("400") ||
-          error.message.toLowerCase().includes("think"));
-
-      if (isThinkingError) {
-        // Retry without thinking
-        p.setModelOutput("");
-        try {
-          p.setPromptLoading(true);
-          const responseStream = await ollama.chat({
-            model: model.model,
+      if (useToolLoop) {
+        // Agentic tool-use loop
+        const accumulatedOutput = await runWithTools({
+          ollama,
+          model,
+          messages,
+          resolveMessages: resolveCurrentMessages,
+          toolbeltCtx: {
+            nodes: p.messageNodes(),
+            clipboard: clipboard(),
+            activeDirectoryName: activeDirectoryName(),
+            viewedFileName: viewedFile()?.fileName ?? null,
+            onWrite: (appended) => {
+              const vf = viewedFile();
+              if (!vf) return;
+              if (vf.source === "clipboard") {
+                const entry = clipboard().find((c) => c.name() === vf.fileName);
+                if (entry) {
+                  entry.setContent(entry.content() + appended);
+                }
+              }
+            },
+          },
+          onStream: (stream) => {
+            p.setPromptLoading(false);
+            p.setRunningPrompt(stream);
+          },
+          onChunk: (text) => {
+            p.setModelOutput((prev) => prev + text);
+          },
+          onThinkChunk: (text) => {
+            p.setModelThoughts((prev) => prev + text);
+          },
+          onToolStatus: (status) => {
+            p.setModelOutput((prev) => prev + "\n" + status + "\n");
+          },
+        });
+        p.setRunningPrompt(null);
+        recordHistoryTurn(accumulatedOutput);
+      } else {
+        // Standard single-shot stream (with think fallback)
+        async function streamStandard(withThink: boolean): Promise<string> {
+          const responseStream = await ollamaNonNull.chat({
+            model: modelNonNull.model,
             stream: true as const,
+            ...(withThink ? { think: true } : {}),
             messages,
           });
           p.setPromptLoading(false);
           p.setRunningPrompt(responseStream);
 
           let accumulatedOutput = "";
+          let hasReceivedThinking = false;
           for await (const response of responseStream) {
+            if (response.message.thinking) {
+              if (!hasReceivedThinking) {
+                p.setModelThoughts("");
+                hasReceivedThinking = true;
+              }
+              p.setModelThoughts((prev) => prev + response.message.thinking);
+            }
             if (response.message.content) {
               accumulatedOutput += response.message.content;
               p.setModelOutput((prev) => prev + response.message.content);
             }
           }
-          p.setRunningPrompt(null);
-          recordHistoryTurn(accumulatedOutput);
-        } catch (retryError) {
-          p.setPromptLoading(false);
-          p.setRunningPrompt(null);
-          console.error("Error processing chat response:", retryError);
+          return accumulatedOutput;
         }
-      } else {
-        p.setPromptLoading(false);
+
+        let accumulatedOutput: string;
+        try {
+          accumulatedOutput = await streamStandard(true);
+        } catch (thinkErr: unknown) {
+          const isThinkingError =
+            thinkErr instanceof Error &&
+            (thinkErr.message.includes("400") ||
+              thinkErr.message.toLowerCase().includes("think"));
+          if (!isThinkingError) throw thinkErr;
+          p.setModelOutput("");
+          accumulatedOutput = await streamStandard(false);
+        }
         p.setRunningPrompt(null);
-        console.error("Error processing chat response:", error);
+        recordHistoryTurn(accumulatedOutput);
       }
+    } catch (error: unknown) {
+      p.setPromptLoading(false);
+      p.setRunningPrompt(null);
+      console.error("Error processing chat response:", error);
     }
   }
 
@@ -795,6 +827,13 @@ function App(): JSXElement {
             title="Add History node"
           >
             <i class="bx bx-history"></i>
+          </button>
+          <button
+            class="button_icon"
+            onclick={() => pipelineMgr.addToolbeltNode()}
+            title="Add Toolbelt node"
+          >
+            <i class="bx bx-wrench"></i>
           </button>
         </div>
       </div>
