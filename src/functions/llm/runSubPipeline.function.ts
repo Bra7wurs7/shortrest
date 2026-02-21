@@ -28,6 +28,8 @@ export async function runSubPipeline(
       messages,
     });
 
+    // Notify caller of the new stream so the abort handle is always current,
+    // including when this is a retry after a think-unsupported error.
     onStream?.(responseStream);
 
     let output = "";

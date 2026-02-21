@@ -263,6 +263,17 @@ export function usePipelineManager(): UsePipelineManagerReturn {
     target?.runningPrompt()?.abort();
 
     const remaining = current.filter((p) => p.id !== id);
+
+    // Clear broken pipeline references in all surviving pipelines
+    for (const p of remaining) {
+      const cleaned = p.messageNodes().map((n) =>
+        n.sourcePipelineId === id ? { ...n, sourcePipelineId: "" } : n,
+      );
+      if (cleaned.some((n, i) => n !== p.messageNodes()[i])) {
+        p.setMessageNodes(cleaned);
+      }
+    }
+
     setPipelines(remaining);
 
     if (activePipelineId() === id) {

@@ -43,9 +43,9 @@ export function PipelineOutput(props: PipelineOutputProps): JSXElement {
       if (node.acquisitionMode !== "sub-pipeline" || node.disabled) continue;
       if (seen.has(node.sourcePipelineId)) continue;
       seen.add(node.sourcePipelineId);
-      const pipeline = props.pipelines().find((p) => p.id === node.sourcePipelineId);
-      if (!pipeline) continue;
       const index = props.pipelines().findIndex((p) => p.id === node.sourcePipelineId);
+      if (index === -1) continue;
+      const pipeline = props.pipelines()[index];
       result.push({ pipeline, index });
     }
     return result;

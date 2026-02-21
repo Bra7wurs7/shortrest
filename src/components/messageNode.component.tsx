@@ -1,4 +1,4 @@
-import { Accessor, For, JSXElement, Match, Show, Switch } from "solid-js";
+import { Accessor, createMemo, For, JSXElement, Match, Show, Switch } from "solid-js";
 import {
   MessageAcquisitionMode,
   MessageNodeConfig,
@@ -88,6 +88,13 @@ export function MessageNode(props: MessageNodeProps): JSXElement {
       .find((p) => p.id === node().sourcePipelineId)
       ?.subPipelineRunning();
 
+  const sourcePipelineIndex = createMemo<number | "?">(() => {
+    const id = node().sourcePipelineId;
+    if (!id) return "?";
+    const idx = props.pipelines().findIndex((p) => p.id === id);
+    return idx === -1 ? "?" : idx + 1;
+  });
+
   return (
     <div
       class={
@@ -124,19 +131,11 @@ export function MessageNode(props: MessageNodeProps): JSXElement {
             </Show>
             <Show when={node().acquisitionMode === "pipeline-output"}>
               {" "}
-              (pipeline{" "}
-              {props
-                .pipelines()
-                .findIndex((p) => p.id === node().sourcePipelineId) + 1 || "?"}
-              )
+              (pipeline {sourcePipelineIndex()})
             </Show>
             <Show when={node().acquisitionMode === "sub-pipeline"}>
               {" "}
-              (sub-pipeline{" "}
-              {props
-                .pipelines()
-                .findIndex((p) => p.id === node().sourcePipelineId) + 1 || "?"}
-              )
+              (sub-pipeline {sourcePipelineIndex()})
             </Show>
           </span>
           <Show when={isSubPipelineRunning()}>

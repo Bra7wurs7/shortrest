@@ -1,11 +1,12 @@
 import { Accessor, For, JSXElement, Show } from "solid-js";
 import { HistoryTurn, PipelineInstance } from "../hooks/usePipelineState";
+import { MessageNodeConfig } from "../types/messageNode.interface";
 
 export interface HistoryNodeProps {
-  node: Accessor<{ id: string; collapsed: boolean; disabled: boolean }>;
+  node: Accessor<MessageNodeConfig>;
   index: number;
   totalNodes: number;
-  onUpdate: (id: string, updates: { collapsed?: boolean; disabled?: boolean }) => void;
+  onUpdate: (id: string, updates: Partial<MessageNodeConfig>) => void;
   onRemove: (id: string) => void;
   onMove: (id: string, direction: "up" | "down") => void;
   pipelines: Accessor<PipelineInstance[]>;
