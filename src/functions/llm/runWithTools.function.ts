@@ -3,6 +3,10 @@ import { parseToolCalls, executeTool, ToolbeltContext } from "./toolbeltExecutor
 
 const MAX_TOOL_TURNS = 10;
 
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 export interface RunWithToolsOptions {
   ollama: Ollama;
   model: ModelResponse;
@@ -16,12 +20,17 @@ export interface RunWithToolsOptions {
   resolveMessages: () => Promise<Message[]>;
   /** Called when a new stream opens (so it can be stored for abort) */
   onStream: (stream: AbortableAsyncIterator<ChatResponse>) => void;
-  /** Called with each streamed content chunk */
+  /** Called with each streamed content chunk during the final (no-tool-calls) turn */
   onChunk: (text: string) => void;
   /** Called with each thinking chunk */
   onThinkChunk: (text: string) => void;
-  /** Called before each tool-call round-trip with a status line like "[readFile: notes.txt]" */
-  onToolStatus: (status: string) => void;
+  /**
+   * Called after each tool-call turn with the fully-resolved output for that turn,
+   * including inline tool call markup and results — ready for display.
+   */
+  onToolTurnComplete: (formattedTurn: string) => void;
+  /** Called with the clipboard accessor so tool context always reads current state */
+  getClipboard: () => ToolbeltContext["clipboard"];
 }
 
 /**
@@ -36,13 +45,14 @@ export interface RunWithToolsOptions {
 export async function runWithTools(
   options: RunWithToolsOptions,
 ): Promise<string> {
-  const { ollama, model, toolbeltCtx, resolveMessages, onStream, onChunk, onThinkChunk, onToolStatus } = options;
+  const { ollama, model, toolbeltCtx, resolveMessages, onStream, onChunk, onThinkChunk, onToolTurnComplete, getClipboard } = options;
 
   // toolExchange accumulates the assistant+tool-result pairs from this agentic session.
   // On each follow-up turn, fresh base messages are resolved and this exchange is appended.
   const toolExchange: Message[] = [];
 
   let finalOutput = "";
+  let emittedFinal = false;
 
   async function streamOnce(messages: Message[], withThink: boolean): Promise<string> {
     const stream = await ollama.chat({
@@ -60,7 +70,6 @@ export async function runWithTools(
       }
       if (response.message.content) {
         output += response.message.content;
-        onChunk(response.message.content);
       }
     }
     return output;
@@ -94,25 +103,61 @@ export async function runWithTools(
     finalOutput = output;
 
     const toolCalls = parseToolCalls(output);
-    if (toolCalls.length === 0) break;
 
-    // Record the assistant turn (with its tool call markup)
-    toolExchange.push({ role: "assistant", content: output });
+    if (toolCalls.length === 0) {
+      // Final turn: no tool calls, emit directly to live display
+      onChunk(output);
+      emittedFinal = true;
+      break;
+    }
 
-    // Execute all tool calls and collect results
+    // Execute all tool calls with a fresh clipboard snapshot so writes from
+    // earlier turns are visible to subsequent reads within the same session.
+    const ctx: ToolbeltContext = {
+      ...toolbeltCtx,
+      clipboard: getClipboard(),
+    };
+
     const resultLines: string[] = [];
     for (const call of toolCalls) {
-      const argDisplay = call.arg ? `: ${call.arg}` : "";
-      onToolStatus(`[${call.name}${argDisplay}]`);
-      const result = await executeTool(call, toolbeltCtx);
+      const result = await executeTool(call, ctx);
       resultLines.push(`<tool_result tool="${call.name}">${result}</tool_result>`);
     }
 
-    // Append tool results as a new user message for the next turn
-    toolExchange.push({
-      role: "user",
-      content: resultLines.join("\n"),
-    });
+    // Build an annotated copy of the output: inline each result right after its call tag.
+    // We process the string once left-to-right, consuming calls in order, so duplicate
+    // tool names are matched positionally rather than all replacing the first occurrence.
+    let annotatedOutput = output;
+    let searchFrom = 0;
+    for (let i = 0; i < toolCalls.length; i++) {
+      const call = toolCalls[i];
+      // Match the specific call tag (with optional arg) starting from where we left off
+      const tagPattern = new RegExp(
+        `<tool>${escapeRegExp(call.name)}<\\/tool>(?:<arg>[\\s\\S]*?<\\/arg>)?`,
+      );
+      const relative = annotatedOutput.slice(searchFrom).search(tagPattern);
+      if (relative === -1) continue;
+      const matchStart = searchFrom + relative;
+      const tagMatch = tagPattern.exec(annotatedOutput.slice(matchStart));
+      if (!tagMatch) continue;
+      const matchEnd = matchStart + tagMatch[0].length;
+      const insertion = tagMatch[0] + resultLines[i];
+      annotatedOutput = annotatedOutput.slice(0, matchStart) + insertion + annotatedOutput.slice(matchEnd);
+      searchFrom = matchStart + insertion.length;
+    }
+
+    // Emit the annotated turn (call + inline result) to the display
+    onToolTurnComplete(annotatedOutput);
+
+    // Record for the next Ollama turn
+    toolExchange.push({ role: "assistant", content: output });
+    toolExchange.push({ role: "user", content: resultLines.join("\n") });
+  }
+
+  // If all turns contained tool calls and the loop exhausted MAX_TOOL_TURNS,
+  // onChunk was never called — emit whatever we have so the display isn't empty.
+  if (!emittedFinal && finalOutput) {
+    onChunk(finalOutput);
   }
 
   return finalOutput;

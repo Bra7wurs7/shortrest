@@ -742,6 +742,17 @@
             border-bottom-right-radius: var(--size_toolbar_width_half);
         }
 
+        /* All toolbar buttons dim at rest — only light up on interaction or active state */
+        .button_icon {
+            color: var(--dark3);
+            &:hover {
+                color: var(--color_foreground_soft);
+            }
+            &.active {
+                color: var(--color_foreground);
+            }
+        }
+
         .toolbar_spacer {
             flex: 1;
         }
@@ -1076,6 +1087,7 @@
             align-items: center;
             .bx {
                 cursor: pointer;
+                color: var(--dark3);
                 &:hover {
                     color: var(--color_foreground);
                 }

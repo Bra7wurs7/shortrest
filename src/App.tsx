@@ -55,6 +55,44 @@ import { LeftSidebar } from "./components/leftSidebar.component";
 import { LeftToolbar } from "./components/leftToolbar.component";
 import { CenterPanel } from "./components/centerPanel.component";
 
+/**
+ * Returns a flush function that accumulates string chunks and applies them
+ * to a setter at most once per animation frame, preventing per-token re-renders.
+ * Call flush(chunk) to enqueue; the pending buffer is written on the next rAF.
+ * Call flush.cancel() when the stream ends to immediately drain any remainder.
+ */
+function createRafAccumulator(
+  setter: (updater: (prev: string) => string) => void,
+): { (chunk: string): void; cancel: () => void } {
+  let buffer = "";
+  let rafId: number | null = null;
+
+  function drain() {
+    rafId = null;
+    if (!buffer) return;
+    const pending = buffer;
+    buffer = "";
+    setter((prev) => prev + pending);
+  }
+
+  function flush(chunk: string) {
+    buffer += chunk;
+    if (rafId === null) {
+      rafId = requestAnimationFrame(drain);
+    }
+  }
+
+  flush.cancel = () => {
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+    drain();
+  };
+
+  return flush;
+}
+
 function App(): JSXElement {
   // ============================================
   // App-level signals
@@ -383,6 +421,7 @@ function App(): JSXElement {
 
       if (useToolLoop) {
         // Agentic tool-use loop
+        const flushThoughts = createRafAccumulator(p.setModelThoughts);
         const accumulatedOutput = await runWithTools({
           ollama,
           model,
@@ -404,20 +443,22 @@ function App(): JSXElement {
               }
             },
           },
+          getClipboard: clipboard,
           onStream: (stream) => {
             p.setPromptLoading(false);
             p.setRunningPrompt(stream);
           },
+          // Final turn: onChunk is called once with the complete output — no batching needed
           onChunk: (text) => {
             p.setModelOutput((prev) => prev + text);
           },
-          onThinkChunk: (text) => {
-            p.setModelThoughts((prev) => prev + text);
-          },
-          onToolStatus: (status) => {
-            p.setModelOutput((prev) => prev + "\n" + status + "\n");
+          onThinkChunk: flushThoughts,
+          // Tool turns: append annotated output (call + inline result) as a block
+          onToolTurnComplete: (annotated) => {
+            p.setModelOutput((prev) => prev + annotated + "\n");
           },
         });
+        flushThoughts.cancel();
         p.setRunningPrompt(null);
         recordHistoryTurn(accumulatedOutput);
       } else {
@@ -432,20 +473,28 @@ function App(): JSXElement {
           p.setPromptLoading(false);
           p.setRunningPrompt(responseStream);
 
+          const flushOutput = createRafAccumulator(p.setModelOutput);
+          const flushThoughts = createRafAccumulator(p.setModelThoughts);
+
           let accumulatedOutput = "";
           let hasReceivedThinking = false;
-          for await (const response of responseStream) {
-            if (response.message.thinking) {
-              if (!hasReceivedThinking) {
-                p.setModelThoughts("");
-                hasReceivedThinking = true;
+          try {
+            for await (const response of responseStream) {
+              if (response.message.thinking) {
+                if (!hasReceivedThinking) {
+                  p.setModelThoughts("");
+                  hasReceivedThinking = true;
+                }
+                flushThoughts(response.message.thinking);
               }
-              p.setModelThoughts((prev) => prev + response.message.thinking);
+              if (response.message.content) {
+                accumulatedOutput += response.message.content;
+                flushOutput(response.message.content);
+              }
             }
-            if (response.message.content) {
-              accumulatedOutput += response.message.content;
-              p.setModelOutput((prev) => prev + response.message.content);
-            }
+          } finally {
+            flushOutput.cancel();
+            flushThoughts.cancel();
           }
           return accumulatedOutput;
         }
