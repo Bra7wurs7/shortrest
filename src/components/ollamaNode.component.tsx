@@ -57,7 +57,7 @@ export function OllamaNode(props: OllamaNodeProps): JSXElement {
             }
           >
             <Match when={props.promptLoading()}>
-              <button class="node_run_btn" disabled>
+              <button class="node_run_btn loading" disabled>
                 <i class="bx bx-loader-alt bx-spin" />
               </button>
             </Match>

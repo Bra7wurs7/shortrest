@@ -790,6 +790,7 @@ function App(): JSXElement {
                 class={
                   "button_icon pipeline_btn" +
                   (pipelineMgr.activePipelineId() === p.id ? " active" : "") +
+                  (p.promptLoading() && p.runningPrompt() === null ? " loading" : "") +
                   (p.runningPrompt() !== null ? " running" : "") +
                   (p.subPipelineRunning() ? " sub_running" : "") +
                   (pendingRemovePipelineId() === p.id ? " red" : "")
