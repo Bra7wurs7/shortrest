@@ -60,7 +60,10 @@ const TOOLBELT_DEFINITIONS: ToolDefinition[] = [
   {
     name: "write",
     description: "Appends text to the end of the currently viewed file.",
-    usage: 'To append to the viewed file, output exactly: <tool>write</tool><arg>text to append</arg>',
+    usage:
+      "To append to the viewed file, place the full content inside <arg> tags immediately after </tool>. " +
+      "The closing </arg> tag must appear right after the last character of content — do not add any commentary after it. Example:\n" +
+      "<tool>write</tool><arg>Line one\nLine two\n</arg>",
   },
 ];
 

@@ -26,7 +26,20 @@ export function parseToolCalls(text: string): ToolCall[] {
   const toolPattern = /<tool>([\s\S]*?)<\/tool>(?:<arg>([\s\S]*?)<\/arg>)?/g;
   let match: RegExpExecArray | null;
   while ((match = toolPattern.exec(text)) !== null) {
-    calls.push({ name: match[1].trim(), arg: match[2]?.trim() ?? null });
+    const name = match[1].trim();
+    // Preserve arg whitespace exactly — trimming corrupts content written by the write tool.
+    let arg = match[2] ?? null;
+
+    // Fallback: if the closed </arg> pattern didn't match, check whether the text
+    // contains an unclosed <arg> tag right after </tool> (e.g. LLM output was truncated).
+    // Capture everything from <arg> to end-of-string rather than silently dropping the content.
+    if (arg === null) {
+      const afterTag = text.slice(match.index + match[0].length);
+      const unclosed = /^<arg>([\s\S]*)$/.exec(afterTag);
+      if (unclosed) arg = unclosed[1];
+    }
+
+    calls.push({ name, arg });
   }
   return calls;
 }
