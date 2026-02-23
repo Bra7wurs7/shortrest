@@ -12,8 +12,6 @@ export type MessageAcquisitionMode =
 export interface ToolbeltToolConfig {
   /** Whether the LLM is allowed to use this tool */
   enabled: boolean;
-  /** Whether the LLM is given a usage explanation for this tool */
-  explained: boolean;
 }
 
 /** A parameter override for a sub-pipeline node execution */

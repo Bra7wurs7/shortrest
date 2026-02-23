@@ -1044,10 +1044,6 @@
         border-bottom-left-radius: var(--size_toolbar_width_half);
         width: 100%;
 
-        &.running {
-            outline: var(--size_border) solid var(--green-dim);
-        }
-
         .pipeline_node {
             &:first-of-type .prompt_header {
                 border-top-left-radius: var(--size_toolbar_width_half);
@@ -1150,7 +1146,8 @@
             display: grid;
             grid-template-columns: 22px 1fr;
             font-size: small;
-            border-bottom: var(--size_border) var(--style_border) var(--color_border);
+            border-bottom: var(--size_border) var(--style_border)
+                var(--color_border);
 
             &:last-child {
                 border-bottom: 0;
@@ -1164,7 +1161,8 @@
             padding-top: var(--size_padding);
             color: var(--color_border_light);
             background-color: var(--color_background_soft);
-            border-right: var(--size_border) var(--style_border) var(--color_border);
+            border-right: var(--size_border) var(--style_border)
+                var(--color_border);
             font-size: 9px;
             font-family: var(--mono);
             gap: 2px;
@@ -1196,44 +1194,30 @@
             display: flex;
             flex-direction: column;
             padding: var(--size_padding);
-        }
-
-        .toolbelt_tool_header_row,
-        .toolbelt_tool_row {
-            display: grid;
-            grid-template-columns: 1fr 28px 28px;
-            align-items: center;
             gap: 2px;
-            padding: 2px var(--size_padding);
         }
 
-        .toolbelt_tool_header_row {
-            color: var(--color_border_light);
-            font-size: 0.75em;
-            padding-bottom: 4px;
+        .toolbelt_tool_row {
+            padding: 0 var(--size_padding);
         }
 
-        .toolbelt_tool_col_label {
-            text-align: center;
+        .toolbelt_checkbox {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+
+            input[type="checkbox"] {
+                cursor: pointer;
+                accent-color: var(--aqua);
+                flex-shrink: 0;
+            }
         }
 
         .toolbelt_tool_name {
             font-family: var(--mono);
             font-size: 0.85em;
             color: var(--color_foreground_soft);
-            cursor: default;
-        }
-
-        .toolbelt_checkbox {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            cursor: pointer;
-
-            input[type="checkbox"] {
-                cursor: pointer;
-                accent-color: var(--aqua);
-            }
         }
 
         .file_input {
@@ -1262,8 +1246,10 @@
         .sub_pipeline_params {
             display: flex;
             flex-direction: column;
-            border-right: var(--size_border) var(--style_border) var(--color_border);
-            border-bottom: var(--size_border) var(--style_border) var(--color_border);
+            border-right: var(--size_border) var(--style_border)
+                var(--color_border);
+            border-bottom: var(--size_border) var(--style_border)
+                var(--color_border);
             border-left: 2px solid var(--blue-dim);
 
             .params_label {
@@ -1277,7 +1263,8 @@
                 display: flex;
                 flex-direction: column;
                 gap: 0;
-                border-top: var(--size_border) var(--style_border) var(--color_border);
+                border-top: var(--size_border) var(--style_border)
+                    var(--color_border);
 
                 .param_node_label {
                     padding: var(--size_padding);
@@ -1289,7 +1276,8 @@
                 .param_value_input {
                     background-color: var(--color_background_hard);
                     color: var(--color_foreground_hard);
-                    border: var(--size_border) var(--style_border) var(--color_border);
+                    border: var(--size_border) var(--style_border)
+                        var(--color_border);
                     border-top-color: transparent;
                     border-right-color: transparent;
                     font-family: var(--sans);
@@ -1863,11 +1851,25 @@
 }
 
 @keyframes pipeline_btn_pulse_green {
-    0%, 100% { color: var(--green); border-color: var(--green-dim); }
-    50% { color: var(--green-dim); border-color: var(--color_border); }
+    0%,
+    100% {
+        color: var(--green);
+        border-color: var(--green-dim);
+    }
+    50% {
+        color: var(--green-dim);
+        border-color: var(--color_border);
+    }
 }
 
 @keyframes pipeline_btn_pulse_blue {
-    0%, 100% { color: var(--blue); border-color: var(--blue-dim); }
-    50% { color: var(--blue-dim); border-color: var(--color_border); }
+    0%,
+    100% {
+        color: var(--blue);
+        border-color: var(--blue-dim);
+    }
+    50% {
+        color: var(--blue-dim);
+        border-color: var(--color_border);
+    }
 }

@@ -1,9 +1,6 @@
-import { Accessor, createEffect, createSignal, Setter, untrack } from "solid-js";
+import { Accessor, createEffect, createSignal, Setter } from "solid-js";
 import { ModelResponse, Ollama } from "ollama";
-import {
-  localStorageOllamaSummaryModel,
-  localStorageOllamaUrl,
-} from "../constants/storageKeys";
+import { localStorageOllamaUrl } from "../constants/storageKeys";
 
 export interface UseOllamaConnectionReturn {
   ollamaConnection: Accessor<Ollama | null>;
@@ -12,8 +9,6 @@ export interface UseOllamaConnectionReturn {
   setOllamaUrl: Setter<string>;
   ollamaModels: Accessor<ModelResponse[] | null>;
   setOllamaModels: Setter<ModelResponse[] | null>;
-  ollamaSummaryModel: Accessor<ModelResponse | null>;
-  setOllamaSummaryModel: Setter<ModelResponse | null>;
 }
 
 export function useOllamaConnection(): UseOllamaConnectionReturn {
@@ -26,8 +21,6 @@ export function useOllamaConnection(): UseOllamaConnectionReturn {
   const [ollamaModels, setOllamaModels] = createSignal<ModelResponse[] | null>(
     null,
   );
-  const [ollamaSummaryModel, setOllamaSummaryModel] =
-    createSignal<ModelResponse | null>(null);
 
   createEffect(() => {
     setOllamaConnection(new Ollama({ host: ollamaUrl() }));
@@ -39,36 +32,14 @@ export function useOllamaConnection(): UseOllamaConnectionReturn {
       .then((m) => {
         setOllamaModels(m.models);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("Failed to list Ollama models:", err);
         setOllamaModels(null);
       });
   });
 
   createEffect(() => {
     localStorage.setItem(localStorageOllamaUrl, ollamaUrl());
-  });
-
-  createEffect(() => {
-    const llmModel = ollamaSummaryModel();
-    if (llmModel !== null) {
-      localStorage.setItem(localStorageOllamaSummaryModel, llmModel.model);
-    }
-  });
-
-  createEffect(() => {
-    const llmModel = untrack(ollamaSummaryModel);
-    const allLlmModels = ollamaModels();
-    if (allLlmModels && allLlmModels.length > 0 && llmModel === null) {
-      const localStorageModelName = localStorage.getItem(
-        localStorageOllamaSummaryModel,
-      );
-      const model = allLlmModels.find((m) => m.model === localStorageModelName);
-      if (model !== undefined) {
-        setOllamaSummaryModel(model);
-      } else {
-        setOllamaSummaryModel(allLlmModels[0] ?? null);
-      }
-    }
   });
 
   return {
@@ -78,7 +49,5 @@ export function useOllamaConnection(): UseOllamaConnectionReturn {
     setOllamaUrl,
     ollamaModels,
     setOllamaModels,
-    ollamaSummaryModel,
-    setOllamaSummaryModel,
   };
 }

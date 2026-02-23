@@ -33,7 +33,7 @@ export function ToolbeltNode(props: ToolbeltNodeProps): JSXElement {
   const node = props.node;
 
   function getToolConfig(name: string): ToolbeltToolConfig {
-    return node().toolbeltTools[name] ?? { enabled: false, explained: false };
+    return node().toolbeltTools[name] ?? { enabled: false };
   }
 
   function setToolConfig(name: string, updates: Partial<ToolbeltToolConfig>) {
@@ -107,20 +107,12 @@ export function ToolbeltNode(props: ToolbeltNodeProps): JSXElement {
       <Show when={!node().collapsed}>
         <div class="prompt_body">
           <div class="toolbelt_tool_list">
-            <div class="toolbelt_tool_header_row">
-              <span class="toolbelt_tool_name_col" />
-              <span class="toolbelt_tool_col_label" title="LLM may use this tool">Use</span>
-              <span class="toolbelt_tool_col_label" title="LLM is given usage explanation">Info</span>
-            </div>
             <For each={TOOL_DEFINITIONS}>
               {(tool) => (
                 <div class="toolbelt_tool_row">
-                  <span class="toolbelt_tool_name" title={tool.description}>
-                    {tool.label}
-                  </span>
                   <label
                     class="toolbelt_checkbox"
-                    title="Allow LLM to use this tool"
+                    title={tool.description}
                     onclick={(e) => e.stopPropagation()}
                   >
                     <input
@@ -130,19 +122,7 @@ export function ToolbeltNode(props: ToolbeltNodeProps): JSXElement {
                         setToolConfig(tool.name, { enabled: e.currentTarget.checked })
                       }
                     />
-                  </label>
-                  <label
-                    class="toolbelt_checkbox"
-                    title="Explain this tool's usage to the LLM"
-                    onclick={(e) => e.stopPropagation()}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={getToolConfig(tool.name).explained}
-                      onchange={(e) =>
-                        setToolConfig(tool.name, { explained: e.currentTarget.checked })
-                      }
-                    />
+                    <span class="toolbelt_tool_name">{tool.label}</span>
                   </label>
                 </div>
               )}

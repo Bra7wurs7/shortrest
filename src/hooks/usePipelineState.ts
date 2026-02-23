@@ -339,9 +339,9 @@ export function usePipelineManager(): UsePipelineManagerReturn {
       collapsed: false,
       disabled: false,
       toolbeltTools: {
-        readFile: { enabled: true, explained: true },
-        listFiles: { enabled: true, explained: true },
-        write: { enabled: true, explained: true },
+        readFile: { enabled: true },
+        listFiles: { enabled: true },
+        write: { enabled: true },
       },
     };
     p.setMessageNodes([...p.messageNodes(), newNode]);

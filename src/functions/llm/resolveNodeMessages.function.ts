@@ -71,9 +71,6 @@ function buildToolbeltMessage(tools: Record<string, ToolbeltToolConfig>): string
   const enabledTools = TOOLBELT_DEFINITIONS.filter(
     (t) => tools[t.name]?.enabled,
   );
-  const explainedTools = TOOLBELT_DEFINITIONS.filter(
-    (t) => tools[t.name]?.explained,
-  );
 
   if (enabledTools.length === 0) return "";
 
@@ -83,16 +80,7 @@ function buildToolbeltMessage(tools: Record<string, ToolbeltToolConfig>): string
 
   for (const tool of enabledTools) {
     lines.push(`- ${tool.name}: ${tool.description}`);
-  }
-
-  if (explainedTools.length > 0) {
-    lines.push("");
-    lines.push("Usage:");
-    for (const tool of explainedTools) {
-      if (tools[tool.name]?.enabled) {
-        lines.push(`  ${tool.usage}`);
-      }
-    }
+    lines.push(`  ${tool.usage}`);
   }
 
   return lines.join("\n");

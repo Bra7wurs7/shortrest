@@ -104,6 +104,7 @@ function App(): JSXElement {
     createSignal<RightSidebarMode>(
       (() => { const v = localStorage.getItem(localStorageRightSidebarMode); return (v === "pipeline" || v === "testbench") ? v as RightSidebarMode : RightSidebarMode.Pipeline; })(),
     );
+  const [pendingRemovePipelineId, setPendingRemovePipelineId] = createSignal<string | null>(null);
   const [directoryNames, setDirectoryNames] = createSignal<string[]>([]);
   const [activeDirectoryName, setActiveDirectoryName] = createSignal<
     string | null
@@ -156,8 +157,6 @@ function App(): JSXElement {
     setOllamaUrl,
     ollamaModels,
     setOllamaModels,
-    ollamaSummaryModel,
-    setOllamaSummaryModel,
   } = useOllamaConnection();
 
   // ============================================
@@ -331,6 +330,8 @@ function App(): JSXElement {
         storeViewedFile(null);
       }
     });
+  }).catch((err) => {
+    console.error("Failed to load directories on startup:", err);
   });
 
   // ============================================
@@ -439,6 +440,7 @@ function App(): JSXElement {
                 const entry = clipboard().find((c) => c.name() === vf.fileName);
                 if (entry) {
                   entry.setContent(entry.content() + appended);
+                  storeClipboard(clipboard);
                 }
               }
             },
@@ -730,8 +732,6 @@ function App(): JSXElement {
         setViewedFile={setViewedFile}
         ollamaConnection={ollamaConnection}
         setOllamaConnection={setOllamaConnection}
-        ollamaSummaryModel={ollamaSummaryModel}
-        setOllamaSummaryModel={setOllamaSummaryModel}
         ollamaModels={ollamaModels}
         setOllamaModels={setOllamaModels}
         ollamaUrl={ollamaUrl}
@@ -791,18 +791,40 @@ function App(): JSXElement {
                   "button_icon pipeline_btn" +
                   (pipelineMgr.activePipelineId() === p.id ? " active" : "") +
                   (p.runningPrompt() !== null ? " running" : "") +
-                  (p.subPipelineRunning() ? " sub_running" : "")
+                  (p.subPipelineRunning() ? " sub_running" : "") +
+                  (pendingRemovePipelineId() === p.id ? " red" : "")
                 }
-                onclick={() => pipelineMgr.setActivePipelineId(p.id)}
+                onclick={() => {
+                  if (pendingRemovePipelineId() === p.id) {
+                    if (pipelineMgr.pipelines().length > 1) {
+                      pipelineMgr.removePipeline(p.id);
+                    }
+                    setPendingRemovePipelineId(null);
+                  } else {
+                    setPendingRemovePipelineId(null);
+                    pipelineMgr.setActivePipelineId(p.id);
+                  }
+                }}
                 oncontextmenu={(e) => {
                   e.preventDefault();
                   if (pipelineMgr.pipelines().length > 1) {
-                    pipelineMgr.removePipeline(p.id);
+                    setPendingRemovePipelineId(p.id);
                   }
                 }}
-                title={`Pipeline ${index() + 1}${p.runningPrompt() !== null ? " (running)" : ""}${p.subPipelineRunning() ? " (sub-pipeline running)" : ""} — right-click to remove`}
+                onmouseleave={() => {
+                  if (pendingRemovePipelineId() === p.id) {
+                    setPendingRemovePipelineId(null);
+                  }
+                }}
+                title={
+                  pendingRemovePipelineId() === p.id
+                    ? "Click to remove pipeline"
+                    : `Pipeline ${index() + 1}${p.runningPrompt() !== null ? " (running)" : ""}${p.subPipelineRunning() ? " (sub-pipeline running)" : ""} — right-click to remove`
+                }
               >
-                {index() + 1}
+                {pendingRemovePipelineId() === p.id
+                  ? <i class="bx bx-x" />
+                  : index() + 1}
               </button>
             )}
           </For>
