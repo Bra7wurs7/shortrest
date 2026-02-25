@@ -6,7 +6,6 @@ export const localStorageClipboardKey = "clipboard";
 export const localStorageViewedFileKey = "viewedFile";
 export const localStorageActiveDirectoryName = "activeDirectory";
 export const localStorageFileViewerMode = "fileViewerMode";
-export const localStorageRightSidebarMode = "rightSidebarMode";
 export const localStorageOllamaModel = "ollamaModel";
 export const localStorageOllamaUrl = "ollamaUrl";
 export const localStorageLLMApiKey = "llmApiKey";

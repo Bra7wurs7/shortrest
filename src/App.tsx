@@ -3,8 +3,6 @@ import {
   createMemo,
   createSignal,
   For,
-  Match,
-  Switch,
   type JSXElement,
 } from "solid-js";
 import { FileViewerMode } from "./types/fileViewerMode.enum";
@@ -44,10 +42,7 @@ import {
   localStorageChatUserPrompt,
   localStorageActiveDirectoryName,
   localStorageFileViewerMode,
-  localStorageRightSidebarMode,
 } from "./constants/storageKeys";
-import { RightSidebarMode } from "./types/rightSidebarMode.enum";
-import { TestBench } from "./components/testBench.component";
 import { extractBracketQuery } from "./functions/extractBracketQuery.function";
 import { longestCommonPrefix } from "./functions/longestCommonPrefix.function";
 
@@ -100,15 +95,6 @@ function App(): JSXElement {
   const [fileViewerMode, setFileViewerMode] = createSignal<FileViewerMode>(
     localStorage.getItem(localStorageFileViewerMode) as FileViewerMode,
   );
-  const [rightSidebarMode, setRightSidebarMode] =
-    createSignal<RightSidebarMode>(
-      (() => {
-        const v = localStorage.getItem(localStorageRightSidebarMode);
-        return v === "pipeline" || v === "testbench"
-          ? (v as RightSidebarMode)
-          : RightSidebarMode.Pipeline;
-      })(),
-    );
   const [pendingRemovePipelineId, setPendingRemovePipelineId] = createSignal<
     string | null
   >(null);
@@ -755,58 +741,51 @@ function App(): JSXElement {
         setViewedFile={setViewedFile}
       />
       <div id="RIGHT_SIDE">
-        <Switch>
-          <Match when={rightSidebarMode() === RightSidebarMode.Pipeline}>
-            <NodePipeline
-              messageNodes={() => pipelineMgr.activePipeline().messageNodes()}
-              onUpdateNode={pipelineMgr.updateNode}
-              onRemoveNode={pipelineMgr.removeNode}
-              onMoveNode={pipelineMgr.moveNode}
-              ollamaNodeCollapsed={() =>
-                pipelineMgr.activePipeline().ollamaNodeCollapsed()
-              }
-              setOllamaNodeCollapsed={(v) => {
-                const val =
-                  typeof v === "function"
-                    ? v(pipelineMgr.activePipeline().ollamaNodeCollapsed())
-                    : v;
-                pipelineMgr.activePipeline().setOllamaNodeCollapsed(() => val);
-              }}
-              llmUrl={llmUrl}
-              setLLMUrl={setLLMUrl}
-              llmApiKey={llmApiKey}
-              setLLMApiKey={setLLMApiKey}
-              llmProviderType={llmProviderType}
-              llmModels={llmModels}
-              llmModel={() => pipelineMgr.activePipeline().model()}
-              setLLMModel={(v) =>
-                pipelineMgr.activePipeline().setModel(v)
-              }
-              promptLoading={() => pipelineMgr.activePipeline().promptLoading()}
-              runningPrompt={() => pipelineMgr.activePipeline().runningPrompt()}
-              onSubmit={handlePipelineSubmit}
-              modelThoughts={() => pipelineMgr.activePipeline().modelThoughts()}
-              modelOutput={() => pipelineMgr.activePipeline().modelOutput()}
-              clipboard={clipboard}
-              activeDirectoryParsedFileNames={activeDirectoryParsedFileNames}
-              pipelines={pipelineMgr.pipelines}
-              ownPipelineId={pipelineMgr.activePipeline().id}
-              isRunning={() =>
-                pipelineMgr.activePipeline().promptLoading() ||
-                pipelineMgr.activePipeline().runningPrompt() !== null
-              }
-              onAbortSubPipeline={(pipelineId) => {
-                const target = pipelineMgr
-                  .pipelines()
-                  .find((p) => p.id === pipelineId);
-                target?.runningPrompt()?.abort();
-              }}
-            />
-          </Match>
-          <Match when={rightSidebarMode() === RightSidebarMode.TestBench}>
-            <TestBench></TestBench>
-          </Match>
-        </Switch>
+        <NodePipeline
+          messageNodes={() => pipelineMgr.activePipeline().messageNodes()}
+          onUpdateNode={pipelineMgr.updateNode}
+          onRemoveNode={pipelineMgr.removeNode}
+          onMoveNode={pipelineMgr.moveNode}
+          ollamaNodeCollapsed={() =>
+            pipelineMgr.activePipeline().ollamaNodeCollapsed()
+          }
+          setOllamaNodeCollapsed={(v) => {
+            const val =
+              typeof v === "function"
+                ? v(pipelineMgr.activePipeline().ollamaNodeCollapsed())
+                : v;
+            pipelineMgr.activePipeline().setOllamaNodeCollapsed(() => val);
+          }}
+          llmUrl={llmUrl}
+          setLLMUrl={setLLMUrl}
+          llmApiKey={llmApiKey}
+          setLLMApiKey={setLLMApiKey}
+          llmProviderType={llmProviderType}
+          llmModels={llmModels}
+          llmModel={() => pipelineMgr.activePipeline().model()}
+          setLLMModel={(v) =>
+            pipelineMgr.activePipeline().setModel(v)
+          }
+          promptLoading={() => pipelineMgr.activePipeline().promptLoading()}
+          runningPrompt={() => pipelineMgr.activePipeline().runningPrompt()}
+          onSubmit={handlePipelineSubmit}
+          modelThoughts={() => pipelineMgr.activePipeline().modelThoughts()}
+          modelOutput={() => pipelineMgr.activePipeline().modelOutput()}
+          clipboard={clipboard}
+          activeDirectoryParsedFileNames={activeDirectoryParsedFileNames}
+          pipelines={pipelineMgr.pipelines}
+          ownPipelineId={pipelineMgr.activePipeline().id}
+          isRunning={() =>
+            pipelineMgr.activePipeline().promptLoading() ||
+            pipelineMgr.activePipeline().runningPrompt() !== null
+          }
+          onAbortSubPipeline={(pipelineId) => {
+            const target = pipelineMgr
+              .pipelines()
+              .find((p) => p.id === pipelineId);
+            target?.runningPrompt()?.abort();
+          }}
+        />
         <div id="RIGHT_TOOLBAR">
           <For each={pipelineMgr.pipelines()}>
             {(p, index) => (

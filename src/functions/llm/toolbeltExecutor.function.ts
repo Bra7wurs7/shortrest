@@ -1,7 +1,7 @@
 import { MessageNodeConfig } from "../../types/messageNode.interface";
 import { ClipboardEntry } from "../../types/clipboardEntry.interface";
 import { getFileContent, listFileNamesInDirectory } from "../dbFilesInterface.functions";
-import { NativeTool } from "../../types/llmProvider.interface";
+import { NativeTool, NativeToolCall } from "../../types/llmProvider.interface";
 
 export interface ToolbeltContext {
   /** Nodes from the active pipeline (used to find which tools are enabled) */
@@ -14,35 +14,6 @@ export interface ToolbeltContext {
   viewedFileName: string | null;
   /** Called when the write tool appends content to the viewed clipboard file */
   onWrite: (appended: string) => void;
-}
-
-export interface ToolCall {
-  name: string;
-  arg: string | null;
-}
-
-/** Parse all <tool>name</tool><arg>value</arg> calls from LLM output */
-export function parseToolCalls(text: string): ToolCall[] {
-  const calls: ToolCall[] = [];
-  const toolPattern = /<tool>([\s\S]*?)<\/tool>(?:<arg>([\s\S]*?)<\/arg>)?/g;
-  let match: RegExpExecArray | null;
-  while ((match = toolPattern.exec(text)) !== null) {
-    const name = match[1].trim();
-    // Preserve arg whitespace exactly — trimming corrupts content written by the write tool.
-    let arg = match[2] ?? null;
-
-    // Fallback: if the closed </arg> pattern didn't match, check whether the text
-    // contains an unclosed <arg> tag right after </tool> (e.g. LLM output was truncated).
-    // Capture everything from <arg> to end-of-string rather than silently dropping the content.
-    if (arg === null) {
-      const afterTag = text.slice(match.index + match[0].length);
-      const unclosed = /^<arg>([\s\S]*)$/.exec(afterTag);
-      if (unclosed) arg = unclosed[1];
-    }
-
-    calls.push({ name, arg });
-  }
-  return calls;
 }
 
 /** Returns the set of tool names that are enabled across all toolbelt nodes */
@@ -60,7 +31,7 @@ function enabledTools(nodes: MessageNodeConfig[]): Set<string> {
 
 /** Execute a single tool call and return the result string */
 export async function executeTool(
-  call: ToolCall,
+  call: NativeToolCall,
   ctx: ToolbeltContext,
 ): Promise<string> {
   const allowed = enabledTools(ctx.nodes);
@@ -71,7 +42,7 @@ export async function executeTool(
 
   switch (call.name) {
     case "readFile": {
-      const fileName = call.arg?.trim();
+      const fileName = String(call.args.filename ?? "").trim();
       if (!fileName) return "[readFile: no filename provided]";
 
       // Check clipboard first
@@ -96,7 +67,7 @@ export async function executeTool(
     }
 
     case "write": {
-      const text = call.arg ?? "";
+      const text = String(call.args.content ?? "");
       if (!ctx.viewedFileName) return "[write: no file is currently viewed]";
       ctx.onWrite(text);
       return `[write: appended to ${ctx.viewedFileName}]`;

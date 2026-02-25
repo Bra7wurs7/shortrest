@@ -1,6 +1,6 @@
 import { LLMAbortableStream, LLMModelInfo, LLMProvider, NativeTool } from "../../types/llmProvider.interface";
 import { Message } from "ollama";
-import { executeTool, ToolbeltContext, ToolCall } from "./toolbeltExecutor.function";
+import { executeTool, ToolbeltContext } from "./toolbeltExecutor.function";
 
 const MAX_TOOL_TURNS = 10;
 
@@ -119,18 +119,7 @@ export async function runWithTools(
     const callSummaryLines: string[] = [];
 
     for (const nativeCall of nativeToolCalls) {
-      // Map native call args to the ToolCall interface expected by executeTool
-      // For readFile the arg is the filename, for write it's the content, for listFiles it's null
-      const call: ToolCall = {
-        name: nativeCall.name,
-        arg: nativeCall.name === "readFile"
-          ? String(nativeCall.args.filename ?? "")
-          : nativeCall.name === "write"
-            ? String(nativeCall.args.content ?? "")
-            : null,
-      };
-
-      const result = await executeTool(call, ctx);
+      const result = await executeTool(nativeCall, ctx);
       resultLines.push(result);
       callSummaryLines.push(`[tool: ${nativeCall.name}] → ${result.slice(0, 120)}${result.length > 120 ? "…" : ""}`);
     }

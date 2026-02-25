@@ -20,9 +20,10 @@ interface SerializedClipboardEntry {
 export function loadClipboard(): ClipboardEntry[] {
   const storedClipboard = localStorage.getItem(localStorageClipboardKey);
   if (storedClipboard) {
-    const parsed = parseClipboard(storedClipboard);
-    if (typeof parsed !== "string") {
-      return parsed;
+    try {
+      return parseClipboard(storedClipboard);
+    } catch {
+      return [];
     }
   }
   return [];
@@ -82,22 +83,17 @@ export function storeViewedFile(viewedFile: ViewedFile | null) {
 }
 
 /**
- * Parses a JSON string into ClipboardEntry array
+ * Parses a JSON string into ClipboardEntry array. Throws on invalid input.
  */
-function parseClipboard(clipboardJson: string): ClipboardEntry[] | string {
-  let entries: SerializedClipboardEntry[];
-  try {
-    entries = JSON.parse(clipboardJson);
-  } catch (error) {
-    return `Error parsing JSON: ${error}`;
-  }
+function parseClipboard(clipboardJson: string): ClipboardEntry[] {
+  const entries: SerializedClipboardEntry[] = JSON.parse(clipboardJson);
 
   if (!Array.isArray(entries)) {
-    return "The parsed result is not an array";
+    throw new Error("Clipboard data is not an array");
   }
 
   if (
-    entries.every(
+    !entries.every(
       (entry) =>
         "name" in entry &&
         typeof entry.name === "string" &&
@@ -112,23 +108,23 @@ function parseClipboard(clipboardJson: string): ClipboardEntry[] | string {
           typeof entry.sourceDirectory === "string"),
     )
   ) {
-    return entries.map(
-      ({ name, content, originalName, originalContent, sourceDirectory }) => {
-        const [n, setN] = createSignal(name);
-        const [c, setC] = createSignal(content);
-
-        return {
-          name: n,
-          setName: setN,
-          content: c,
-          setContent: setC,
-          originalName,
-          originalContent,
-          sourceDirectory,
-        };
-      },
-    );
-  } else {
-    return "The array contains elements that are not valid ClipboardEntry objects";
+    throw new Error("Clipboard data contains invalid entries");
   }
+
+  return entries.map(
+    ({ name, content, originalName, originalContent, sourceDirectory }) => {
+      const [n, setN] = createSignal(name);
+      const [c, setC] = createSignal(content);
+
+      return {
+        name: n,
+        setName: setN,
+        content: c,
+        setContent: setC,
+        originalName,
+        originalContent,
+        sourceDirectory,
+      };
+    },
+  );
 }
