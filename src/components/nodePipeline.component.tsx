@@ -29,6 +29,7 @@ export interface NodePipelineProps {
   setLLMModel: (model: LLMModelInfo | null) => void;
   promptLoading: Accessor<boolean>;
   runningPrompt: Accessor<LLMAbortableStream | null>;
+  pendingContinue: Accessor<(() => void) | null>;
   onSubmit: () => void;
 
   // Output
@@ -109,6 +110,7 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
           setLLMModel={props.setLLMModel}
           promptLoading={props.promptLoading}
           runningPrompt={props.runningPrompt}
+          pendingContinue={props.pendingContinue}
           onSubmit={props.onSubmit}
         />
       </div>

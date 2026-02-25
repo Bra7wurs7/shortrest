@@ -1084,6 +1084,11 @@
             background-color: var(--color_background_soft);
         }
 
+        .llm_status_text {
+            font-style: italic;
+            color: var(--color_foreground_soft);
+        }
+
         .node_header_actions {
             gap: var(--size_margin);
             align-items: center;
@@ -1200,22 +1205,39 @@
             font-style: italic;
         }
 
-        .toolbelt_tool_list {
+        .toolbelt_body {
             display: flex;
             flex-direction: column;
-            padding: var(--size_padding);
-            gap: 2px;
+            gap: 1px;
         }
 
-        .toolbelt_tool_row {
-            padding: 0 var(--size_padding);
+        .toolbelt_tool_card {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding: 7px 10px;
+            border-left: 2px solid transparent;
+            transition: border-color var(--transition_duration) ease-in;
+
+            &.enabled {
+                border-left-color: var(--aqua-dim);
+            }
         }
 
-        .toolbelt_checkbox {
+        .toolbelt_tool_header {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--size_margin);
+        }
+
+        .toolbelt_enable_label {
             display: flex;
             align-items: center;
             gap: 6px;
             cursor: pointer;
+            user-select: none;
 
             input[type="checkbox"] {
                 cursor: pointer;
@@ -1227,7 +1249,57 @@
         .toolbelt_tool_name {
             font-family: var(--mono);
             font-size: 0.85em;
+            color: var(--color_foreground);
+        }
+
+        .toolbelt_tool_desc {
+            margin: 0;
+            font-size: 0.78em;
             color: var(--color_foreground_soft);
+            line-height: 1.4;
+        }
+
+        .toolbelt_reprompt_label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            user-select: none;
+            font-size: 0.78em;
+            border-radius: 3px;
+            padding: 1px 5px;
+            border: var(--size_border) var(--style_border) transparent;
+            transition:
+                border-color var(--transition_duration) ease-in,
+                color var(--transition_duration) ease-in;
+
+            input[type="checkbox"] {
+                display: none;
+            }
+
+            &.auto {
+                color: var(--aqua-dim);
+                border-color: var(--aqua-dim);
+                &:hover {
+                    color: var(--aqua);
+                    border-color: var(--aqua);
+                }
+            }
+
+            &.manual {
+                color: var(--orange-dim);
+                border-color: var(--orange-dim);
+                &:hover {
+                    color: var(--orange);
+                    border-color: var(--orange);
+                }
+            }
+        }
+
+        .toolbelt_reprompt_text {
+            display: flex;
+            align-items: center;
+            gap: 3px;
         }
 
         .file_input {

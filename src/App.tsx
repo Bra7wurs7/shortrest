@@ -341,6 +341,16 @@ function App(): JSXElement {
 
     // Capture the active pipeline at submit time so it streams to the right instance
     const p = pipelineMgr.activePipeline();
+
+    // If the tool loop is paused waiting for user input, resume it instead of starting fresh
+    const resume = p.pendingContinue();
+    if (resume) {
+      p.setPendingContinue(null);
+      p.setPromptLoading(true);
+      resume();
+      return;
+    }
+
     const model = p.model();
 
     if (!provider || !model) {
@@ -468,9 +478,16 @@ function App(): JSXElement {
           onToolTurnComplete: (annotated) => {
             p.setModelOutput((prev) => prev + annotated + "\n");
           },
+          // Pause the loop and wait for the user to re-submit
+          waitForUser: () => new Promise<void>((resolve) => {
+            p.setPromptLoading(false);
+            p.setRunningPrompt(null);
+            p.setPendingContinue(() => resolve);
+          }),
         });
         flushThoughts.cancel();
         p.setRunningPrompt(null);
+        p.setPendingContinue(null);
         recordHistoryTurn(accumulatedOutput);
       } else {
         // Standard single-shot stream (with think fallback)
@@ -516,8 +533,7 @@ function App(): JSXElement {
         } catch (thinkErr: unknown) {
           const isThinkingError =
             thinkErr instanceof Error &&
-            (thinkErr.message.includes("400") ||
-              thinkErr.message.toLowerCase().includes("think"));
+            thinkErr.message.toLowerCase().includes("think");
           if (!isThinkingError) throw thinkErr;
           p.setModelOutput("");
           accumulatedOutput = await streamStandard(false);
@@ -528,7 +544,10 @@ function App(): JSXElement {
     } catch (error: unknown) {
       p.setPromptLoading(false);
       p.setRunningPrompt(null);
+      p.setPendingContinue(null);
+      const message = error instanceof Error ? error.message : String(error);
       console.error("Error processing chat response:", error);
+      p.setModelOutput((prev) => prev + `\n\n*Error: ${message}*`);
     }
   }
 
@@ -768,6 +787,7 @@ function App(): JSXElement {
           }
           promptLoading={() => pipelineMgr.activePipeline().promptLoading()}
           runningPrompt={() => pipelineMgr.activePipeline().runningPrompt()}
+          pendingContinue={() => pipelineMgr.activePipeline().pendingContinue()}
           onSubmit={handlePipelineSubmit}
           modelThoughts={() => pipelineMgr.activePipeline().modelThoughts()}
           modelOutput={() => pipelineMgr.activePipeline().modelOutput()}

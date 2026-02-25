@@ -6,17 +6,17 @@ const TOOL_DEFINITIONS: { name: string; label: string; description: string }[] =
   {
     name: "readFile",
     label: "readFile",
-    description: "return the content of file with given name",
+    description: "Read the full content of a named file from the active directory or clipboard.",
   },
   {
     name: "listFiles",
     label: "listFiles",
-    description: "return a list of readable fileNames",
+    description: "List all file names available in the active directory and clipboard.",
   },
   {
     name: "write",
     label: "write",
-    description: "appends to the end of the viewed file",
+    description: "Append text to the end of the currently viewed file.",
   },
 ];
 
@@ -33,7 +33,7 @@ export function ToolbeltNode(props: ToolbeltNodeProps): JSXElement {
   const node = props.node;
 
   function getToolConfig(name: string): ToolbeltToolConfig {
-    return node().toolbeltTools[name] ?? { enabled: false };
+    return node().toolbeltTools[name] ?? { enabled: false, autoReprompt: true };
   }
 
   function setToolConfig(name: string, updates: Partial<ToolbeltToolConfig>) {
@@ -105,29 +105,54 @@ export function ToolbeltNode(props: ToolbeltNodeProps): JSXElement {
         </div>
       </div>
       <Show when={!node().collapsed}>
-        <div class="prompt_body">
-          <div class="toolbelt_tool_list">
-            <For each={TOOL_DEFINITIONS}>
-              {(tool) => (
-                <div class="toolbelt_tool_row">
-                  <label
-                    class="toolbelt_checkbox"
-                    title={tool.description}
-                    onclick={(e) => e.stopPropagation()}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={getToolConfig(tool.name).enabled}
-                      onchange={(e) =>
-                        setToolConfig(tool.name, { enabled: e.currentTarget.checked })
-                      }
-                    />
-                    <span class="toolbelt_tool_name">{tool.label}</span>
-                  </label>
+        <div class="prompt_body toolbelt_body">
+          <For each={TOOL_DEFINITIONS}>
+            {(tool) => {
+              const cfg = () => getToolConfig(tool.name);
+              return (
+                <div class={"toolbelt_tool_card" + (cfg().enabled ? " enabled" : "")}>
+                  <div class="toolbelt_tool_header">
+                    <label
+                      class="toolbelt_enable_label"
+                      onclick={(e) => e.stopPropagation()}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={cfg().enabled}
+                        onchange={(e) =>
+                          setToolConfig(tool.name, { enabled: e.currentTarget.checked })
+                        }
+                      />
+                      <span class="toolbelt_tool_name">{tool.label}</span>
+                    </label>
+                    <Show when={cfg().enabled}>
+                      <label
+                        class={"toolbelt_reprompt_label" + (cfg().autoReprompt ? " auto" : " manual")}
+                        title={cfg().autoReprompt
+                          ? "Auto: agent continues automatically after this tool runs"
+                          : "Manual: agent pauses after this tool — re-submit to continue"}
+                        onclick={(e) => e.stopPropagation()}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={cfg().autoReprompt}
+                          onchange={(e) =>
+                            setToolConfig(tool.name, { autoReprompt: e.currentTarget.checked })
+                          }
+                        />
+                        <Show when={cfg().autoReprompt} fallback={
+                          <span class="toolbelt_reprompt_text"><i class="bx bx-pause-circle" /> manual</span>
+                        }>
+                          <span class="toolbelt_reprompt_text"><i class="bx bx-refresh" /> auto</span>
+                        </Show>
+                      </label>
+                    </Show>
+                  </div>
+                  <p class="toolbelt_tool_desc">{tool.description}</p>
                 </div>
-              )}
-            </For>
-          </div>
+              );
+            }}
+          </For>
         </div>
       </Show>
     </div>

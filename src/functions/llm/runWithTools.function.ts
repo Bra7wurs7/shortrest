@@ -28,6 +28,12 @@ export interface RunWithToolsOptions {
   onToolTurnComplete: (formattedTurn: string) => void;
   /** Called with the clipboard accessor so tool context always reads current state */
   getClipboard: () => ToolbeltContext["clipboard"];
+  /**
+   * Called when a tool with autoReprompt=false has just executed, pausing the
+   * agent loop until the returned Promise resolves. The app should resolve this
+   * when the user explicitly re-submits (e.g. presses the run button again).
+   */
+  waitForUser: () => Promise<void>;
 }
 
 /**
@@ -35,14 +41,15 @@ export interface RunWithToolsOptions {
  *   1. Stream the LLM response (with tools passed to the API).
  *   2. When the stream finishes, check final() for tool_calls.
  *   3. Execute each tool call and append { role: "tool" } result messages.
- *   4. Repeat until there are no more tool calls or MAX_TOOL_TURNS is reached.
+ *   4. If any executed tool has autoReprompt=false, pause and await waitForUser().
+ *   5. Repeat until there are no more tool calls or MAX_TOOL_TURNS is reached.
  *
  * Falls back to a non-thinking request if the model rejects `think: true`.
  */
 export async function runWithTools(
   options: RunWithToolsOptions,
 ): Promise<string> {
-  const { provider, model, tools, toolbeltCtx, resolveMessages, onStream, onChunk, onThinkChunk, onToolTurnComplete, getClipboard } = options;
+  const { provider, model, tools, toolbeltCtx, resolveMessages, onStream, onChunk, onThinkChunk, onToolTurnComplete, getClipboard, waitForUser } = options;
 
   // toolExchange accumulates the assistant+tool-result messages from this agentic session.
   // On each follow-up turn, fresh base messages are resolved and this exchange is appended.
@@ -79,13 +86,24 @@ export async function runWithTools(
     } catch (err: unknown) {
       const isThinkingError =
         err instanceof Error &&
-        (err.message.includes("400") ||
-          err.message.toLowerCase().includes("think"));
+        err.message.toLowerCase().includes("think");
       if (isThinkingError) {
         return await streamOnce(messages, false);
       }
       throw err;
     }
+  }
+
+  /** Returns true if every tool called in this turn has autoReprompt enabled */
+  function shouldAutoReprompt(toolNames: string[]): boolean {
+    for (const node of toolbeltCtx.nodes) {
+      if (node.acquisitionMode !== "toolbelt" || node.disabled) continue;
+      for (const name of toolNames) {
+        const cfg = node.toolbeltTools[name];
+        if (cfg?.enabled && cfg.autoReprompt === false) return false;
+      }
+    }
+    return true;
   }
 
   for (let turn = 0; turn < MAX_TOOL_TURNS; turn++) {
@@ -141,6 +159,12 @@ export async function runWithTools(
 
     for (let i = 0; i < nativeToolCalls.length; i++) {
       toolExchange.push({ role: "tool", content: resultLines[i] } as Message);
+    }
+
+    // If any tool in this turn requires manual continuation, pause here
+    const toolNames = nativeToolCalls.map((tc) => tc.name);
+    if (!shouldAutoReprompt(toolNames)) {
+      await waitForUser();
     }
   }
 

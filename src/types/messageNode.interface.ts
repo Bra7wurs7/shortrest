@@ -12,6 +12,12 @@ export type MessageAcquisitionMode =
 export interface ToolbeltToolConfig {
   /** Whether the LLM is allowed to use this tool */
   enabled: boolean;
+  /**
+   * When true (default), the agent loop automatically re-prompts the LLM after
+   * this tool executes. When false, the loop pauses and waits for the user to
+   * manually re-submit before continuing.
+   */
+  autoReprompt: boolean;
 }
 
 /** A parameter override for a sub-pipeline node execution */

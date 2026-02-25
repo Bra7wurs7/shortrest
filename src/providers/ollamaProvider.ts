@@ -34,14 +34,24 @@ export function createOllamaProvider(host: string): LLMProvider {
             async next() {
               const result = await inner.next();
               if (result.done) {
+                // The done=true chunk carries the final assembled message which is
+                // the primary place Ollama puts tool_calls. Check it before resolving.
+                const finalMsg = result.value?.message;
+                if (finalMsg?.tool_calls && finalMsg.tool_calls.length > 0) {
+                  finalChunk = {
+                    toolCalls: finalMsg.tool_calls.map((tc) => ({
+                      name: tc.function.name,
+                      args: tc.function.arguments as Record<string, unknown>,
+                    })),
+                  };
+                }
                 finalResolve(finalChunk);
                 return { value: undefined as unknown as LLMStreamChunk, done: true };
               }
               const msg = result.value.message;
 
-              // Ollama emits tool_calls on the final assembled message (done=true on the stream),
-              // but some builds emit them on the last streaming chunk before done.
-              // Capture tool_calls whenever they appear.
+              // Some Ollama builds emit tool_calls on intermediate streaming chunks
+              // before the done=true message. Capture them here as a fallback.
               if (msg.tool_calls && msg.tool_calls.length > 0) {
                 const calls: NativeToolCall[] = msg.tool_calls.map((tc) => ({
                   name: tc.function.name,

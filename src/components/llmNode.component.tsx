@@ -27,6 +27,7 @@ export interface LlmNodeProps {
   setLLMModel: (model: LLMModelInfo | null) => void;
   promptLoading: Accessor<boolean>;
   runningPrompt: Accessor<LLMAbortableStream | null>;
+  pendingContinue: Accessor<(() => void) | null>;
   onSubmit: () => void;
 }
 
@@ -64,7 +65,17 @@ export function LlmNode(props: LlmNodeProps): JSXElement {
             }
           />
           <i class={"bx " + providerIcon(props.llmProviderType())} />
-          <span>{providerLabel(props.llmProviderType())}</span>
+          <Switch fallback={<span>{providerLabel(props.llmProviderType())}</span>}>
+            <Match when={props.promptLoading()}>
+              <span class="llm_status_text">waiting…</span>
+            </Match>
+            <Match when={props.runningPrompt() !== null}>
+              <span class="llm_status_text">generating…</span>
+            </Match>
+            <Match when={props.pendingContinue() !== null}>
+              <span class="llm_status_text">paused · re-submit to continue</span>
+            </Match>
+          </Switch>
         </div>
         <div class="right" onclick={(e) => e.stopPropagation()}>
           <Switch
