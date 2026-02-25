@@ -102,9 +102,16 @@ function App(): JSXElement {
   );
   const [rightSidebarMode, setRightSidebarMode] =
     createSignal<RightSidebarMode>(
-      (() => { const v = localStorage.getItem(localStorageRightSidebarMode); return (v === "pipeline" || v === "testbench") ? v as RightSidebarMode : RightSidebarMode.Pipeline; })(),
+      (() => {
+        const v = localStorage.getItem(localStorageRightSidebarMode);
+        return v === "pipeline" || v === "testbench"
+          ? (v as RightSidebarMode)
+          : RightSidebarMode.Pipeline;
+      })(),
     );
-  const [pendingRemovePipelineId, setPendingRemovePipelineId] = createSignal<string | null>(null);
+  const [pendingRemovePipelineId, setPendingRemovePipelineId] = createSignal<
+    string | null
+  >(null);
   const [directoryNames, setDirectoryNames] = createSignal<string[]>([]);
   const [activeDirectoryName, setActiveDirectoryName] = createSignal<
     string | null
@@ -301,38 +308,43 @@ function App(): JSXElement {
   // ============================================
   // Initialization
   // ============================================
-  listAllDirectories().then((names) => {
-    setDirectoryNames(names);
-    onUpdateDirectory(
-      directoryNames,
-      setDirectoryNames,
-      activeDirectoryName,
-    ).then(() => {
-      const storedDirName = activeDirectoryName();
-      const currentDirNames = directoryNames();
+  listAllDirectories()
+    .then((names) => {
+      setDirectoryNames(names);
+      onUpdateDirectory(
+        directoryNames,
+        setDirectoryNames,
+        activeDirectoryName,
+      ).then(() => {
+        const storedDirName = activeDirectoryName();
+        const currentDirNames = directoryNames();
 
-      if (!storedDirName || !currentDirNames.includes(storedDirName)) {
-        const emptyDirectory = currentDirNames[0];
-        if (emptyDirectory) {
-          setActiveDirectoryName(emptyDirectory);
-          localStorage.setItem(localStorageActiveDirectoryName, emptyDirectory);
+        if (!storedDirName || !currentDirNames.includes(storedDirName)) {
+          const emptyDirectory = currentDirNames[0];
+          if (emptyDirectory) {
+            setActiveDirectoryName(emptyDirectory);
+            localStorage.setItem(
+              localStorageActiveDirectoryName,
+              emptyDirectory,
+            );
+          }
         }
-      }
 
-      // Validate viewed file: if it points to a directory that no longer exists, clear it
-      const vf = viewedFile();
-      if (
-        vf?.source === "idb" &&
-        vf.directoryName &&
-        !currentDirNames.includes(vf.directoryName)
-      ) {
-        setViewedFile(null);
-        storeViewedFile(null);
-      }
+        // Validate viewed file: if it points to a directory that no longer exists, clear it
+        const vf = viewedFile();
+        if (
+          vf?.source === "idb" &&
+          vf.directoryName &&
+          !currentDirNames.includes(vf.directoryName)
+        ) {
+          setViewedFile(null);
+          storeViewedFile(null);
+        }
+      });
+    })
+    .catch((err) => {
+      console.error("Failed to load directories on startup:", err);
     });
-  }).catch((err) => {
-    console.error("Failed to load directories on startup:", err);
-  });
 
   // ============================================
   // LLM pipeline handler
@@ -356,7 +368,11 @@ function App(): JSXElement {
     // so that if a sub-pipeline doesn't run this time, its output area shows nothing.
     const allPipelines = pipelineMgr.pipelines();
     for (const node of p.messageNodes()) {
-      if (node.acquisitionMode === "sub-pipeline" && !node.disabled && node.sourcePipelineId) {
+      if (
+        node.acquisitionMode === "sub-pipeline" &&
+        !node.disabled &&
+        node.sourcePipelineId
+      ) {
         const subP = allPipelines.find((q) => q.id === node.sourcePipelineId);
         if (subP) {
           subP.setModelOutput("");
@@ -366,30 +382,35 @@ function App(): JSXElement {
     }
 
     // Extracted so the tool loop can re-resolve on every agent iteration
-    const resolveCurrentMessages = () => resolveNodeMessages({
-      nodes: p.messageNodes(),
-      directInputValue: userPrompt(),
-      clipboard: clipboard(),
-      activeDirectoryName: activeDirectoryName(),
-      displayedFileContent: displayedFileContent(),
-      pipelines: pipelineMgr.pipelines(),
-      ownHistory: p.history(),
-      ollama,
-      model,
-      ownPipelineId: p.id,
-      onSubPipelineStateChange: (pipelineId, running, streamOrOutput) => {
-        const target = pipelineMgr.pipelines().find((p) => p.id === pipelineId);
-        if (!target) return;
-        target.setSubPipelineRunning(running);
-        if (running) {
-          // streamOrOutput is the AbortableAsyncIterator — store it so it can be aborted
-          target.setRunningPrompt(streamOrOutput as AbortableAsyncIterator<ChatResponse>);
-        } else {
-          target.setRunningPrompt(null);
-          target.setModelOutput(streamOrOutput as string);
-        }
-      },
-    });
+    const resolveCurrentMessages = () =>
+      resolveNodeMessages({
+        nodes: p.messageNodes(),
+        directInputValue: userPrompt(),
+        clipboard: clipboard(),
+        activeDirectoryName: activeDirectoryName(),
+        displayedFileContent: displayedFileContent(),
+        pipelines: pipelineMgr.pipelines(),
+        ownHistory: p.history(),
+        ollama,
+        model,
+        ownPipelineId: p.id,
+        onSubPipelineStateChange: (pipelineId, running, streamOrOutput) => {
+          const target = pipelineMgr
+            .pipelines()
+            .find((p) => p.id === pipelineId);
+          if (!target) return;
+          target.setSubPipelineRunning(running);
+          if (running) {
+            // streamOrOutput is the AbortableAsyncIterator — store it so it can be aborted
+            target.setRunningPrompt(
+              streamOrOutput as AbortableAsyncIterator<ChatResponse>,
+            );
+          } else {
+            target.setRunningPrompt(null);
+            target.setModelOutput(streamOrOutput as string);
+          }
+        },
+      });
 
     const messages = await resolveCurrentMessages();
 
@@ -759,7 +780,9 @@ function App(): JSXElement {
               setOllamaUrl={setOllamaUrl}
               ollamaModels={ollamaModels}
               ollamaModel={() => pipelineMgr.activePipeline().ollamaModel()}
-              setOllamaModel={(v) => pipelineMgr.activePipeline().setOllamaModel(v)}
+              setOllamaModel={(v) =>
+                pipelineMgr.activePipeline().setOllamaModel(v)
+              }
               promptLoading={() => pipelineMgr.activePipeline().promptLoading()}
               runningPrompt={() => pipelineMgr.activePipeline().runningPrompt()}
               onSubmit={handlePipelineSubmit}
@@ -774,7 +797,9 @@ function App(): JSXElement {
                 pipelineMgr.activePipeline().runningPrompt() !== null
               }
               onAbortSubPipeline={(pipelineId) => {
-                const target = pipelineMgr.pipelines().find((p) => p.id === pipelineId);
+                const target = pipelineMgr
+                  .pipelines()
+                  .find((p) => p.id === pipelineId);
                 target?.runningPrompt()?.abort();
               }}
             />
@@ -790,7 +815,9 @@ function App(): JSXElement {
                 class={
                   "button_icon pipeline_btn" +
                   (pipelineMgr.activePipelineId() === p.id ? " active" : "") +
-                  (p.promptLoading() && p.runningPrompt() === null ? " loading" : "") +
+                  (p.promptLoading() && p.runningPrompt() === null
+                    ? " loading"
+                    : "") +
                   (p.runningPrompt() !== null ? " running" : "") +
                   (p.subPipelineRunning() ? " sub_running" : "") +
                   (pendingRemovePipelineId() === p.id ? " red" : "")
@@ -823,9 +850,11 @@ function App(): JSXElement {
                     : `Pipeline ${index() + 1}${p.runningPrompt() !== null ? " (running)" : ""}${p.subPipelineRunning() ? " (sub-pipeline running)" : ""} — right-click to remove`
                 }
               >
-                {pendingRemovePipelineId() === p.id
-                  ? <i class="bx bx-x" />
-                  : index() + 1}
+                {pendingRemovePipelineId() === p.id ? (
+                  <i class="bx bx-x" />
+                ) : (
+                  index() + 1
+                )}
               </button>
             )}
           </For>
@@ -835,41 +864,6 @@ function App(): JSXElement {
             title="Add pipeline"
           >
             <i class="bx bx-plus"></i>
-          </button>
-          <div class="toolbar_spacer" />
-          <button
-            class={
-              "button_icon" +
-              (rightSidebarMode() === RightSidebarMode.Pipeline
-                ? " active"
-                : "")
-            }
-            onclick={() => {
-              setRightSidebarMode(RightSidebarMode.Pipeline);
-              localStorage.setItem(
-                localStorageRightSidebarMode,
-                RightSidebarMode.Pipeline,
-              );
-            }}
-          >
-            <i class="bx bxs-edit"></i>
-          </button>
-          <button
-            class={
-              "button_icon" +
-              (rightSidebarMode() === RightSidebarMode.TestBench
-                ? " active"
-                : "")
-            }
-            onclick={() => {
-              setRightSidebarMode(RightSidebarMode.TestBench);
-              localStorage.setItem(
-                localStorageRightSidebarMode,
-                RightSidebarMode.TestBench,
-              );
-            }}
-          >
-            <i class="bx bx-test-tube"></i>
           </button>
           <div class="toolbar_spacer" />
           <button

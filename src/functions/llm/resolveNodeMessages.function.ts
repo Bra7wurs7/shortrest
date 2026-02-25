@@ -86,9 +86,89 @@ function buildToolbeltMessage(tools: Record<string, ToolbeltToolConfig>): string
   return lines.join("\n");
 }
 
+/** Build and start a single sub-pipeline, returning a promise for its output. */
+async function startSubPipeline(
+  node: MessageNodeConfig,
+  options: ResolveNodeMessagesOptions,
+  callStack: ReadonlySet<string>,
+): Promise<string> {
+  if (!options.ollama || !options.model) return "";
+
+  const { pipelines } = options;
+  const subPipeline = pipelines.find((p) => p.id === node.sourcePipelineId);
+  if (!subPipeline) return "";
+
+  if (callStack.has(subPipeline.id)) {
+    console.warn(
+      `Sub-pipeline cycle detected: pipeline "${subPipeline.id}" is already in the call stack. Skipping.`,
+    );
+    return "";
+  }
+
+  const overrides = new Map(
+    node.subPipelineParams.map((p) => [p.targetNodeId, p.value]),
+  );
+  const subNodes = subPipeline.messageNodes().map(
+    (n): MessageNodeConfig => {
+      const override = overrides.get(n.id);
+      if (override !== undefined) {
+        return { ...n, acquisitionMode: "prepared", preparedContent: override };
+      }
+      return n;
+    },
+  );
+
+  // Recursively resolve sub-pipeline messages.
+  // Always pass empty history — sub-pipelines are stateless function calls;
+  // their accumulated interactive history must not bleed into programmatic execution.
+  // Pass through directInputValue so "direct" mode nodes receive the parent's prompt.
+  const subMessages = await resolveNodeMessages({
+    nodes: subNodes,
+    directInputValue: options.directInputValue,
+    clipboard: options.clipboard,
+    activeDirectoryName: options.activeDirectoryName,
+    displayedFileContent: options.displayedFileContent,
+    pipelines: options.pipelines,
+    ownHistory: [],
+    ollama: options.ollama,
+    model: options.model,
+    ownPipelineId: subPipeline.id,
+    _callStack: new Set([...callStack, subPipeline.id]),
+    onSubPipelineStateChange: options.onSubPipelineStateChange,
+  });
+
+  if (subMessages.length === 0) {
+    console.warn(
+      `Sub-pipeline "${subPipeline.id}" resolved to no messages — check that its nodes have non-empty content or are overridden via subPipelineParams. Skipping.`,
+    );
+    return "";
+  }
+
+  const subModel = subPipeline.ollamaModel() ?? options.model;
+  if (!subModel) return "";
+
+  try {
+    const content = await runSubPipeline({
+      ollama: options.ollama,
+      model: subModel,
+      messages: subMessages,
+      onStream: (stream) => {
+        options.onSubPipelineStateChange?.(subPipeline.id, true, stream);
+      },
+    });
+    options.onSubPipelineStateChange?.(subPipeline.id, false, content);
+    return content;
+  } catch (e) {
+    options.onSubPipelineStateChange?.(subPipeline.id, false, "");
+    throw e;
+  }
+}
+
 /**
  * Resolves an ordered list of MessageNodeConfigs into an Ollama Message[].
  * Skips disabled nodes and nodes with empty resolved content.
+ * Sub-pipeline nodes are all started in parallel and awaited in order,
+ * so multiple sub-pipelines run concurrently while message ordering is preserved.
  */
 export async function resolveNodeMessages(
   options: ResolveNodeMessagesOptions,
@@ -110,9 +190,18 @@ export async function resolveNodeMessages(
       ? new Set([options.ownPipelineId])
       : new Set<string>());
 
+  // Pass 1: kick off all sub-pipeline executions in parallel, indexed by node position.
+  // Non-sub-pipeline nodes get null so the array stays aligned with `nodes`.
+  const subPipelinePromises: (Promise<string> | null)[] = nodes.map((node) => {
+    if (node.disabled || node.acquisitionMode !== "sub-pipeline") return null;
+    return startSubPipeline(node, options, callStack);
+  });
+
+  // Pass 2: resolve all nodes in order, awaiting each sub-pipeline promise as we reach it.
   const messages: Message[] = [];
 
-  for (const node of nodes) {
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
     if (node.disabled) continue;
 
     // History nodes expand into multiple messages and are handled separately
@@ -163,86 +252,10 @@ export async function resolveNodeMessages(
       case "toolbelt":
         content = buildToolbeltMessage(node.toolbeltTools ?? {});
         break;
-      case "sub-pipeline": {
-        if (!options.ollama || !options.model) break;
-
-        const subPipeline = pipelines.find(
-          (p) => p.id === node.sourcePipelineId,
-        );
-        if (!subPipeline) break;
-
-        // Cycle detection
-        if (callStack.has(subPipeline.id)) {
-          console.warn(
-            `Sub-pipeline cycle detected: pipeline "${subPipeline.id}" is already in the call stack. Skipping.`,
-          );
-          break;
-        }
-
-        // Apply parameter overrides: replace overridden nodes with prepared content
-        const overrides = new Map(
-          node.subPipelineParams.map((p) => [p.targetNodeId, p.value]),
-        );
-        const subNodes = subPipeline.messageNodes().map(
-          (n): MessageNodeConfig => {
-            const override = overrides.get(n.id);
-            if (override !== undefined) {
-              return {
-                ...n,
-                acquisitionMode: "prepared",
-                preparedContent: override,
-              };
-            }
-            return n;
-          },
-        );
-
-        // Recursively resolve sub-pipeline messages.
-        // Always pass empty history — sub-pipelines are stateless function calls;
-        // their accumulated interactive history must not bleed into programmatic execution.
-        // Pass through directInputValue so "direct" mode nodes receive the parent's prompt.
-        const subMessages = await resolveNodeMessages({
-          nodes: subNodes,
-          directInputValue: options.directInputValue,
-          clipboard: options.clipboard,
-          activeDirectoryName: options.activeDirectoryName,
-          displayedFileContent: options.displayedFileContent,
-          pipelines: options.pipelines,
-          ownHistory: [],
-          ollama: options.ollama,
-          model: options.model,
-          ownPipelineId: subPipeline.id,
-          _callStack: new Set([...callStack, subPipeline.id]),
-          onSubPipelineStateChange: options.onSubPipelineStateChange,
-        });
-
-        if (subMessages.length === 0) {
-          console.warn(
-            `Sub-pipeline "${subPipeline.id}" resolved to no messages — check that its nodes have non-empty content or are overridden via subPipelineParams. Skipping.`,
-          );
-          break;
-        }
-
-        // Use the sub-pipeline's own model if set, otherwise fall back to the calling model
-        const subModel = subPipeline.ollamaModel() ?? options.model;
-        if (!subModel) break;
-
-        try {
-          content = await runSubPipeline({
-            ollama: options.ollama,
-            model: subModel,
-            messages: subMessages,
-            onStream: (stream) => {
-              options.onSubPipelineStateChange?.(subPipeline.id, true, stream);
-            },
-          });
-          options.onSubPipelineStateChange?.(subPipeline.id, false, content);
-        } catch (e) {
-          options.onSubPipelineStateChange?.(subPipeline.id, false, "");
-          throw e;
-        }
+      case "sub-pipeline":
+        // Promise was started in pass 1; await it now to get the result in order.
+        content = await (subPipelinePromises[i] ?? Promise.resolve(""));
         break;
-      }
     }
 
     if (content) {
