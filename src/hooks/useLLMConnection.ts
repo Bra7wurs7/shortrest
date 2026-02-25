@@ -40,17 +40,26 @@ export function useLLMConnection(): UseLLMConnectionReturn {
     }
   });
 
-  // Re-fetch model list when provider changes
+  // Re-fetch model list when provider changes.
+  // A generation counter ensures that only the response from the *latest* provider
+  // is applied — stale responses from rapid URL switching are discarded.
+  let fetchGeneration = 0;
+
   createEffect(() => {
     const provider = llmProvider();
     if (!provider) return;
 
+    const gen = ++fetchGeneration;
+    setLLMModels(null);
+
     provider
       .listModels()
       .then((models) => {
+        if (gen !== fetchGeneration) return; // stale — a newer fetch already started
         setLLMModels(models);
       })
       .catch((err) => {
+        if (gen !== fetchGeneration) return;
         console.error("Failed to list models:", err);
         setLLMModels(null);
       });

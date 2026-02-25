@@ -1,17 +1,14 @@
-import { LLMAbortableStream, LLMModelInfo, LLMProvider } from "../../types/llmProvider.interface";
+import { LLMAbortableStream, LLMModelInfo, LLMProvider, NativeTool } from "../../types/llmProvider.interface";
 import { Message } from "ollama";
-import { parseToolCalls, executeTool, ToolbeltContext } from "./toolbeltExecutor.function";
+import { executeTool, ToolbeltContext, ToolCall } from "./toolbeltExecutor.function";
 
 const MAX_TOOL_TURNS = 10;
-
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 export interface RunWithToolsOptions {
   provider: LLMProvider;
   model: LLMModelInfo;
   messages: Message[];
+  tools: NativeTool[];
   toolbeltCtx: ToolbeltContext;
   /**
    * Called before each follow-up LLM turn to re-resolve the full pipeline
@@ -26,8 +23,7 @@ export interface RunWithToolsOptions {
   /** Called with each thinking chunk */
   onThinkChunk: (text: string) => void;
   /**
-   * Called after each tool-call turn with the fully-resolved output for that turn,
-   * including inline tool call markup and results — ready for display.
+   * Called after each tool-call turn with a formatted summary of calls + results.
    */
   onToolTurnComplete: (formattedTurn: string) => void;
   /** Called with the clipboard accessor so tool context always reads current state */
@@ -35,48 +31,49 @@ export interface RunWithToolsOptions {
 }
 
 /**
- * Runs an agentic tool-use loop:
- *   1. Stream the LLM response.
- *   2. If the output contains <tool> calls, execute them and append
- *      the results as a new user message, then repeat.
- *   3. Stop when there are no more tool calls or MAX_TOOL_TURNS is reached.
+ * Runs an agentic native tool-use loop:
+ *   1. Stream the LLM response (with tools passed to the API).
+ *   2. When the stream finishes, check final() for tool_calls.
+ *   3. Execute each tool call and append { role: "tool" } result messages.
+ *   4. Repeat until there are no more tool calls or MAX_TOOL_TURNS is reached.
  *
  * Falls back to a non-thinking request if the model rejects `think: true`.
  */
 export async function runWithTools(
   options: RunWithToolsOptions,
 ): Promise<string> {
-  const { provider, model, toolbeltCtx, resolveMessages, onStream, onChunk, onThinkChunk, onToolTurnComplete, getClipboard } = options;
+  const { provider, model, tools, toolbeltCtx, resolveMessages, onStream, onChunk, onThinkChunk, onToolTurnComplete, getClipboard } = options;
 
-  // toolExchange accumulates the assistant+tool-result pairs from this agentic session.
+  // toolExchange accumulates the assistant+tool-result messages from this agentic session.
   // On each follow-up turn, fresh base messages are resolved and this exchange is appended.
   const toolExchange: Message[] = [];
 
   let finalOutput = "";
   let emittedFinal = false;
 
-  async function streamOnce(messages: Message[], withThink: boolean): Promise<string> {
+  async function streamOnce(messages: Message[], withThink: boolean): Promise<{ content: string; stream: LLMAbortableStream }> {
     const stream = await provider.chat({
       model: model.id,
       stream: true as const,
       ...(withThink ? { think: true } : {}),
       messages,
+      tools,
     });
     onStream(stream);
 
-    let output = "";
+    let content = "";
     for await (const chunk of stream) {
       if (chunk.thinking) {
         onThinkChunk(chunk.thinking);
       }
       if (chunk.content) {
-        output += chunk.content;
+        content += chunk.content;
       }
     }
-    return output;
+    return { content, stream };
   }
 
-  async function streamWithFallback(messages: Message[]): Promise<string> {
+  async function streamWithFallback(messages: Message[]): Promise<{ content: string; stream: LLMAbortableStream }> {
     try {
       return await streamOnce(messages, true);
     } catch (err: unknown) {
@@ -92,67 +89,70 @@ export async function runWithTools(
   }
 
   for (let turn = 0; turn < MAX_TOOL_TURNS; turn++) {
-    // Re-resolve the full pipeline on every turn so file contents,
-    // sub-pipeline outputs, etc. are always up to date.
     const baseMessages = turn === 0
       ? [...options.messages]
       : await resolveMessages();
 
     const messages = [...baseMessages, ...toolExchange];
 
-    const output = await streamWithFallback(messages);
+    const { content: output, stream } = await streamWithFallback(messages);
     finalOutput = output;
 
-    const toolCalls = parseToolCalls(output);
+    // Check for native tool calls in the assembled response
+    const finalMeta = await stream.final();
+    const nativeToolCalls = finalMeta.toolCalls ?? [];
 
-    if (toolCalls.length === 0) {
+    if (nativeToolCalls.length === 0) {
       // Final turn: no tool calls, emit directly to live display
       onChunk(output);
       emittedFinal = true;
       break;
     }
 
-    // Execute all tool calls with a fresh clipboard snapshot so writes from
-    // earlier turns are visible to subsequent reads within the same session.
+    // Execute all tool calls with a fresh clipboard snapshot
     const ctx: ToolbeltContext = {
       ...toolbeltCtx,
       clipboard: getClipboard(),
     };
 
     const resultLines: string[] = [];
-    for (const call of toolCalls) {
+    const callSummaryLines: string[] = [];
+
+    for (const nativeCall of nativeToolCalls) {
+      // Map native call args to the ToolCall interface expected by executeTool
+      // For readFile the arg is the filename, for write it's the content, for listFiles it's null
+      const call: ToolCall = {
+        name: nativeCall.name,
+        arg: nativeCall.name === "readFile"
+          ? String(nativeCall.args.filename ?? "")
+          : nativeCall.name === "write"
+            ? String(nativeCall.args.content ?? "")
+            : null,
+      };
+
       const result = await executeTool(call, ctx);
-      resultLines.push(`<tool_result tool="${call.name}">${result}</tool_result>`);
+      resultLines.push(result);
+      callSummaryLines.push(`[tool: ${nativeCall.name}] → ${result.slice(0, 120)}${result.length > 120 ? "…" : ""}`);
     }
 
-    // Build an annotated copy of the output: inline each result right after its call tag.
-    // We process the string once left-to-right, consuming calls in order, so duplicate
-    // tool names are matched positionally rather than all replacing the first occurrence.
-    let annotatedOutput = output;
-    let searchFrom = 0;
-    for (let i = 0; i < toolCalls.length; i++) {
-      const call = toolCalls[i];
-      // Match the specific call tag (with optional arg) starting from where we left off
-      const tagPattern = new RegExp(
-        `<tool>${escapeRegExp(call.name)}<\\/tool>(?:<arg>[\\s\\S]*?<\\/arg>)?`,
-      );
-      const relative = annotatedOutput.slice(searchFrom).search(tagPattern);
-      if (relative === -1) continue;
-      const matchStart = searchFrom + relative;
-      const tagMatch = tagPattern.exec(annotatedOutput.slice(matchStart));
-      if (!tagMatch) continue;
-      const matchEnd = matchStart + tagMatch[0].length;
-      const insertion = tagMatch[0] + resultLines[i];
-      annotatedOutput = annotatedOutput.slice(0, matchStart) + insertion + annotatedOutput.slice(matchEnd);
-      searchFrom = matchStart + insertion.length;
+    // Emit a readable summary of this tool turn to the display
+    onToolTurnComplete(callSummaryLines.join("\n") + "\n");
+
+    // Append the assistant's tool-call turn and results to the exchange.
+    // Both Ollama and Mistral accept { role: "tool", content: "..." } result messages.
+    // The assistant message must carry the tool_calls so the model knows what it did.
+    toolExchange.push({
+      role: "assistant",
+      content: output,
+      // Ollama accepts tool_calls on the assistant message
+      tool_calls: nativeToolCalls.map((tc) => ({
+        function: { name: tc.name, arguments: tc.args as Record<string, string> },
+      })),
+    } as Message);
+
+    for (let i = 0; i < nativeToolCalls.length; i++) {
+      toolExchange.push({ role: "tool", content: resultLines[i] } as Message);
     }
-
-    // Emit the annotated turn (call + inline result) to the display
-    onToolTurnComplete(annotatedOutput);
-
-    // Record for the next LLM turn
-    toolExchange.push({ role: "assistant", content: output });
-    toolExchange.push({ role: "user", content: resultLines.join("\n") });
   }
 
   // If all turns contained tool calls and the loop exhausted MAX_TOOL_TURNS,

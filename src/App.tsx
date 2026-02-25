@@ -37,7 +37,7 @@ import type { LLMAbortableStream } from "./types/llmProvider.interface";
 
 import { resolveNodeMessages } from "./functions/llm/resolveNodeMessages.function";
 import { runWithTools } from "./functions/llm/runWithTools.function";
-import { hasEnabledToolbelt } from "./functions/llm/toolbeltExecutor.function";
+import { hasEnabledToolbelt, buildNativeToolDefinitions } from "./functions/llm/toolbeltExecutor.function";
 import { NodePipeline } from "./components/nodePipeline.component";
 import { usePipelineManager } from "./hooks/usePipelineState";
 import {
@@ -449,6 +449,7 @@ function App(): JSXElement {
           provider,
           model,
           messages,
+          tools: buildNativeToolDefinitions(p.messageNodes()),
           resolveMessages: resolveCurrentMessages,
           toolbeltCtx: {
             nodes: p.messageNodes(),

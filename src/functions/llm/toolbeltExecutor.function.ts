@@ -1,6 +1,7 @@
 import { MessageNodeConfig } from "../../types/messageNode.interface";
 import { ClipboardEntry } from "../../types/clipboardEntry.interface";
 import { getFileContent, listFileNamesInDirectory } from "../dbFilesInterface.functions";
+import { NativeTool } from "../../types/llmProvider.interface";
 
 export interface ToolbeltContext {
   /** Nodes from the active pipeline (used to find which tools are enabled) */
@@ -114,4 +115,66 @@ export function hasEnabledToolbelt(nodes: MessageNodeConfig[]): boolean {
       !n.disabled &&
       Object.values(n.toolbeltTools).some((cfg) => cfg.enabled),
   );
+}
+
+/** Build native tool definitions for the LLM API from the enabled toolbelt tools */
+export function buildNativeToolDefinitions(nodes: MessageNodeConfig[]): NativeTool[] {
+  const enabled = enabledTools(nodes);
+  const tools: NativeTool[] = [];
+
+  if (enabled.has("readFile")) {
+    tools.push({
+      type: "function",
+      function: {
+        name: "readFile",
+        description: "Returns the full content of a file given its name.",
+        parameters: {
+          type: "object",
+          properties: {
+            filename: {
+              type: "string",
+              description: "The name of the file to read.",
+            },
+          },
+          required: ["filename"],
+        },
+      },
+    });
+  }
+
+  if (enabled.has("listFiles")) {
+    tools.push({
+      type: "function",
+      function: {
+        name: "listFiles",
+        description: "Returns a list of all readable file names.",
+        parameters: {
+          type: "object",
+          properties: {},
+        },
+      },
+    });
+  }
+
+  if (enabled.has("write")) {
+    tools.push({
+      type: "function",
+      function: {
+        name: "write",
+        description: "Appends text to the end of the currently viewed file.",
+        parameters: {
+          type: "object",
+          properties: {
+            content: {
+              type: "string",
+              description: "The text to append to the file.",
+            },
+          },
+          required: ["content"],
+        },
+      },
+    });
+  }
+
+  return tools;
 }

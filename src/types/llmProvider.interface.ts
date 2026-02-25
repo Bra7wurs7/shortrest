@@ -3,12 +3,49 @@ export interface LLMModelInfo {
   name: string;
 }
 
+/** A single parameter property in a tool's JSON Schema */
+export interface NativeToolProperty {
+  type: string;
+  description?: string;
+  enum?: unknown[];
+}
+
+/** Native tool definition passed to the LLM API */
+export interface NativeTool {
+  type: "function";
+  function: {
+    name: string;
+    description: string;
+    parameters: {
+      type: "object";
+      properties: Record<string, NativeToolProperty>;
+      required?: string[];
+    };
+  };
+}
+
+/** A tool call returned by the model in the final assembled response */
+export interface NativeToolCall {
+  name: string;
+  /** Parsed arguments object */
+  args: Record<string, unknown>;
+}
+
 export interface LLMStreamChunk {
   content?: string;
   thinking?: string;
 }
 
-export type LLMAbortableStream = AsyncIterable<LLMStreamChunk> & { abort(): void };
+/** Final chunk may carry tool calls assembled from the full response */
+export interface LLMFinalChunk {
+  toolCalls?: NativeToolCall[];
+}
+
+export type LLMAbortableStream = AsyncIterable<LLMStreamChunk> & {
+  abort(): void;
+  /** Resolved after the stream completes — carries any tool calls from the response */
+  final(): Promise<LLMFinalChunk>;
+};
 
 export interface LLMProvider {
   chat(params: {
@@ -16,6 +53,7 @@ export interface LLMProvider {
     messages: { role: string; content: string }[];
     stream: true;
     think?: boolean;
+    tools?: NativeTool[];
   }): Promise<LLMAbortableStream>;
 
   listModels(): Promise<LLMModelInfo[]>;

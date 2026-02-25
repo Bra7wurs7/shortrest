@@ -3386,6 +3386,7 @@
         "npm:@codemirror/state@^6.5.4",
         "npm:@codemirror/view@^6.39.12",
         "npm:@lezer/highlight@1",
+        "npm:@mistralai/mistralai@^1.14.1",
         "npm:@types/file-saver@^2.0.7",
         "npm:boxicons@^2.1.4",
         "npm:buffer@^6.0.3",

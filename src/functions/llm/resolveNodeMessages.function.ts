@@ -1,6 +1,6 @@
 import { LLMAbortableStream, LLMModelInfo, LLMProvider } from "../../types/llmProvider.interface";
 import { Message } from "ollama";
-import { MessageNodeConfig, ToolbeltToolConfig } from "../../types/messageNode.interface";
+import { MessageNodeConfig } from "../../types/messageNode.interface";
 import { ClipboardEntry } from "../../types/clipboardEntry.interface";
 import { HistoryTurn, PipelineInstance } from "../../hooks/usePipelineState";
 import { getFileContent } from "../dbFilesInterface.functions";
@@ -39,52 +39,6 @@ export interface ResolveNodeMessagesOptions {
     running: boolean,
     streamOrOutput: LLMAbortableStream | string,
   ) => void;
-}
-
-interface ToolDefinition {
-  name: string;
-  description: string;
-  usage: string;
-}
-
-const TOOLBELT_DEFINITIONS: ToolDefinition[] = [
-  {
-    name: "readFile",
-    description: "Returns the full content of a file given its name.",
-    usage: 'To read a file, output exactly: <tool>readFile</tool><arg>filename</arg>',
-  },
-  {
-    name: "listFiles",
-    description: "Returns a list of all readable file names.",
-    usage: 'To list files, output exactly: <tool>listFiles</tool>',
-  },
-  {
-    name: "write",
-    description: "Appends text to the end of the currently viewed file.",
-    usage:
-      "To append to the viewed file, place the full content inside <arg> tags immediately after </tool>. " +
-      "The closing </arg> tag must appear right after the last character of content — do not add any commentary after it. Example:\n" +
-      "<tool>write</tool><arg>Line one\nLine two\n</arg>",
-  },
-];
-
-function buildToolbeltMessage(tools: Record<string, ToolbeltToolConfig>): string {
-  const enabledTools = TOOLBELT_DEFINITIONS.filter(
-    (t) => tools[t.name]?.enabled,
-  );
-
-  if (enabledTools.length === 0) return "";
-
-  const lines: string[] = [];
-  lines.push("You have access to the following tools:");
-  lines.push("");
-
-  for (const tool of enabledTools) {
-    lines.push(`- ${tool.name}: ${tool.description}`);
-    lines.push(`  ${tool.usage}`);
-  }
-
-  return lines.join("\n");
 }
 
 /** Build and start a single sub-pipeline, returning a promise for its output. */
@@ -168,6 +122,8 @@ async function startSubPipeline(
 /**
  * Resolves an ordered list of MessageNodeConfigs into an Ollama Message[].
  * Skips disabled nodes and nodes with empty resolved content.
+ * Toolbelt nodes are skipped here — they contribute tool definitions to the API
+ * call (via buildNativeToolDefinitions) rather than injecting prompt messages.
  * Sub-pipeline nodes are all started in parallel and awaited in order,
  * so multiple sub-pipelines run concurrently while message ordering is preserved.
  */
@@ -215,6 +171,10 @@ export async function resolveNodeMessages(
       continue;
     }
 
+    // Toolbelt nodes do not produce prompt messages — they signal which native
+    // tools to attach to the API request (handled by buildNativeToolDefinitions).
+    if (node.acquisitionMode === "toolbelt") continue;
+
     let content = "";
 
     switch (node.acquisitionMode) {
@@ -250,9 +210,6 @@ export async function resolveNodeMessages(
         content = source?.modelOutput() ?? "";
         break;
       }
-      case "toolbelt":
-        content = buildToolbeltMessage(node.toolbeltTools ?? {});
-        break;
       case "sub-pipeline":
         // Promise was started in pass 1; await it now to get the result in order.
         content = await (subPipelinePromises[i] ?? Promise.resolve(""));
