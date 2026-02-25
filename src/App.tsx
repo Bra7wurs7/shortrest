@@ -342,15 +342,6 @@ function App(): JSXElement {
     // Capture the active pipeline at submit time so it streams to the right instance
     const p = pipelineMgr.activePipeline();
 
-    // If the tool loop is paused waiting for user input, resume it instead of starting fresh
-    const resume = p.pendingContinue();
-    if (resume) {
-      p.setPendingContinue(null);
-      p.setPromptLoading(true);
-      resume();
-      return;
-    }
-
     const model = p.model();
 
     if (!provider || !model) {
@@ -478,16 +469,9 @@ function App(): JSXElement {
           onToolTurnComplete: (annotated) => {
             p.setModelOutput((prev) => prev + annotated + "\n");
           },
-          // Pause the loop and wait for the user to re-submit
-          waitForUser: () => new Promise<void>((resolve) => {
-            p.setPromptLoading(false);
-            p.setRunningPrompt(null);
-            p.setPendingContinue(() => resolve);
-          }),
         });
         flushThoughts.cancel();
         p.setRunningPrompt(null);
-        p.setPendingContinue(null);
         recordHistoryTurn(accumulatedOutput);
       } else {
         // Standard single-shot stream (with think fallback)
@@ -544,10 +528,15 @@ function App(): JSXElement {
     } catch (error: unknown) {
       p.setPromptLoading(false);
       p.setRunningPrompt(null);
-      p.setPendingContinue(null);
       const message = error instanceof Error ? error.message : String(error);
       console.error("Error processing chat response:", error);
       p.setModelOutput((prev) => prev + `\n\n*Error: ${message}*`);
+      return;
+    }
+
+    // Auto-rerun if loop mode is enabled
+    if (p.loopEnabled()) {
+      handlePipelineSubmit();
     }
   }
 
@@ -761,48 +750,22 @@ function App(): JSXElement {
       />
       <div id="RIGHT_SIDE">
         <NodePipeline
-          messageNodes={() => pipelineMgr.activePipeline().messageNodes()}
+          pipeline={pipelineMgr.activePipeline}
           onUpdateNode={pipelineMgr.updateNode}
           onRemoveNode={pipelineMgr.removeNode}
           onMoveNode={pipelineMgr.moveNode}
-          ollamaNodeCollapsed={() =>
-            pipelineMgr.activePipeline().ollamaNodeCollapsed()
-          }
-          setOllamaNodeCollapsed={(v) => {
-            const val =
-              typeof v === "function"
-                ? v(pipelineMgr.activePipeline().ollamaNodeCollapsed())
-                : v;
-            pipelineMgr.activePipeline().setOllamaNodeCollapsed(() => val);
-          }}
           llmUrl={llmUrl}
           setLLMUrl={setLLMUrl}
           llmApiKey={llmApiKey}
           setLLMApiKey={setLLMApiKey}
           llmProviderType={llmProviderType}
           llmModels={llmModels}
-          llmModel={() => pipelineMgr.activePipeline().model()}
-          setLLMModel={(v) =>
-            pipelineMgr.activePipeline().setModel(v)
-          }
-          promptLoading={() => pipelineMgr.activePipeline().promptLoading()}
-          runningPrompt={() => pipelineMgr.activePipeline().runningPrompt()}
-          pendingContinue={() => pipelineMgr.activePipeline().pendingContinue()}
           onSubmit={handlePipelineSubmit}
-          modelThoughts={() => pipelineMgr.activePipeline().modelThoughts()}
-          modelOutput={() => pipelineMgr.activePipeline().modelOutput()}
           clipboard={clipboard}
           activeDirectoryParsedFileNames={activeDirectoryParsedFileNames}
           pipelines={pipelineMgr.pipelines}
-          ownPipelineId={pipelineMgr.activePipeline().id}
-          isRunning={() =>
-            pipelineMgr.activePipeline().promptLoading() ||
-            pipelineMgr.activePipeline().runningPrompt() !== null
-          }
           onAbortSubPipeline={(pipelineId) => {
-            const target = pipelineMgr
-              .pipelines()
-              .find((p) => p.id === pipelineId);
+            const target = pipelineMgr.pipelines().find((p) => p.id === pipelineId);
             target?.runningPrompt()?.abort();
           }}
         />

@@ -1,5 +1,5 @@
-import { Accessor, Index, JSXElement, Match, Setter, Switch } from "solid-js";
-import { LLMAbortableStream, LLMModelInfo, LLMProviderType } from "../types/llmProvider.interface";
+import { Accessor, Index, JSXElement, Match, Switch } from "solid-js";
+import { LLMModelInfo, LLMProviderType } from "../types/llmProvider.interface";
 import { MessageNodeConfig } from "../types/messageNode.interface";
 import { ParsedFileName } from "../types/parsedFileName.interface";
 import { ClipboardEntry } from "../types/clipboardEntry.interface";
@@ -11,68 +11,60 @@ import { LlmNode } from "./llmNode.component";
 import { PipelineOutput } from "./pipelineOutput.component";
 
 export interface NodePipelineProps {
-  // Message nodes
-  messageNodes: Accessor<MessageNodeConfig[]>;
+  // Active pipeline instance — owns all per-pipeline reactive state
+  pipeline: Accessor<PipelineInstance>;
+
+  // Node CRUD callbacks
   onUpdateNode: (id: string, updates: Partial<MessageNodeConfig>) => void;
   onRemoveNode: (id: string) => void;
   onMoveNode: (id: string, direction: "up" | "down") => void;
-  // LLM node
-  ollamaNodeCollapsed: Accessor<boolean>;
-  setOllamaNodeCollapsed: Setter<boolean>;
+
+  // LLM connection (shared across pipelines)
   llmUrl: Accessor<string>;
-  setLLMUrl: Setter<string>;
+  setLLMUrl: (url: string) => void;
   llmApiKey: Accessor<string>;
-  setLLMApiKey: Setter<string>;
+  setLLMApiKey: (key: string) => void;
   llmProviderType: Accessor<LLMProviderType>;
   llmModels: Accessor<LLMModelInfo[] | null>;
-  llmModel: Accessor<LLMModelInfo | null>;
-  setLLMModel: (model: LLMModelInfo | null) => void;
-  promptLoading: Accessor<boolean>;
-  runningPrompt: Accessor<LLMAbortableStream | null>;
-  pendingContinue: Accessor<(() => void) | null>;
   onSubmit: () => void;
-
-  // Output
-  modelThoughts: Accessor<string>;
-  modelOutput: Accessor<string>;
 
   // File autocompletion data
   clipboard: Accessor<ClipboardEntry[]>;
   activeDirectoryParsedFileNames: Accessor<ParsedFileName[] | null>;
 
-  // Pipeline cross-reference data
+  // All pipeline instances (for cross-pipeline references)
   pipelines: Accessor<PipelineInstance[]>;
-  ownPipelineId: string;
 
-  // Running state for border highlight
-  isRunning: Accessor<boolean>;
   onAbortSubPipeline: (pipelineId: string) => void;
 }
 
 export function NodePipeline(props: NodePipelineProps): JSXElement {
+  const p = props.pipeline;
+  const isRunning = () => p().promptLoading() || p().runningPrompt() !== null;
+
   return (
-    <div id="PIPELINE_SIDEBAR" class={props.isRunning() ? "running" : ""}>
+    <div id="PIPELINE_SIDEBAR" class={isRunning() ? "running" : ""}>
       <div id="P_S_TOP">
-        <Index each={props.messageNodes()}>
+        <Index each={p().messageNodes()}>
           {(node, index) => (
             <Switch>
               <Match when={node().acquisitionMode === "history"}>
                 <HistoryNode
                   node={node}
                   index={index}
-                  totalNodes={props.messageNodes().length}
+                  totalNodes={p().messageNodes().length}
                   onUpdate={props.onUpdateNode}
                   onRemove={props.onRemoveNode}
                   onMove={props.onMoveNode}
                   pipelines={props.pipelines}
-                  ownPipelineId={props.ownPipelineId}
+                  ownPipelineId={p().id}
                 />
               </Match>
               <Match when={node().acquisitionMode === "toolbelt"}>
                 <ToolbeltNode
                   node={node}
                   index={index}
-                  totalNodes={props.messageNodes().length}
+                  totalNodes={p().messageNodes().length}
                   onUpdate={props.onUpdateNode}
                   onRemove={props.onRemoveNode}
                   onMove={props.onMoveNode}
@@ -82,43 +74,33 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
                 <MessageNode
                   node={node}
                   index={index}
-                  totalNodes={props.messageNodes().length}
+                  totalNodes={p().messageNodes().length}
                   onUpdate={props.onUpdateNode}
                   onRemove={props.onRemoveNode}
                   onMove={props.onMoveNode}
                   clipboard={props.clipboard}
-                  activeDirectoryParsedFileNames={
-                    props.activeDirectoryParsedFileNames
-                  }
+                  activeDirectoryParsedFileNames={props.activeDirectoryParsedFileNames}
                   pipelines={props.pipelines}
-                  ownPipelineId={props.ownPipelineId}
+                  ownPipelineId={p().id}
                 />
               </Match>
             </Switch>
           )}
         </Index>
         <LlmNode
-          collapsed={props.ollamaNodeCollapsed}
-          setCollapsed={props.setOllamaNodeCollapsed}
+          pipeline={p}
           llmUrl={props.llmUrl}
           setLLMUrl={props.setLLMUrl}
           llmApiKey={props.llmApiKey}
           setLLMApiKey={props.setLLMApiKey}
           llmProviderType={props.llmProviderType}
           llmModels={props.llmModels}
-          llmModel={props.llmModel}
-          setLLMModel={props.setLLMModel}
-          promptLoading={props.promptLoading}
-          runningPrompt={props.runningPrompt}
-          pendingContinue={props.pendingContinue}
           onSubmit={props.onSubmit}
         />
       </div>
       <div id="P_S_BOTTOM">
         <PipelineOutput
-          modelThoughts={props.modelThoughts}
-          modelOutput={props.modelOutput}
-          messageNodes={props.messageNodes}
+          pipeline={p}
           pipelines={props.pipelines}
           onAbortSubPipeline={props.onAbortSubPipeline}
         />

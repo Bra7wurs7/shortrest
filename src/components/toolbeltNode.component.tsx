@@ -33,7 +33,7 @@ export function ToolbeltNode(props: ToolbeltNodeProps): JSXElement {
   const node = props.node;
 
   function getToolConfig(name: string): ToolbeltToolConfig {
-    return node().toolbeltTools[name] ?? { enabled: false, autoReprompt: true };
+    return node().toolbeltTools[name] ?? { enabled: false };
   }
 
   function setToolConfig(name: string, updates: Partial<ToolbeltToolConfig>) {
@@ -125,28 +125,6 @@ export function ToolbeltNode(props: ToolbeltNodeProps): JSXElement {
                       />
                       <span class="toolbelt_tool_name">{tool.label}</span>
                     </label>
-                    <Show when={cfg().enabled}>
-                      <label
-                        class={"toolbelt_reprompt_label" + (cfg().autoReprompt ? " auto" : " manual")}
-                        title={cfg().autoReprompt
-                          ? "Auto: agent continues automatically after this tool runs"
-                          : "Manual: agent pauses after this tool — re-submit to continue"}
-                        onclick={(e) => e.stopPropagation()}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={cfg().autoReprompt}
-                          onchange={(e) =>
-                            setToolConfig(tool.name, { autoReprompt: e.currentTarget.checked })
-                          }
-                        />
-                        <Show when={cfg().autoReprompt} fallback={
-                          <span class="toolbelt_reprompt_text"><i class="bx bx-pause-circle" /> manual</span>
-                        }>
-                          <span class="toolbelt_reprompt_text"><i class="bx bx-refresh" /> auto</span>
-                        </Show>
-                      </label>
-                    </Show>
                   </div>
                   <p class="toolbelt_tool_desc">{tool.description}</p>
                 </div>

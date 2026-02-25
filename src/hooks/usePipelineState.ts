@@ -91,12 +91,9 @@ export interface PipelineInstance {
   setModel: Setter<LLMModelInfo | null>;
   /** The persisted model name (model id string), restored before models are loaded */
   modelName: Accessor<string | null>;
-  /**
-   * Non-null when the tool loop is paused waiting for user input (a tool with
-   * autoReprompt=false ran). Calling the function resumes the loop.
-   */
-  pendingContinue: Accessor<(() => void) | null>;
-  setPendingContinue: Setter<(() => void) | null>;
+  /** When true, the pipeline re-runs automatically after each completion. */
+  loopEnabled: Accessor<boolean>;
+  setLoopEnabled: Setter<boolean>;
 }
 
 function createPipelineInstance(data: PipelineData): PipelineInstance {
@@ -118,7 +115,7 @@ function createPipelineInstance(data: PipelineData): PipelineInstance {
   const [model, setModel] = createSignal<LLMModelInfo | null>(null);
   const resolvedModelName = data.modelName ?? data.ollamaModelName ?? null;
   const modelName = () => resolvedModelName;
-  const [pendingContinue, setPendingContinue] = createSignal<(() => void) | null>(null);
+  const [loopEnabled, setLoopEnabled] = createSignal(false);
 
   return {
     id: data.id,
@@ -141,8 +138,8 @@ function createPipelineInstance(data: PipelineData): PipelineInstance {
     model,
     setModel,
     modelName,
-    pendingContinue,
-    setPendingContinue,
+    loopEnabled,
+    setLoopEnabled,
   };
 }
 
@@ -172,7 +169,7 @@ function migrateNode(raw: unknown): MessageNodeConfig {
     disabled: node.disabled ?? false,
     toolbeltTools: Object.fromEntries(
       Object.entries((node.toolbeltTools as Record<string, Partial<ToolbeltToolConfig>>) ?? {}).map(
-        ([name, cfg]) => [name, { enabled: cfg.enabled ?? false, autoReprompt: cfg.autoReprompt ?? true }]
+        ([name, cfg]) => [name, { enabled: cfg.enabled ?? false }]
       )
     ),
   };

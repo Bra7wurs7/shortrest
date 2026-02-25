@@ -1,13 +1,6 @@
-import {
-  Accessor,
-  For,
-  JSXElement,
-  Match,
-  Setter,
-  Show,
-  Switch,
-} from "solid-js";
-import { LLMAbortableStream, LLMModelInfo, LLMProviderType } from "../types/llmProvider.interface";
+import { Accessor, For, JSXElement, Match, Show, Switch } from "solid-js";
+import { LLMModelInfo, LLMProviderType } from "../types/llmProvider.interface";
+import { PipelineInstance } from "../hooks/usePipelineState";
 
 const PRESET_URLS = [
   { label: "Local Ollama", url: "127.0.0.1:11434" },
@@ -15,69 +8,77 @@ const PRESET_URLS = [
 ];
 
 export interface LlmNodeProps {
-  collapsed: Accessor<boolean>;
-  setCollapsed: Setter<boolean>;
+  pipeline: Accessor<PipelineInstance>;
   llmUrl: Accessor<string>;
-  setLLMUrl: Setter<string>;
+  setLLMUrl: (url: string) => void;
   llmApiKey: Accessor<string>;
-  setLLMApiKey: Setter<string>;
+  setLLMApiKey: (key: string) => void;
   llmProviderType: Accessor<LLMProviderType>;
   llmModels: Accessor<LLMModelInfo[] | null>;
-  llmModel: Accessor<LLMModelInfo | null>;
-  setLLMModel: (model: LLMModelInfo | null) => void;
-  promptLoading: Accessor<boolean>;
-  runningPrompt: Accessor<LLMAbortableStream | null>;
-  pendingContinue: Accessor<(() => void) | null>;
   onSubmit: () => void;
 }
 
 function providerIcon(type: LLMProviderType): string {
   switch (type) {
-    case "mistral": return "bx-wind";
-    default: return "bx-server";
+    case "mistral":
+      return "bx-wind";
+    default:
+      return "bx-server";
   }
 }
 
 function providerLabel(type: LLMProviderType): string {
   switch (type) {
-    case "mistral": return "Mistral";
-    default: return "Ollama";
+    case "mistral":
+      return "Mistral";
+    default:
+      return "Ollama";
   }
 }
 
 export function LlmNode(props: LlmNodeProps): JSXElement {
+  const p = props.pipeline;
+
   return (
     <div
       class={
         "ai_section pipeline_node ollama_node" +
-        (props.collapsed() ? " collapsed" : "")
+        (p().ollamaNodeCollapsed() ? " collapsed" : "")
       }
     >
       <div
         class="prompt_header"
-        onclick={() => props.setCollapsed(!props.collapsed())}
+        onclick={() => p().setOllamaNodeCollapsed(!p().ollamaNodeCollapsed())}
       >
         <div class="left">
           <i
             class={
               "bx " +
-              (props.collapsed() ? "bx-chevron-right" : "bx-chevron-down")
+              (p().ollamaNodeCollapsed()
+                ? "bx-chevron-right"
+                : "bx-chevron-down")
             }
           />
           <i class={"bx " + providerIcon(props.llmProviderType())} />
-          <Switch fallback={<span>{providerLabel(props.llmProviderType())}</span>}>
-            <Match when={props.promptLoading()}>
-              <span class="llm_status_text">waiting…</span>
+          <Switch
+            fallback={<span>{providerLabel(props.llmProviderType())}</span>}
+          >
+            <Match when={p().promptLoading()}>
+              <span class="llm_status_text">loading…</span>
             </Match>
-            <Match when={props.runningPrompt() !== null}>
+            <Match when={p().runningPrompt() !== null}>
               <span class="llm_status_text">generating…</span>
-            </Match>
-            <Match when={props.pendingContinue() !== null}>
-              <span class="llm_status_text">paused · re-submit to continue</span>
             </Match>
           </Switch>
         </div>
         <div class="right" onclick={(e) => e.stopPropagation()}>
+          <button
+            class={"node_loop_btn" + (p().loopEnabled() ? " active" : "")}
+            title={p().loopEnabled() ? "Loop: on — click to disable" : "Loop: off — click to enable"}
+            onClick={() => p().setLoopEnabled(!p().loopEnabled())}
+          >
+            <i class="bx bx-repeat" />
+          </button>
           <Switch
             fallback={
               <button
@@ -89,15 +90,15 @@ export function LlmNode(props: LlmNodeProps): JSXElement {
               </button>
             }
           >
-            <Match when={props.promptLoading()}>
+            <Match when={p().promptLoading()}>
               <button class="node_run_btn loading" disabled>
                 <i class="bx bx-loader-alt bx-spin" />
               </button>
             </Match>
-            <Match when={props.runningPrompt() !== null}>
+            <Match when={p().runningPrompt() !== null}>
               <button
                 class="node_run_btn abort"
-                onClick={() => props.runningPrompt()?.abort()}
+                onClick={() => p().runningPrompt()?.abort()}
                 title="Abort"
               >
                 <i class="bx bx-stop" />
@@ -106,7 +107,7 @@ export function LlmNode(props: LlmNodeProps): JSXElement {
           </Switch>
         </div>
       </div>
-      <Show when={!props.collapsed()}>
+      <Show when={!p().ollamaNodeCollapsed()}>
         <div class="prompt_settings">
           <div class="settings_row preset_buttons">
             <For each={PRESET_URLS}>
@@ -181,14 +182,14 @@ export function LlmNode(props: LlmNodeProps): JSXElement {
                 const model = props
                   .llmModels()
                   ?.find((m) => m.id === e.currentTarget.value);
-                props.setLLMModel(model ?? null);
+                p().setModel(model ?? null);
               }}
             >
               <For each={props.llmModels()}>
                 {(model: LLMModelInfo) => (
                   <option
                     value={model.id}
-                    selected={props.llmModel()?.id === model.id}
+                    selected={p().model()?.id === model.id}
                   >
                     {model.name}
                   </option>
