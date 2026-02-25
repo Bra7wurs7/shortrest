@@ -1,15 +1,16 @@
-import { AbortableAsyncIterator, ChatResponse, Message, Ollama, ModelResponse } from "ollama";
+import { LLMAbortableStream, LLMModelInfo, LLMProvider } from "../../types/llmProvider.interface";
+import { Message } from "ollama";
 
 export interface RunSubPipelineOptions {
-  ollama: Ollama;
-  model: ModelResponse;
+  provider: LLMProvider;
+  model: LLMModelInfo;
   messages: Message[];
   /** Called immediately after the stream is opened, before any tokens are consumed. */
-  onStream?: (stream: AbortableAsyncIterator<ChatResponse>) => void;
+  onStream?: (stream: LLMAbortableStream) => void;
 }
 
 /**
- * Executes a sub-pipeline by sending messages to Ollama and accumulating the
+ * Executes a sub-pipeline by sending messages to the LLM provider and accumulating the
  * full response. Non-streaming — the complete output is returned as a string.
  * Thinking tokens are discarded; only content is returned.
  * Falls back to non-thinking mode if the model does not support it.
@@ -18,11 +19,11 @@ export interface RunSubPipelineOptions {
 export async function runSubPipeline(
   options: RunSubPipelineOptions,
 ): Promise<string> {
-  const { ollama, model, messages, onStream } = options;
+  const { provider, model, messages, onStream } = options;
 
   async function attemptRun(withThink: boolean): Promise<string> {
-    const responseStream = await ollama.chat({
-      model: model.model,
+    const stream = await provider.chat({
+      model: model.id,
       stream: true as const,
       ...(withThink ? { think: true } : {}),
       messages,
@@ -30,12 +31,12 @@ export async function runSubPipeline(
 
     // Notify caller of the new stream so the abort handle is always current,
     // including when this is a retry after a think-unsupported error.
-    onStream?.(responseStream);
+    onStream?.(stream);
 
     let output = "";
-    for await (const response of responseStream) {
-      if (response.message.content) {
-        output += response.message.content;
+    for await (const chunk of stream) {
+      if (chunk.content) {
+        output += chunk.content;
       }
     }
     return output;

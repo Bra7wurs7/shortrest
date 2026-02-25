@@ -1,4 +1,5 @@
-import { AbortableAsyncIterator, ChatResponse, Message, Ollama, ModelResponse } from "ollama";
+import { LLMAbortableStream, LLMModelInfo, LLMProvider } from "../../types/llmProvider.interface";
+import { Message } from "ollama";
 import { MessageNodeConfig, ToolbeltToolConfig } from "../../types/messageNode.interface";
 import { ClipboardEntry } from "../../types/clipboardEntry.interface";
 import { HistoryTurn, PipelineInstance } from "../../hooks/usePipelineState";
@@ -20,10 +21,10 @@ export interface ResolveNodeMessagesOptions {
   pipelines: PipelineInstance[];
   /** History turns from the owning pipeline, injected by history nodes */
   ownHistory: HistoryTurn[];
-  /** Ollama connection — required for "sub-pipeline" mode */
-  ollama: Ollama | null;
+  /** LLM provider — required for "sub-pipeline" mode */
+  provider: LLMProvider | null;
   /** Selected model — required for "sub-pipeline" mode */
-  model: ModelResponse | null;
+  model: LLMModelInfo | null;
   /** ID of the pipeline that owns these nodes — used for cycle detection */
   ownPipelineId?: string;
   /** Internal: pipeline IDs currently on the call stack, for cycle detection */
@@ -36,7 +37,7 @@ export interface ResolveNodeMessagesOptions {
   onSubPipelineStateChange?: (
     pipelineId: string,
     running: boolean,
-    streamOrOutput: AbortableAsyncIterator<ChatResponse> | string,
+    streamOrOutput: LLMAbortableStream | string,
   ) => void;
 }
 
@@ -92,7 +93,7 @@ async function startSubPipeline(
   options: ResolveNodeMessagesOptions,
   callStack: ReadonlySet<string>,
 ): Promise<string> {
-  if (!options.ollama || !options.model) return "";
+  if (!options.provider || !options.model) return "";
 
   const { pipelines } = options;
   const subPipeline = pipelines.find((p) => p.id === node.sourcePipelineId);
@@ -130,7 +131,7 @@ async function startSubPipeline(
     displayedFileContent: options.displayedFileContent,
     pipelines: options.pipelines,
     ownHistory: [],
-    ollama: options.ollama,
+    provider: options.provider,
     model: options.model,
     ownPipelineId: subPipeline.id,
     _callStack: new Set([...callStack, subPipeline.id]),
@@ -144,12 +145,12 @@ async function startSubPipeline(
     return "";
   }
 
-  const subModel = subPipeline.ollamaModel() ?? options.model;
+  const subModel = subPipeline.model() ?? options.model;
   if (!subModel) return "";
 
   try {
     const content = await runSubPipeline({
-      ollama: options.ollama,
+      provider: options.provider!,
       model: subModel,
       messages: subMessages,
       onStream: (stream) => {

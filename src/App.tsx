@@ -32,8 +32,8 @@ import {
   getOrCreateEditableFile,
   ensureEmptyClipboardFile,
 } from "./app-handlers";
-import { useOllamaConnection } from "./hooks/useOllamaConnection";
-import type { AbortableAsyncIterator, ChatResponse } from "ollama";
+import { useLLMConnection } from "./hooks/useLLMConnection";
+import type { LLMAbortableStream } from "./types/llmProvider.interface";
 
 import { resolveNodeMessages } from "./functions/llm/resolveNodeMessages.function";
 import { runWithTools } from "./functions/llm/runWithTools.function";
@@ -155,16 +155,17 @@ function App(): JSXElement {
   const [directoryCollapsed, setDirectoryCollapsed] = createSignal(false);
 
   // ============================================
-  // Ollama connection
+  // LLM connection
   // ============================================
   const {
-    ollamaConnection,
-    setOllamaConnection,
-    ollamaUrl,
-    setOllamaUrl,
-    ollamaModels,
-    setOllamaModels,
-  } = useOllamaConnection();
+    llmProvider,
+    llmProviderType,
+    llmUrl,
+    setLLMUrl,
+    llmApiKey,
+    setLLMApiKey,
+    llmModels,
+  } = useLLMConnection();
 
   // ============================================
   // Prompt / pipeline state
@@ -178,7 +179,7 @@ function App(): JSXElement {
 
   // Resolve each pipeline's model when the model list loads or when pipelines change
   createEffect(() => {
-    const models = ollamaModels();
+    const models = llmModels();
     pipelineMgr.pipelines(); // track pipeline list so new pipelines get resolved too
     if (models && models.length > 0) {
       pipelineMgr.resolveModels(models);
@@ -350,18 +351,18 @@ function App(): JSXElement {
   // LLM pipeline handler
   // ============================================
   async function handlePipelineSubmit() {
-    const ollama = ollamaConnection();
+    const provider = llmProvider();
 
     // Capture the active pipeline at submit time so it streams to the right instance
     const p = pipelineMgr.activePipeline();
-    const model = p.ollamaModel();
+    const model = p.model();
 
-    if (!ollama || !model) {
-      console.warn("Cannot submit pipeline: missing ollama or model");
+    if (!provider || !model) {
+      console.warn("Cannot submit pipeline: missing provider or model");
       return;
     }
     // Non-null aliases so TypeScript doesn't lose the narrowing in nested functions
-    const ollamaNonNull = ollama;
+    const providerNonNull = provider;
     const modelNonNull = model;
 
     // Clear stale output from any sub-pipelines referenced by this pipeline's nodes
@@ -391,7 +392,7 @@ function App(): JSXElement {
         displayedFileContent: displayedFileContent(),
         pipelines: pipelineMgr.pipelines(),
         ownHistory: p.history(),
-        ollama,
+        provider,
         model,
         ownPipelineId: p.id,
         onSubPipelineStateChange: (pipelineId, running, streamOrOutput) => {
@@ -401,9 +402,9 @@ function App(): JSXElement {
           if (!target) return;
           target.setSubPipelineRunning(running);
           if (running) {
-            // streamOrOutput is the AbortableAsyncIterator — store it so it can be aborted
+            // streamOrOutput is the LLMAbortableStream — store it so it can be aborted
             target.setRunningPrompt(
-              streamOrOutput as AbortableAsyncIterator<ChatResponse>,
+              streamOrOutput as LLMAbortableStream,
             );
           } else {
             target.setRunningPrompt(null);
@@ -445,7 +446,7 @@ function App(): JSXElement {
         // Agentic tool-use loop
         const flushThoughts = createRafAccumulator(p.setModelThoughts);
         const accumulatedOutput = await runWithTools({
-          ollama,
+          provider,
           model,
           messages,
           resolveMessages: resolveCurrentMessages,
@@ -487,8 +488,8 @@ function App(): JSXElement {
       } else {
         // Standard single-shot stream (with think fallback)
         async function streamStandard(withThink: boolean): Promise<string> {
-          const responseStream = await ollamaNonNull.chat({
-            model: modelNonNull.model,
+          const responseStream = await providerNonNull.chat({
+            model: modelNonNull.id,
             stream: true as const,
             ...(withThink ? { think: true } : {}),
             messages,
@@ -502,17 +503,17 @@ function App(): JSXElement {
           let accumulatedOutput = "";
           let hasReceivedThinking = false;
           try {
-            for await (const response of responseStream) {
-              if (response.message.thinking) {
+            for await (const chunk of responseStream) {
+              if (chunk.thinking) {
                 if (!hasReceivedThinking) {
                   p.setModelThoughts("");
                   hasReceivedThinking = true;
                 }
-                flushThoughts(response.message.thinking);
+                flushThoughts(chunk.thinking);
               }
-              if (response.message.content) {
-                accumulatedOutput += response.message.content;
-                flushOutput(response.message.content);
+              if (chunk.content) {
+                accumulatedOutput += chunk.content;
+                flushOutput(chunk.content);
               }
             }
           } finally {
@@ -751,12 +752,6 @@ function App(): JSXElement {
         clipboard={clipboard}
         activeDirectoryName={activeDirectoryName}
         setViewedFile={setViewedFile}
-        ollamaConnection={ollamaConnection}
-        setOllamaConnection={setOllamaConnection}
-        ollamaModels={ollamaModels}
-        setOllamaModels={setOllamaModels}
-        ollamaUrl={ollamaUrl}
-        setOllamaUrl={setOllamaUrl}
       />
       <div id="RIGHT_SIDE">
         <Switch>
@@ -776,12 +771,15 @@ function App(): JSXElement {
                     : v;
                 pipelineMgr.activePipeline().setOllamaNodeCollapsed(() => val);
               }}
-              ollamaUrl={ollamaUrl}
-              setOllamaUrl={setOllamaUrl}
-              ollamaModels={ollamaModels}
-              ollamaModel={() => pipelineMgr.activePipeline().ollamaModel()}
-              setOllamaModel={(v) =>
-                pipelineMgr.activePipeline().setOllamaModel(v)
+              llmUrl={llmUrl}
+              setLLMUrl={setLLMUrl}
+              llmApiKey={llmApiKey}
+              setLLMApiKey={setLLMApiKey}
+              llmProviderType={llmProviderType}
+              llmModels={llmModels}
+              llmModel={() => pipelineMgr.activePipeline().model()}
+              setLLMModel={(v) =>
+                pipelineMgr.activePipeline().setModel(v)
               }
               promptLoading={() => pipelineMgr.activePipeline().promptLoading()}
               runningPrompt={() => pipelineMgr.activePipeline().runningPrompt()}

@@ -9,8 +9,6 @@ import { appModes } from "../constants/appModes";
 import { localStorageFileViewerMode } from "../constants/storageKeys";
 import { CodeMirrorEditor } from "./codeMirrorEditor.component";
 import { MdReader } from "./mdReader.component";
-import { SettingsComponent } from "./settings.component";
-import { ModelResponse, Ollama } from "ollama";
 
 export interface CenterPanelProps {
   // View mode
@@ -43,14 +41,6 @@ export interface CenterPanelProps {
   clipboard: Accessor<ClipboardEntry[]>;
   activeDirectoryName: Accessor<string | null>;
   setViewedFile: Setter<ViewedFile | null>;
-
-  // Settings (Ollama)
-  ollamaConnection: Accessor<Ollama | null>;
-  setOllamaConnection: Setter<Ollama | null>;
-  ollamaModels: Accessor<ModelResponse[] | null>;
-  setOllamaModels: Setter<ModelResponse[] | null>;
-  ollamaUrl: Accessor<string>;
-  setOllamaUrl: Setter<string>;
 }
 
 export function CenterPanel(props: CenterPanelProps): JSXElement {
@@ -113,16 +103,6 @@ export function CenterPanel(props: CenterPanelProps): JSXElement {
             activeDirectoryName={props.activeDirectoryName}
             setViewedFile={props.setViewedFile}
           />
-        </Match>
-        <Match when={props.fileViewerMode() === FileViewerMode.Settings}>
-          {SettingsComponent(
-            props.ollamaConnection,
-            props.setOllamaConnection,
-            props.ollamaModels,
-            props.setOllamaModels,
-            props.ollamaUrl,
-            props.setOllamaUrl,
-          )}
         </Match>
       </Switch>
       <Switch>

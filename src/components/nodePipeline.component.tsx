@@ -1,5 +1,5 @@
 import { Accessor, Index, JSXElement, Match, Setter, Switch } from "solid-js";
-import { AbortableAsyncIterator, ChatResponse, ModelResponse } from "ollama";
+import { LLMAbortableStream, LLMModelInfo, LLMProviderType } from "../types/llmProvider.interface";
 import { MessageNodeConfig } from "../types/messageNode.interface";
 import { ParsedFileName } from "../types/parsedFileName.interface";
 import { ClipboardEntry } from "../types/clipboardEntry.interface";
@@ -7,7 +7,7 @@ import { PipelineInstance } from "../hooks/usePipelineState";
 import { MessageNode } from "./messageNode.component";
 import { HistoryNode } from "./historyNode.component";
 import { ToolbeltNode } from "./toolbeltNode.component";
-import { OllamaNode } from "./ollamaNode.component";
+import { LlmNode } from "./llmNode.component";
 import { PipelineOutput } from "./pipelineOutput.component";
 
 export interface NodePipelineProps {
@@ -16,16 +16,19 @@ export interface NodePipelineProps {
   onUpdateNode: (id: string, updates: Partial<MessageNodeConfig>) => void;
   onRemoveNode: (id: string) => void;
   onMoveNode: (id: string, direction: "up" | "down") => void;
-  // Ollama node
+  // LLM node
   ollamaNodeCollapsed: Accessor<boolean>;
   setOllamaNodeCollapsed: Setter<boolean>;
-  ollamaUrl: Accessor<string>;
-  setOllamaUrl: Setter<string>;
-  ollamaModels: Accessor<ModelResponse[] | null>;
-  ollamaModel: Accessor<ModelResponse | null>;
-  setOllamaModel: (model: ModelResponse | null) => void;
+  llmUrl: Accessor<string>;
+  setLLMUrl: Setter<string>;
+  llmApiKey: Accessor<string>;
+  setLLMApiKey: Setter<string>;
+  llmProviderType: Accessor<LLMProviderType>;
+  llmModels: Accessor<LLMModelInfo[] | null>;
+  llmModel: Accessor<LLMModelInfo | null>;
+  setLLMModel: (model: LLMModelInfo | null) => void;
   promptLoading: Accessor<boolean>;
-  runningPrompt: Accessor<AbortableAsyncIterator<ChatResponse> | null>;
+  runningPrompt: Accessor<LLMAbortableStream | null>;
   onSubmit: () => void;
 
   // Output
@@ -93,14 +96,17 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
             </Switch>
           )}
         </Index>
-        <OllamaNode
+        <LlmNode
           collapsed={props.ollamaNodeCollapsed}
           setCollapsed={props.setOllamaNodeCollapsed}
-          ollamaUrl={props.ollamaUrl}
-          setOllamaUrl={props.setOllamaUrl}
-          ollamaModels={props.ollamaModels}
-          ollamaModel={props.ollamaModel}
-          setOllamaModel={props.setOllamaModel}
+          llmUrl={props.llmUrl}
+          setLLMUrl={props.setLLMUrl}
+          llmApiKey={props.llmApiKey}
+          setLLMApiKey={props.setLLMApiKey}
+          llmProviderType={props.llmProviderType}
+          llmModels={props.llmModels}
+          llmModel={props.llmModel}
+          setLLMModel={props.setLLMModel}
           promptLoading={props.promptLoading}
           runningPrompt={props.runningPrompt}
           onSubmit={props.onSubmit}

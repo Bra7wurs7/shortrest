@@ -9,3 +9,4 @@ export const localStorageFileViewerMode = "fileViewerMode";
 export const localStorageRightSidebarMode = "rightSidebarMode";
 export const localStorageOllamaModel = "ollamaModel";
 export const localStorageOllamaUrl = "ollamaUrl";
+export const localStorageLLMApiKey = "llmApiKey";

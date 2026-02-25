@@ -1,4 +1,5 @@
-import { AbortableAsyncIterator, ChatResponse, Message, Ollama, ModelResponse } from "ollama";
+import { LLMAbortableStream, LLMModelInfo, LLMProvider } from "../../types/llmProvider.interface";
+import { Message } from "ollama";
 import { parseToolCalls, executeTool, ToolbeltContext } from "./toolbeltExecutor.function";
 
 const MAX_TOOL_TURNS = 10;
@@ -8,8 +9,8 @@ function escapeRegExp(s: string): string {
 }
 
 export interface RunWithToolsOptions {
-  ollama: Ollama;
-  model: ModelResponse;
+  provider: LLMProvider;
+  model: LLMModelInfo;
   messages: Message[];
   toolbeltCtx: ToolbeltContext;
   /**
@@ -19,7 +20,7 @@ export interface RunWithToolsOptions {
    */
   resolveMessages: () => Promise<Message[]>;
   /** Called when a new stream opens (so it can be stored for abort) */
-  onStream: (stream: AbortableAsyncIterator<ChatResponse>) => void;
+  onStream: (stream: LLMAbortableStream) => void;
   /** Called with each streamed content chunk during the final (no-tool-calls) turn */
   onChunk: (text: string) => void;
   /** Called with each thinking chunk */
@@ -45,7 +46,7 @@ export interface RunWithToolsOptions {
 export async function runWithTools(
   options: RunWithToolsOptions,
 ): Promise<string> {
-  const { ollama, model, toolbeltCtx, resolveMessages, onStream, onChunk, onThinkChunk, onToolTurnComplete, getClipboard } = options;
+  const { provider, model, toolbeltCtx, resolveMessages, onStream, onChunk, onThinkChunk, onToolTurnComplete, getClipboard } = options;
 
   // toolExchange accumulates the assistant+tool-result pairs from this agentic session.
   // On each follow-up turn, fresh base messages are resolved and this exchange is appended.
@@ -55,8 +56,8 @@ export async function runWithTools(
   let emittedFinal = false;
 
   async function streamOnce(messages: Message[], withThink: boolean): Promise<string> {
-    const stream = await ollama.chat({
-      model: model.model,
+    const stream = await provider.chat({
+      model: model.id,
       stream: true as const,
       ...(withThink ? { think: true } : {}),
       messages,
@@ -64,12 +65,12 @@ export async function runWithTools(
     onStream(stream);
 
     let output = "";
-    for await (const response of stream) {
-      if (response.message.thinking) {
-        onThinkChunk(response.message.thinking);
+    for await (const chunk of stream) {
+      if (chunk.thinking) {
+        onThinkChunk(chunk.thinking);
       }
-      if (response.message.content) {
-        output += response.message.content;
+      if (chunk.content) {
+        output += chunk.content;
       }
     }
     return output;
@@ -149,7 +150,7 @@ export async function runWithTools(
     // Emit the annotated turn (call + inline result) to the display
     onToolTurnComplete(annotatedOutput);
 
-    // Record for the next Ollama turn
+    // Record for the next LLM turn
     toolExchange.push({ role: "assistant", content: output });
     toolExchange.push({ role: "user", content: resultLines.join("\n") });
   }

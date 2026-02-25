@@ -5,7 +5,7 @@ import {
   createSignal,
   Setter,
 } from "solid-js";
-import { AbortableAsyncIterator, ChatResponse, ModelResponse } from "ollama";
+import { LLMAbortableStream, LLMModelInfo } from "../types/llmProvider.interface";
 import { MessageNodeConfig, MessageRole, ToolbeltToolConfig } from "../types/messageNode.interface";
 
 export interface HistoryTurn {
@@ -60,7 +60,9 @@ interface PipelineData {
   nodes: MessageNodeConfig[];
   ollamaNodeCollapsed: boolean;
   history?: HistoryTurn[];
-  /** Persisted model name for this pipeline (model.model string) */
+  /** Persisted model id for this pipeline */
+  modelName?: string;
+  /** Legacy field — migrated to modelName */
   ollamaModelName?: string;
 }
 
@@ -75,8 +77,8 @@ export interface PipelineInstance {
   setModelOutput: Setter<string>;
   modelThoughts: Accessor<string>;
   setModelThoughts: Setter<string>;
-  runningPrompt: Accessor<AbortableAsyncIterator<ChatResponse> | null>;
-  setRunningPrompt: Setter<AbortableAsyncIterator<ChatResponse> | null>;
+  runningPrompt: Accessor<LLMAbortableStream | null>;
+  setRunningPrompt: Setter<LLMAbortableStream | null>;
   promptLoading: Accessor<boolean>;
   setPromptLoading: Setter<boolean>;
   history: Accessor<HistoryTurn[]>;
@@ -85,10 +87,10 @@ export interface PipelineInstance {
   subPipelineRunning: Accessor<boolean>;
   setSubPipelineRunning: Setter<boolean>;
   /** The model selected for this pipeline. Null until models are loaded. */
-  ollamaModel: Accessor<ModelResponse | null>;
-  setOllamaModel: Setter<ModelResponse | null>;
-  /** The persisted model name (model.model string), restored before models are loaded */
-  ollamaModelName: Accessor<string | null>;
+  model: Accessor<LLMModelInfo | null>;
+  setModel: Setter<LLMModelInfo | null>;
+  /** The persisted model name (model id string), restored before models are loaded */
+  modelName: Accessor<string | null>;
 }
 
 function createPipelineInstance(data: PipelineData): PipelineInstance {
@@ -101,14 +103,15 @@ function createPipelineInstance(data: PipelineData): PipelineInstance {
   const [modelOutput, setModelOutput] = createSignal("");
   const [modelThoughts, setModelThoughts] = createSignal("");
   const [runningPrompt, setRunningPrompt] =
-    createSignal<AbortableAsyncIterator<ChatResponse> | null>(null);
+    createSignal<LLMAbortableStream | null>(null);
   const [promptLoading, setPromptLoading] = createSignal(false);
   const [history, setHistory] = createSignal<HistoryTurn[]>(
     data.history ?? [],
   );
   const [subPipelineRunning, setSubPipelineRunning] = createSignal(false);
-  const [ollamaModel, setOllamaModel] = createSignal<ModelResponse | null>(null);
-  const ollamaModelName = () => data.ollamaModelName ?? null;
+  const [model, setModel] = createSignal<LLMModelInfo | null>(null);
+  const resolvedModelName = data.modelName ?? data.ollamaModelName ?? null;
+  const modelName = () => resolvedModelName;
 
   return {
     id: data.id,
@@ -128,9 +131,9 @@ function createPipelineInstance(data: PipelineData): PipelineInstance {
     setHistory,
     subPipelineRunning,
     setSubPipelineRunning,
-    ollamaModel,
-    setOllamaModel,
-    ollamaModelName,
+    model,
+    setModel,
+    modelName,
   };
 }
 
@@ -140,7 +143,7 @@ function serializePipeline(instance: PipelineInstance): PipelineData {
     nodes: instance.messageNodes(),
     ollamaNodeCollapsed: instance.ollamaNodeCollapsed(),
     history: instance.history(),
-    ollamaModelName: instance.ollamaModel()?.model ?? instance.ollamaModelName() ?? undefined,
+    modelName: instance.model()?.id ?? instance.modelName() ?? undefined,
   };
 }
 
@@ -174,8 +177,8 @@ function loadPipelines(): PipelineData[] {
         return parsed.map((p: PipelineData) => ({
           ...p,
           nodes: p.nodes.map(migrateNode),
-          // Migrate: if no per-pipeline model yet, seed from legacy global key
-          ollamaModelName: p.ollamaModelName ?? legacyModelName ?? undefined,
+          // Migrate: prefer new modelName, fallback to ollamaModelName, then legacy global key
+          modelName: p.modelName ?? p.ollamaModelName ?? legacyModelName ?? undefined,
         }));
       }
     } catch {
@@ -187,7 +190,7 @@ function loadPipelines(): PipelineData[] {
       id: generateId(),
       nodes: createDefaultNodes(),
       ollamaNodeCollapsed: false,
-      ollamaModelName: legacyModelName ?? undefined,
+      modelName: legacyModelName ?? undefined,
     },
   ];
 }
@@ -211,10 +214,10 @@ export interface UsePipelineManagerReturn {
 
   /**
    * Called when the available models list loads or changes.
-   * Resolves each pipeline's saved model name to a ModelResponse,
+   * Resolves each pipeline's saved model name to an LLMModelInfo,
    * falling back to the first available model if the saved name is not found.
    */
-  resolveModels: (models: ModelResponse[]) => void;
+  resolveModels: (models: LLMModelInfo[]) => void;
 }
 
 export function usePipelineManager(): UsePipelineManagerReturn {
@@ -372,14 +375,14 @@ export function usePipelineManager(): UsePipelineManagerReturn {
     );
   }
 
-  function resolveModels(models: ModelResponse[]) {
+  function resolveModels(models: LLMModelInfo[]) {
     for (const p of pipelines()) {
-      if (p.ollamaModel() !== null) continue; // already resolved
-      const savedName = p.ollamaModelName();
+      if (p.model() !== null) continue; // already resolved
+      const savedName = p.modelName();
       const match = savedName
-        ? (models.find((m) => m.model === savedName) ?? models[0] ?? null)
+        ? (models.find((m) => m.id === savedName) ?? models[0] ?? null)
         : (models[0] ?? null);
-      p.setOllamaModel(match);
+      p.setModel(match);
     }
   }
 
