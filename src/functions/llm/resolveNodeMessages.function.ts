@@ -30,6 +30,11 @@ export interface ResolveNodeMessagesOptions {
   /** Internal: pipeline IDs currently on the call stack, for cycle detection */
   _callStack?: ReadonlySet<string>;
   /**
+   * Called immediately before a sub-pipeline's LLM request is sent (before the
+   * stream opens). Use this to show a loading indicator.
+   */
+  onSubPipelineLoading?: (pipelineId: string) => void;
+  /**
    * Called when a sub-pipeline starts or finishes.
    * On start: running=true, stream=the live iterator (can be aborted).
    * On finish: running=false, output=accumulated result string.
@@ -89,6 +94,7 @@ async function startSubPipeline(
     model: options.model,
     ownPipelineId: subPipeline.id,
     _callStack: new Set([...callStack, subPipeline.id]),
+    onSubPipelineLoading: options.onSubPipelineLoading,
     onSubPipelineStateChange: options.onSubPipelineStateChange,
   });
 
@@ -102,6 +108,7 @@ async function startSubPipeline(
   const subModel = subPipeline.model() ?? options.model;
   if (!subModel) return "";
 
+  options.onSubPipelineLoading?.(subPipeline.id);
   try {
     const content = await runSubPipeline({
       provider: options.provider!,

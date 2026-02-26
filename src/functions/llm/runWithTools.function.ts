@@ -142,6 +142,11 @@ export async function runWithTools(
       toolExchange.push({ role: "tool", content: resultLines[i] } as Message);
     }
 
+    // Stop the loop after a write — the file has been modified; no further LLM turn needed.
+    if (nativeToolCalls.some((tc) => tc.name === "write")) {
+      break;
+    }
+
   }
 
   // If all turns contained tool calls and the loop exhausted MAX_TOOL_TURNS,

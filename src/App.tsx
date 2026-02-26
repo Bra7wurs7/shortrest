@@ -382,6 +382,12 @@ function App(): JSXElement {
         provider,
         model,
         ownPipelineId: p.id,
+        onSubPipelineLoading: (pipelineId) => {
+          const target = pipelineMgr.pipelines().find((p) => p.id === pipelineId);
+          if (!target) return;
+          target.setPromptLoading(true);
+          target.setRunningPrompt(null);
+        },
         onSubPipelineStateChange: (pipelineId, running, streamOrOutput) => {
           const target = pipelineMgr
             .pipelines()
@@ -389,11 +395,11 @@ function App(): JSXElement {
           if (!target) return;
           target.setSubPipelineRunning(running);
           if (running) {
-            // streamOrOutput is the LLMAbortableStream — store it so it can be aborted
-            target.setRunningPrompt(
-              streamOrOutput as LLMAbortableStream,
-            );
+            // Stream has opened: transition from loading → running
+            target.setPromptLoading(false);
+            target.setRunningPrompt(streamOrOutput as LLMAbortableStream);
           } else {
+            target.setPromptLoading(false);
             target.setRunningPrompt(null);
             target.setModelOutput(streamOrOutput as string);
           }
@@ -773,16 +779,22 @@ function App(): JSXElement {
           <For each={pipelineMgr.pipelines()}>
             {(p, index) => (
               <button
-                class={
-                  "button_icon pipeline_btn" +
-                  (pipelineMgr.activePipelineId() === p.id ? " active" : "") +
-                  (p.promptLoading() && p.runningPrompt() === null
-                    ? " loading"
-                    : "") +
-                  (p.runningPrompt() !== null ? " running" : "") +
-                  (p.subPipelineRunning() ? " sub_running" : "") +
-                  (pendingRemovePipelineId() === p.id ? " red" : "")
-                }
+                class={(() => {
+                  const ownLoading = p.promptLoading() && p.runningPrompt() === null;
+                  const subLoading = !ownLoading && p.messageNodes().some((n) => {
+                    if (n.acquisitionMode !== "sub-pipeline" || n.disabled) return false;
+                    const sub = pipelineMgr.pipelines().find((q) => q.id === n.sourcePipelineId);
+                    return sub ? (sub.promptLoading() && sub.runningPrompt() === null) : false;
+                  });
+                  return (
+                    "button_icon pipeline_btn" +
+                    (pipelineMgr.activePipelineId() === p.id ? " active" : "") +
+                    (ownLoading || subLoading ? " loading" : "") +
+                    (p.runningPrompt() !== null ? " running" : "") +
+                    (p.subPipelineRunning() ? " sub_running" : "") +
+                    (pendingRemovePipelineId() === p.id ? " red" : "")
+                  );
+                })()}
                 onclick={() => {
                   if (pendingRemovePipelineId() === p.id) {
                     if (pipelineMgr.pipelines().length > 1) {
@@ -808,7 +820,7 @@ function App(): JSXElement {
                 title={
                   pendingRemovePipelineId() === p.id
                     ? "Click to remove pipeline"
-                    : `Pipeline ${index() + 1}${p.runningPrompt() !== null ? " (running)" : ""}${p.subPipelineRunning() ? " (sub-pipeline running)" : ""} — right-click to remove`
+                    : `Pipeline ${index() + 1}${p.promptLoading() && p.runningPrompt() === null ? " (loading)" : ""}${p.runningPrompt() !== null ? " (running)" : ""}${p.subPipelineRunning() ? " (sub-pipeline running)" : ""} — right-click to remove`
                 }
               >
                 {pendingRemovePipelineId() === p.id ? (
