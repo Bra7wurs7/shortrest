@@ -5,8 +5,15 @@ import {
   createSignal,
   Setter,
 } from "solid-js";
-import { LLMAbortableStream, LLMModelInfo } from "../types/llmProvider.interface";
-import { MessageNodeConfig, MessageRole, ToolbeltToolConfig } from "../types/messageNode.interface";
+import {
+  LLMAbortableStream,
+  LLMModelInfo,
+} from "../types/llmProvider.interface";
+import {
+  MessageNodeConfig,
+  MessageRole,
+  ToolbeltToolConfig,
+} from "../types/messageNode.interface";
 
 export interface HistoryTurn {
   user: string;
@@ -27,13 +34,27 @@ function createDefaultNodes(): MessageNodeConfig[] {
       id: generateId(),
       role: "system",
       acquisitionMode: "prepared",
-      preparedContent: "",
+      preparedContent: "You are a helpful assistant.",
       fileName: "",
       truncateLength: 0,
       truncateUnit: "all",
       sourcePipelineId: "",
       subPipelineParams: [],
       collapsed: false,
+      disabled: false,
+      toolbeltTools: {},
+    },
+    {
+      id: generateId(),
+      role: "user",
+      acquisitionMode: "history",
+      preparedContent: "",
+      fileName: "",
+      truncateLength: 0,
+      truncateUnit: "all",
+      sourcePipelineId: "",
+      subPipelineParams: [],
+      collapsed: true,
       disabled: false,
       toolbeltTools: {},
     },
@@ -47,7 +68,7 @@ function createDefaultNodes(): MessageNodeConfig[] {
       truncateUnit: "all",
       sourcePipelineId: "",
       subPipelineParams: [],
-      collapsed: false,
+      collapsed: true,
       disabled: false,
       toolbeltTools: {},
     },
@@ -108,9 +129,7 @@ function createPipelineInstance(data: PipelineData): PipelineInstance {
   const [runningPrompt, setRunningPrompt] =
     createSignal<LLMAbortableStream | null>(null);
   const [promptLoading, setPromptLoading] = createSignal(false);
-  const [history, setHistory] = createSignal<HistoryTurn[]>(
-    data.history ?? [],
-  );
+  const [history, setHistory] = createSignal<HistoryTurn[]>(data.history ?? []);
   const [subPipelineRunning, setSubPipelineRunning] = createSignal(false);
   const [model, setModel] = createSignal<LLMModelInfo | null>(null);
   const resolvedModelName = data.modelName ?? data.ollamaModelName ?? null;
@@ -168,9 +187,10 @@ function migrateNode(raw: unknown): MessageNodeConfig {
     collapsed: node.collapsed ?? false,
     disabled: node.disabled ?? false,
     toolbeltTools: Object.fromEntries(
-      Object.entries((node.toolbeltTools as Record<string, Partial<ToolbeltToolConfig>>) ?? {}).map(
-        ([name, cfg]) => [name, { enabled: cfg.enabled ?? false }]
-      )
+      Object.entries(
+        (node.toolbeltTools as Record<string, Partial<ToolbeltToolConfig>>) ??
+          {},
+      ).map(([name, cfg]) => [name, { enabled: cfg.enabled ?? false }]),
     ),
   };
 }
@@ -188,7 +208,8 @@ function loadPipelines(): PipelineData[] {
           ...p,
           nodes: p.nodes.map(migrateNode),
           // Migrate: prefer new modelName, fallback to ollamaModelName, then legacy global key
-          modelName: p.modelName ?? p.ollamaModelName ?? legacyModelName ?? undefined,
+          modelName:
+            p.modelName ?? p.ollamaModelName ?? legacyModelName ?? undefined,
         }));
       }
     } catch {
@@ -283,9 +304,11 @@ export function usePipelineManager(): UsePipelineManagerReturn {
 
     // Clear broken pipeline references in all surviving pipelines
     for (const p of remaining) {
-      const cleaned = p.messageNodes().map((n) =>
-        n.sourcePipelineId === id ? { ...n, sourcePipelineId: "" } : n,
-      );
+      const cleaned = p
+        .messageNodes()
+        .map((n) =>
+          n.sourcePipelineId === id ? { ...n, sourcePipelineId: "" } : n,
+        );
       if (cleaned.some((n, i) => n !== p.messageNodes()[i])) {
         p.setMessageNodes(cleaned);
       }
@@ -387,7 +410,9 @@ export function usePipelineManager(): UsePipelineManagerReturn {
 
   function resolveModels(models: LLMModelInfo[]) {
     for (const p of pipelines()) {
-      if (p.model() !== null) continue; // already resolved
+      const current = p.model();
+      // Skip if the current model is already valid for this provider's model list
+      if (current !== null && models.some((m) => m.id === current.id)) continue;
       const savedName = p.modelName();
       const match = savedName
         ? (models.find((m) => m.id === savedName) ?? models[0] ?? null)

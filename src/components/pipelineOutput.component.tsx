@@ -1,4 +1,4 @@
-import { Accessor, createMemo, For, JSXElement, Show } from "solid-js";
+import { Accessor, createEffect, createMemo, createSignal, For, JSXElement, Show } from "solid-js";
 import { micromark } from "micromark";
 import { gfm, gfmHtml } from "micromark-extension-gfm";
 import { PipelineInstance } from "../hooks/usePipelineState";
@@ -32,6 +32,16 @@ export function PipelineOutput(props: PipelineOutputProps): JSXElement {
   );
   const renderedOutput = createMemo(() => renderMarkdown(p().modelOutput()));
 
+  const [thoughtsCollapsed, setThoughtsCollapsed] = createSignal(false);
+  const [outputCollapsed, setOutputCollapsed] = createSignal(false);
+
+  // Auto-collapse thoughts and sub-pipeline outputs once main output appears
+  createEffect(() => {
+    if (p().modelOutput()) {
+      setThoughtsCollapsed(true);
+    }
+  });
+
   /** Sub-pipelines referenced by active pipeline nodes, in node order, deduplicated */
   const referencedSubPipelines = createMemo<
     { pipeline: PipelineInstance; index: number }[]
@@ -55,47 +65,76 @@ export function PipelineOutput(props: PipelineOutputProps): JSXElement {
   return (
     <div id="PIPELINE_OUTPUT">
       <Show when={p().modelThoughts()}>
-        <div class="pipeline_section_label thoughts_label">
+        <div
+          class="pipeline_section_label thoughts_label collapsible"
+          onclick={() => setThoughtsCollapsed(!thoughtsCollapsed())}
+        >
+          <i class={`bx bx-chevron-${thoughtsCollapsed() ? "right" : "down"}`} />
           <i class="bx bx-brain" />
           thoughts
         </div>
-        <div class="pipeline_thoughts" innerHTML={renderedThoughts()} />
+        <Show when={!thoughtsCollapsed()}>
+          <div class="pipeline_thoughts" innerHTML={renderedThoughts()} />
+        </Show>
       </Show>
       <Show when={p().modelOutput()}>
-        <div class="pipeline_section_label output_label">
+        <div
+          class="pipeline_section_label output_label collapsible"
+          onclick={() => setOutputCollapsed(!outputCollapsed())}
+        >
+          <i class={`bx bx-chevron-${outputCollapsed() ? "right" : "down"}`} />
           <i class="bx bx-comment-detail" />
           output
         </div>
-        <div class="pipeline_markdown" innerHTML={renderedOutput()} />
+        <Show when={!outputCollapsed()}>
+          <div class="pipeline_markdown" innerHTML={renderedOutput()} />
+        </Show>
       </Show>
       <For each={referencedSubPipelines()}>
-        {({ pipeline, index }) => (
-          <Show when={pipeline.modelOutput() || pipeline.subPipelineRunning()}>
-            <div class="pipeline_section_label sub_pipeline_output_label">
-              <i class="bx bx-git-branch" />
-              <Show when={pipeline.subPipelineRunning()}>
-                <i class="bx bx-loader-alt bx-spin" />
-                <button
-                  class="sub_pipeline_abort_btn"
-                  onclick={() => props.onAbortSubPipeline(pipeline.id)}
-                  title="Abort sub-pipeline"
-                >
-                  <i class="bx bx-stop" />
-                </button>
-              </Show>
-              pipeline {index + 1}
-            </div>
-            <Show
-              when={pipeline.modelOutput()}
-              fallback={<div class="pipeline_sub_placeholder" />}
-            >
+        {({ pipeline, index }) => {
+          const [subCollapsed, setSubCollapsed] = createSignal(false);
+
+          // Auto-collapse sub-pipeline output once main output appears
+          createEffect(() => {
+            if (p().modelOutput()) {
+              setSubCollapsed(true);
+            }
+          });
+
+          return (
+            <Show when={pipeline.modelOutput() || pipeline.subPipelineRunning()}>
               <div
-                class="pipeline_markdown pipeline_sub_output"
-                innerHTML={renderMarkdown(pipeline.modelOutput())}
-              />
+                class="pipeline_section_label sub_pipeline_output_label collapsible"
+                onclick={() => setSubCollapsed(!subCollapsed())}
+              >
+                <i class={`bx bx-chevron-${subCollapsed() ? "right" : "down"}`} />
+                <i class="bx bx-git-branch" />
+                <Show when={pipeline.subPipelineRunning()}>
+                  <i class="bx bx-loader-alt bx-spin" />
+                  <button
+                    class="sub_pipeline_abort_btn"
+                    onclick={(e) => { e.stopPropagation(); props.onAbortSubPipeline(pipeline.id); }}
+                    title="Abort sub-pipeline"
+                  >
+                    <i class="bx bx-stop" />
+                  </button>
+                </Show>
+                pipeline {index + 1}
+              </div>
+              <Show when={!subCollapsed()}>
+                <Show
+                  when={pipeline.modelOutput()}
+                  fallback={<div class="pipeline_sub_placeholder" />}
+                >
+                  <div
+                    class="pipeline_markdown pipeline_sub_output"
+                    innerHTML={renderMarkdown(pipeline.modelOutput())}
+                  />
+                </Show>
+              </Show>
             </Show>
-          </Show>
-        )}
+          );
+        }}
       </For>
     </div>
   );
