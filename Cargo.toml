@@ -9,8 +9,8 @@ mime_guess = "2.0.5"
 rust-embed = "8.7.2"
 tokio = { version = "1.47.1", features = ["full"] }
 webbrowser = "1.0.5"
-tray-icon = "0.19"
-muda = "0.15"
+tray-icon = { version = "0.19", default-features = false }
+muda = { version = "0.15", default-features = false }
 image = { version = "0.25", default-features = false, features = ["png"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
