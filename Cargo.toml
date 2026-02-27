@@ -1,6 +1,6 @@
 [package]
-name = "shortrest"
-version = "0.3.0"
+name = "shortrest-portable-server"
+version = "0.3.1"
 edition = "2024"
 
 [dependencies]
@@ -9,12 +9,14 @@ mime_guess = "2.0.5"
 rust-embed = "8.7.2"
 tokio = { version = "1.47.1", features = ["full"] }
 webbrowser = "1.0.5"
-tray-icon = { version = "0.19", default-features = false }
-muda = { version = "0.15", default-features = false }
 image = { version = "0.25", default-features = false, features = ["png"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-gtk = "0.18"
+ksni = "0.3"
+
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+tray-icon = { version = "0.19", default-features = false }
+muda = { version = "0.15", default-features = false }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows-sys = { version = "0.59", features = ["Win32_UI_WindowsAndMessaging"] }
