@@ -14,6 +14,9 @@ use muda::{Menu, MenuEvent, MenuItem, PredefinedMenuItem};
 #[cfg(not(target_os = "linux"))]
 use tray_icon::{Icon, TrayIconBuilder};
 
+#[cfg(target_os = "macos")]
+use tao::event_loop::{ControlFlow, EventLoopBuilder};
+
 #[derive(RustEmbed)]
 #[folder = "dist/"]
 struct Assets;
@@ -86,6 +89,22 @@ impl ksni::Tray for ShortRestTray {
 }
 
 fn main() {
+    // On macOS, re-launch as a detached background process so the terminal
+    // window closes immediately (equivalent of windows_subsystem = "windows").
+    #[cfg(target_os = "macos")]
+    if std::env::var("SHORTREST_DAEMON").is_err() {
+        let exe = std::env::current_exe().expect("Failed to get current executable");
+        std::process::Command::new(exe)
+            .args(std::env::args_os().skip(1))
+            .env("SHORTREST_DAEMON", "1")
+            .stdin(std::process::Stdio::null())
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .expect("Failed to re-launch as background process");
+        return;
+    }
+
     let addr = SocketAddr::from(([127, 0, 0, 1], 7777));
     let server_url = format!("http://{}", addr);
 
@@ -124,6 +143,11 @@ fn main() {
             }
         });
     });
+
+    // On macOS, the event loop must be created before TrayIconBuilder::build()
+    // because it initialises NSApplication, which is required for NSStatusBar items.
+    #[cfg(target_os = "macos")]
+    let event_loop = EventLoopBuilder::<()>::new().build();
 
     #[cfg(target_os = "linux")]
     {
@@ -206,17 +230,20 @@ fn main() {
 
         #[cfg(target_os = "macos")]
         {
-            use std::time::Duration;
             let menu_receiver = MenuEvent::receiver();
-            loop {
-                if let Ok(event) = menu_receiver.recv_timeout(Duration::from_millis(100)) {
+            event_loop.run(move |_event, _target, control_flow| {
+                // Wake periodically to drain the menu-event channel.
+                *control_flow = ControlFlow::WaitUntil(
+                    std::time::Instant::now() + std::time::Duration::from_millis(100),
+                );
+                while let Ok(event) = menu_receiver.try_recv() {
                     if event.id == open_id {
                         let _ = webbrowser::open(&server_url);
                     } else if event.id == quit_id {
                         std::process::exit(0);
                     }
                 }
-            }
+            });
         }
     }
 }

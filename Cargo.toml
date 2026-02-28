@@ -20,3 +20,6 @@ muda = { version = "0.15", default-features = false }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows-sys = { version = "0.59", features = ["Win32_UI_WindowsAndMessaging"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+tao = { version = "0.30", default-features = false }
