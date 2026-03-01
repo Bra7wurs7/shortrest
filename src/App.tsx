@@ -134,6 +134,8 @@ function App(): JSXElement {
   const [rightClickedDirectory, setRightClickedDirectory] = createSignal<
     string | null
   >(null);
+  const [rightClickedDirectoryDelete, setRightClickedDirectoryDelete] =
+    createSignal(false);
   const [hoveredDirectoryName, setHoveredDirectoryName] = createSignal<
     string | null
   >(null);
@@ -676,6 +678,8 @@ function App(): JSXElement {
           setActiveDirectoryName={setActiveDirectoryName}
           rightClickedDirectory={rightClickedDirectory}
           setRightClickedDirectory={setRightClickedDirectory}
+          rightClickedDirectoryDelete={rightClickedDirectoryDelete}
+          setRightClickedDirectoryDelete={setRightClickedDirectoryDelete}
           hoveredDirectoryName={hoveredDirectoryName}
           setHoveredDirectoryName={setHoveredDirectoryName}
         />

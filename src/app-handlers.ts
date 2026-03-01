@@ -19,6 +19,7 @@ import { storeClipboard, storeViewedFile } from "./functions/storage.functions";
 import { saveAs } from "file-saver";
 import JSZip from "jszip";
 import { v4 as uuidv4 } from "uuid";
+import { localStorageActiveDirectoryName } from "./constants/storageKeys";
 
 /**
  * Ensures the clipboard always has one empty unnamed file ready for new content.
@@ -601,6 +602,25 @@ export function onClickDownloadDirectory(name: string) {
     .catch((error) => {
       console.error(`Error listing files in directory ${name}:`, error);
     });
+}
+
+export async function onClickDeleteDirectory(
+  name: string,
+  directoryNames: Accessor<string[]>,
+  setDirectoryNames: Setter<string[]>,
+  activeDirectoryName: Accessor<string | null>,
+  setActiveDirectoryName: Setter<string | null>,
+) {
+  await removeDirectory(name);
+  setDirectoryNames(directoryNames().filter((n) => n !== name));
+  await onUpdateDirectory(directoryNames, setDirectoryNames, activeDirectoryName);
+  if (activeDirectoryName() === name) {
+    const next = directoryNames()[0] ?? null;
+    setActiveDirectoryName(next);
+    if (next) {
+      localStorage.setItem(localStorageActiveDirectoryName, next);
+    }
+  }
 }
 
 export function onInputExistingFileName(

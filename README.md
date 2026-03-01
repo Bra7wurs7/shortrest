@@ -1,5 +1,6 @@
 # shortrest
 aims to become the most powerful tool for using language models to work with and on text
+![](0.3.0-vibe_screenshot.png)
 
 ### using shortrest
 To start using shortrest, download the latest release from the [releases tab](https://github.com/Bra7wurs7/shortrest/releases).

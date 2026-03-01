@@ -2142,7 +2142,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "shortrest-portable-server"
+name = "shortrest"
 version = "0.3.1"
 dependencies = [
  "axum",

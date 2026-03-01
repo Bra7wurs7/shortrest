@@ -10,6 +10,7 @@ import {
 import {
   onClickUploadDirectory,
   onClickDownloadDirectory,
+  onClickDeleteDirectory,
 } from "../app-handlers";
 import { localStorageActiveDirectoryName } from "../constants/storageKeys";
 
@@ -20,11 +21,18 @@ export interface LeftToolbarProps {
   setActiveDirectoryName: Setter<string | null>;
   rightClickedDirectory: Accessor<string | null>;
   setRightClickedDirectory: Setter<string | null>;
+  rightClickedDirectoryDelete: Accessor<boolean>;
+  setRightClickedDirectoryDelete: Setter<boolean>;
   hoveredDirectoryName: Accessor<string | null>;
   setHoveredDirectoryName: Setter<string | null>;
 }
 
 export function LeftToolbar(props: LeftToolbarProps): JSXElement {
+  function resetRightClick() {
+    props.setRightClickedDirectory("");
+    props.setRightClickedDirectoryDelete(false);
+  }
+
   return (
     <div id="LEFT_TOOLBAR">
       <div id="LM_S_ACTIONS"></div>
@@ -62,6 +70,7 @@ export function LeftToolbar(props: LeftToolbarProps): JSXElement {
                     oncontextmenu={(e: PointerEvent) => {
                       e.preventDefault();
                       props.setRightClickedDirectory(name);
+                      props.setRightClickedDirectoryDelete(false);
                     }}
                     onmouseenter={() => {
                       props.setHoveredDirectoryName(name);
@@ -98,7 +107,12 @@ export function LeftToolbar(props: LeftToolbarProps): JSXElement {
                     </Show>
                   </button>
                 </Match>
-                <Match when={props.rightClickedDirectory() === name}>
+                <Match
+                  when={
+                    props.rightClickedDirectory() === name &&
+                    !props.rightClickedDirectoryDelete()
+                  }
+                >
                   <button
                     class={
                       "button_icon " +
@@ -106,12 +120,42 @@ export function LeftToolbar(props: LeftToolbarProps): JSXElement {
                     }
                     onclick={() => {
                       onClickDownloadDirectory(name);
+                      resetRightClick();
                     }}
-                    onmouseleave={() => {
-                      props.setRightClickedDirectory("");
+                    oncontextmenu={(e: PointerEvent) => {
+                      e.preventDefault();
+                      props.setRightClickedDirectoryDelete(true);
                     }}
+                    onmouseleave={resetRightClick}
                   >
                     <i class="bx bxs-download"></i>
+                  </button>
+                </Match>
+                <Match
+                  when={
+                    props.rightClickedDirectory() === name &&
+                    props.rightClickedDirectoryDelete()
+                  }
+                >
+                  <button
+                    class={
+                      "button_icon red " +
+                      (name === props.activeDirectoryName() ? "active" : "")
+                    }
+                    onclick={() => {
+                      onClickDeleteDirectory(
+                        name,
+                        props.directoryNames,
+                        props.setDirectoryNames,
+                        props.activeDirectoryName,
+                        props.setActiveDirectoryName,
+                      );
+                      resetRightClick();
+                    }}
+                    onmouseleave={resetRightClick}
+                    title="Click to delete directory"
+                  >
+                    <i class="bx bx-x" />
                   </button>
                 </Match>
               </Switch>
