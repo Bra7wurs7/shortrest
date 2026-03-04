@@ -1,3 +1,4 @@
+import "./messageNode.component.css";
 import { Accessor, createMemo, For, JSXElement, Match, Show, Switch } from "solid-js";
 import {
   MessageAcquisitionMode,

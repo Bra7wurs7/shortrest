@@ -486,7 +486,9 @@ export function onClickDownloadSavedFile(
   if (activeDirName) {
     getFileContent(activeDirName, name)
       .then((content) => {
-        if (content !== null) {
+        if (content instanceof Blob) {
+          saveAs(content, name);
+        } else if (content !== null) {
           const blob = new Blob([content], { type: "text/plain" });
           saveAs(blob, name);
         } else {

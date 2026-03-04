@@ -1,3 +1,4 @@
+import "./pipelineOutput.component.css";
 import { Accessor, createEffect, createMemo, createSignal, For, JSXElement, Show } from "solid-js";
 import { micromark } from "micromark";
 import { gfm, gfmHtml } from "micromark-extension-gfm";

@@ -1,0 +1,213 @@
+#LEFT_SIDEBAR {
+    background-color: var(--color_background);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-bottom-right-radius: var(--size_toolbar_width_half);
+    border-top-right-radius: var(--size_toolbar_width_half);
+    width: 100%;
+
+    &.showing_hovered_directory {
+        background-color: var(--color_background_hard);
+    }
+
+    #L_S_TOP {
+        display: flex;
+        flex-direction: column;
+        flex: 0 0 auto;
+        max-height: 50%;
+        overflow: hidden;
+
+        &.collapsed {
+            flex: 0 0 auto;
+            max-height: none;
+
+            .filelist_header {
+                border-bottom-right-radius: var(--size_toolbar_width_half);
+                color: var(--color_border_light);
+            }
+        }
+
+        #L_S_CLIPBOARD {
+            overflow-y: auto;
+        }
+    }
+
+    #L_S_BOTTOM {
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+
+        &.collapsed {
+            flex: 0 0 auto;
+            min-height: auto;
+
+            .filelist_header {
+                border-bottom-right-radius: var(--size_toolbar_width_half);
+                color: var(--color_border_light);
+            }
+        }
+
+        #L_S_DIRECTORY {
+            overflow-y: auto;
+        }
+    }
+}
+
+/* Clipboard and Saved file buttons - shared base styles */
+.clipboard_file,
+.saved_file {
+    transition: var(--transition_background_color);
+    box-sizing: border-box;
+    width: 100%;
+    height: min-content;
+    background-color: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-color: transparent;
+    color: var(--color_foreground);
+    font-family: var(--sans);
+    padding: var(--size_padding);
+
+    &:hover {
+        border-color: var(--color_border_light);
+    }
+
+    &.context_menu {
+        background-color: var(--color_background_hard);
+    }
+
+    &:focus {
+        outline: none;
+        border-color: var(--color_border_light);
+    }
+
+    .filename {
+        display: flex;
+        flex-grow: 1;
+        align-items: center;
+        text-wrap: nowrap;
+        overflow: hidden;
+        color: var(--color_border_light);
+
+        .bx {
+            font-size: small;
+            margin-right: var(--size_margin);
+        }
+    }
+
+    &.active {
+        background-color: var(--color_background_soft);
+        .filename {
+            color: var(--color_foreground);
+        }
+    }
+
+    &:active {
+        transition: background-color 0ms;
+        background-color: var(--color_foreground_soft);
+        color: var(--color_background_hard);
+        border: var(--size_border) var(--style_border) var(--color_foreground);
+    }
+
+    .tags {
+        display: flex;
+        color: var(--color_border_light);
+        overflow-x: hidden;
+    }
+    &.nameless {
+        color: var(--color_border_light);
+    }
+}
+
+/* Clipboard and Saved file context menus - shared base styles */
+.clipboard_file_contextmenu,
+.saved_file_contextmenu {
+    height: min-content;
+    color: var(--color_foreground);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1px 0px 1px 4px;
+    box-sizing: border-box;
+    border: var(--size_border) solid transparent;
+    background-color: var(--color_background_hard);
+
+    .filename {
+        display: flex;
+        flex-grow: 1;
+        font-size: small;
+        user-select: none;
+        overflow: hidden;
+        white-space: nowrap;
+
+        &:hover {
+            color: var(--color_foreground_hard);
+        }
+        &:focus {
+            outline: none;
+            color: var(--color_foreground_hard);
+        }
+    }
+
+    .actions {
+        display: flex;
+        flex-direction: row;
+
+        .button_icon {
+            width: var(--size_toolbar_width_half);
+            height: var(--size_toolbar_width_half);
+        }
+    }
+}
+
+.filelist_header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--sans);
+    color: var(--color_foreground_soft);
+    font-size: small;
+    padding: var(--size_padding);
+    cursor: pointer;
+    user-select: none;
+    flex-shrink: 0;
+    height: var(--size_toolbar_width);
+    box-sizing: border-box;
+    border-width: var(--size_border);
+    border-style: var(--style_border);
+    border-color: transparent;
+
+    .left {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: var(--size_margin);
+    }
+
+    .right {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: var(--size_margin);
+    }
+
+    .bx {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: small;
+    }
+
+    &:hover {
+        color: var(--color_foreground);
+        border-color: var(--color_border_light);
+    }
+
+    border-top-right-radius: var(--size_toolbar_width_half);
+}

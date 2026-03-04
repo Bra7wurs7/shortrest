@@ -1,3 +1,4 @@
+import "./App.css";
 import {
   createEffect,
   createMemo,
@@ -42,7 +43,9 @@ import {
   localStorageChatUserPrompt,
   localStorageActiveDirectoryName,
   localStorageFileViewerMode,
+  localStorageComfyuiUrl,
 } from "./constants/storageKeys";
+import { writeFileToDirectory } from "./functions/dbFilesInterface.functions";
 import { extractBracketQuery } from "./functions/extractBracketQuery.function";
 import { longestCommonPrefix } from "./functions/longestCommonPrefix.function";
 
@@ -114,6 +117,8 @@ function App(): JSXElement {
 
   // IDB file content: populated when viewing an IDB file
   const [idbFileContent, setIdbFileContent] = createSignal<string>("");
+  // IDB file blob: set when the viewed IDB file is binary (e.g. generated image)
+  const [idbFileBlob, setIdbFileBlob] = createSignal<Blob | null>(null);
 
   const [inputValue, setInputValue] = createSignal<string>("");
   const [bracketMode, setBracketMode] = createSignal(false);
@@ -154,6 +159,14 @@ function App(): JSXElement {
     setLLMApiKey,
     llmModels,
   } = useLLMConnection();
+
+  const [comfyuiUrl, setComfyuiUrl] = createSignal<string>(
+    localStorage.getItem(localStorageComfyuiUrl) ?? "http://127.0.0.1:8188",
+  );
+
+  createEffect(() => {
+    localStorage.setItem(localStorageComfyuiUrl, comfyuiUrl());
+  });
 
   // ============================================
   // Prompt / pipeline state
@@ -220,6 +233,13 @@ function App(): JSXElement {
     return idbFileContent();
   });
 
+  // Blob content of the currently viewed IDB file (null for text files or clipboard)
+  const displayedFileBlob = createMemo<Blob | null>(() => {
+    const vf = viewedFile();
+    if (vf?.source === "idb") return idbFileBlob();
+    return null;
+  });
+
   // The currently displayed file name
   const displayedFileName = createMemo<string | null>(() => {
     const vf = viewedFile();
@@ -277,11 +297,18 @@ function App(): JSXElement {
     const vf = viewedFile();
     if (vf?.source === "idb" && vf.directoryName && vf.fileName) {
       getFileContent(vf.directoryName, vf.fileName).then((content) => {
-        setIdbFileContent(content ?? "");
+        if (content instanceof Blob) {
+          setIdbFileBlob(content);
+          setIdbFileContent("");
+        } else {
+          setIdbFileBlob(null);
+          setIdbFileContent(content ?? "");
+        }
       });
     } else if (vf?.source === "clipboard") {
       // Clear IDB content when viewing clipboard
       setIdbFileContent("");
+      setIdbFileBlob(null);
     }
   });
 
@@ -449,6 +476,8 @@ function App(): JSXElement {
 
     const useToolLoop = hasEnabledToolbelt(p.messageNodes());
 
+    let finalOutput = "";
+
     try {
       p.setPromptLoading(true);
 
@@ -466,6 +495,7 @@ function App(): JSXElement {
             clipboard: clipboard(),
             activeDirectoryName: activeDirectoryName(),
             viewedFileName: viewedFile()?.fileName ?? null,
+            comfyuiUrl: comfyuiUrl(),
             onWrite: (appended) => {
               const vf = viewedFile();
               if (!vf) return;
@@ -476,6 +506,20 @@ function App(): JSXElement {
                   storeClipboard(clipboard);
                 }
               }
+            },
+            onImageGenerated: async (filename, blob) => {
+              const dirName = activeDirectoryName();
+              if (!dirName) return;
+              await writeFileToDirectory(dirName, { name: filename, content: blob });
+              const names = await listFileNamesInDirectory(dirName);
+              setActiveDirectoryParsedFileNames(names.map((fn) => parseFileName(fn)));
+              const newViewedFile: ViewedFile = {
+                source: "idb",
+                directoryName: dirName,
+                fileName: filename,
+              };
+              setViewedFile(newViewedFile);
+              storeViewedFile(newViewedFile);
             },
           },
           getClipboard: clipboard,
@@ -495,7 +539,8 @@ function App(): JSXElement {
         });
         flushThoughts.cancel();
         p.setRunningPrompt(null);
-        recordHistoryTurn(accumulatedOutput);
+        finalOutput = accumulatedOutput;
+        recordHistoryTurn(finalOutput);
       } else {
         // Standard single-shot stream (with think fallback)
         async function streamStandard(withThink: boolean): Promise<string> {
@@ -546,7 +591,40 @@ function App(): JSXElement {
           accumulatedOutput = await streamStandard(false);
         }
         p.setRunningPrompt(null);
-        recordHistoryTurn(accumulatedOutput);
+        finalOutput = accumulatedOutput;
+        recordHistoryTurn(finalOutput);
+      }
+
+      // ComfyUI image generation — runs after the LLM completes if enabled
+      const comfyCfg = p.comfyuiConfig();
+      if (comfyCfg.enabled) {
+        const imagePrompt =
+          comfyCfg.promptSource === "llm-output" ? finalOutput :
+          comfyCfg.promptSource === "user-prompt" ? userPrompt() :
+          comfyCfg.preparedPrompt;
+
+        const dirName = activeDirectoryName();
+        const filename = comfyCfg.filename.trim() || "generated.png";
+
+        if (imagePrompt.trim() && dirName) {
+          const { FluxClient, randomSeed } = await import("./comfyui/index");
+          const client = new FluxClient(comfyuiUrl());
+          const blob = await client.generateBlob(imagePrompt, randomSeed(), {
+            width: comfyCfg.width,
+            height: comfyCfg.height,
+            steps: comfyCfg.steps,
+          });
+          await writeFileToDirectory(dirName, { name: filename, content: blob });
+          const names = await listFileNamesInDirectory(dirName);
+          setActiveDirectoryParsedFileNames(names.map((fn) => parseFileName(fn)));
+          const newViewedFile: ViewedFile = {
+            source: "idb",
+            directoryName: dirName,
+            fileName: filename,
+          };
+          setViewedFile(newViewedFile);
+          storeViewedFile(newViewedFile);
+        }
       }
     } catch (error: unknown) {
       p.setPromptLoading(false);
@@ -736,6 +814,7 @@ function App(): JSXElement {
         setFileViewerMode={setFileViewerMode}
         viewedFile={viewedFile}
         displayedFileContent={displayedFileContent}
+        displayedFileBlob={displayedFileBlob}
         onTextareaInput={handleTextareaInput}
         onSave={async () => {
           const entry = currentClipboardEntry();
@@ -785,6 +864,8 @@ function App(): JSXElement {
           setLLMApiKey={setLLMApiKey}
           llmProviderType={llmProviderType}
           llmModels={llmModels}
+          comfyuiUrl={comfyuiUrl}
+          setComfyuiUrl={setComfyuiUrl}
           onSubmit={handlePipelineSubmit}
           clipboard={clipboard}
           activeDirectoryParsedFileNames={activeDirectoryParsedFileNames}

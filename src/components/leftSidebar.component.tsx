@@ -1,3 +1,4 @@
+import "./leftSidebar.component.css";
 import { Accessor, For, JSXElement, Setter, Show } from "solid-js";
 import { ParsedFileName } from "../types/parsedFileName.interface";
 import { ViewedFile } from "../types/viewedFile.interface";

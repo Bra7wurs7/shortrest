@@ -1,0 +1,53 @@
+.toolbelt_body {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.toolbelt_tool_card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 7px 10px;
+    border-left: 2px solid transparent;
+    transition: border-color var(--transition_duration) ease-in;
+
+    &.enabled {
+        border-left-color: var(--aqua-dim);
+    }
+}
+
+.toolbelt_tool_header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--size_margin);
+}
+
+.toolbelt_enable_label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    user-select: none;
+
+    input[type="checkbox"] {
+        cursor: pointer;
+        accent-color: var(--aqua);
+        flex-shrink: 0;
+    }
+}
+
+.toolbelt_tool_name {
+    font-family: var(--mono);
+    font-size: 0.85em;
+    color: var(--color_foreground);
+}
+
+.toolbelt_tool_desc {
+    margin: 0;
+    font-size: 0.78em;
+    color: var(--color_foreground_soft);
+    line-height: 1.4;
+}

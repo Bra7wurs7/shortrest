@@ -1,3 +1,4 @@
+import "./historyNode.component.css";
 import { Accessor, For, JSXElement, Show } from "solid-js";
 import { HistoryTurn, PipelineInstance } from "../hooks/usePipelineState";
 import { MessageNodeConfig } from "../types/messageNode.interface";

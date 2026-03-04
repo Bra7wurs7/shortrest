@@ -20,6 +20,30 @@ export interface HistoryTurn {
   assistant: string;
 }
 
+export type ComfyuiPromptSource = "user-prompt" | "llm-output" | "prepared";
+
+export interface ComfyuiConfig {
+  enabled: boolean;
+  collapsed: boolean;
+  promptSource: ComfyuiPromptSource;
+  preparedPrompt: string;
+  filename: string;
+  width: number;
+  height: number;
+  steps: number;
+}
+
+export const DEFAULT_COMFYUI_CONFIG: ComfyuiConfig = {
+  enabled: false,
+  collapsed: true,
+  promptSource: "llm-output",
+  preparedPrompt: "",
+  filename: "generated.png",
+  width: 768,
+  height: 768,
+  steps: 7,
+};
+
 const localStoragePipelines = "pipelines";
 const localStorageActivePipelineId = "activePipelineId";
 const localStorageOllamaModel = "ollamaModel"; // legacy key — used once for migration
@@ -85,6 +109,7 @@ interface PipelineData {
   modelName?: string;
   /** Legacy field — migrated to modelName */
   ollamaModelName?: string;
+  comfyuiConfig?: Partial<ComfyuiConfig>;
 }
 
 /** Full runtime pipeline instance with reactive signals */
@@ -115,6 +140,9 @@ export interface PipelineInstance {
   /** When true, the pipeline re-runs automatically after each completion. */
   loopEnabled: Accessor<boolean>;
   setLoopEnabled: Setter<boolean>;
+  /** ComfyUI image generation config for this pipeline */
+  comfyuiConfig: Accessor<ComfyuiConfig>;
+  setComfyuiConfig: Setter<ComfyuiConfig>;
 }
 
 function createPipelineInstance(data: PipelineData): PipelineInstance {
@@ -135,6 +163,10 @@ function createPipelineInstance(data: PipelineData): PipelineInstance {
   const resolvedModelName = data.modelName ?? data.ollamaModelName ?? null;
   const modelName = () => resolvedModelName;
   const [loopEnabled, setLoopEnabled] = createSignal(false);
+  const [comfyuiConfig, setComfyuiConfig] = createSignal<ComfyuiConfig>({
+    ...DEFAULT_COMFYUI_CONFIG,
+    ...data.comfyuiConfig,
+  });
 
   return {
     id: data.id,
@@ -159,6 +191,8 @@ function createPipelineInstance(data: PipelineData): PipelineInstance {
     modelName,
     loopEnabled,
     setLoopEnabled,
+    comfyuiConfig,
+    setComfyuiConfig,
   };
 }
 
@@ -169,6 +203,7 @@ function serializePipeline(instance: PipelineInstance): PipelineData {
     ollamaNodeCollapsed: instance.ollamaNodeCollapsed(),
     history: instance.history(),
     modelName: instance.model()?.id ?? instance.modelName() ?? undefined,
+    comfyuiConfig: instance.comfyuiConfig(),
   };
 }
 

@@ -1,3 +1,4 @@
+import "./leftToolbar.component.css";
 import {
   Accessor,
   For,

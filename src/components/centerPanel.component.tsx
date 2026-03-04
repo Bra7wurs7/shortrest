@@ -1,4 +1,5 @@
-import { Accessor, For, JSXElement, Match, Setter, Show, Switch } from "solid-js";
+import "./centerPanel.component.css";
+import { Accessor, createMemo, For, JSXElement, Match, onCleanup, Setter, Show, Switch } from "solid-js";
 import { FileViewerMode } from "../types/fileViewerMode.enum";
 import { ViewedFile } from "../types/viewedFile.interface";
 import { ClipboardEntry } from "../types/clipboardEntry.interface";
@@ -41,9 +42,20 @@ export interface CenterPanelProps {
   clipboard: Accessor<ClipboardEntry[]>;
   activeDirectoryName: Accessor<string | null>;
   setViewedFile: Setter<ViewedFile | null>;
+
+  // Image viewer
+  displayedFileBlob: Accessor<Blob | null>;
 }
 
 export function CenterPanel(props: CenterPanelProps): JSXElement {
+  const imageObjectUrl = createMemo<string | null>(() => {
+    const blob = props.displayedFileBlob();
+    if (!blob) return null;
+    const url = URL.createObjectURL(blob);
+    onCleanup(() => URL.revokeObjectURL(url));
+    return url;
+  });
+
   return (
     <div id="CENTER">
       <div id="CENTRAL_HEADER">
@@ -73,38 +85,47 @@ export function CenterPanel(props: CenterPanelProps): JSXElement {
           </For>
         </div>
       </div>
-      <Switch>
-        <Match when={props.fileViewerMode() === FileViewerMode.AiWriter}>
-          <Show
-            when={props.viewedFile()}
-            fallback={<div id="CODEMIRROR_EDITOR" />}
-          >
-            <CodeMirrorEditor
-              content={props.displayedFileContent}
-              onInput={(value) => props.onTextareaInput(value)}
-              enableMarkdown={
-                !!props.viewedFile() &&
-                parseFileName(props.viewedFile()!.fileName).ext.startsWith(
-                  ".md",
-                )
-              }
-              inputValue={props.inputValue}
-              setInputValue={props.setInputValue}
-              filteredClipboardFileNames={props.filteredParsedClipboardFileNames}
-              filteredDirectoryFileNames={props.filteredParsedDirectoryFileNames}
-              onSave={props.onSave}
-            />
-          </Show>
-        </Match>
-        <Match when={props.fileViewerMode() === FileViewerMode.MdReader}>
-          <MdReader
-            content={props.displayedFileContent}
-            clipboard={props.clipboard}
-            activeDirectoryName={props.activeDirectoryName}
-            setViewedFile={props.setViewedFile}
-          />
-        </Match>
-      </Switch>
+      <Show
+        when={imageObjectUrl()}
+        fallback={
+          <Switch>
+            <Match when={props.fileViewerMode() === FileViewerMode.AiWriter}>
+              <Show
+                when={props.viewedFile()}
+                fallback={<div id="CODEMIRROR_EDITOR" />}
+              >
+                <CodeMirrorEditor
+                  content={props.displayedFileContent}
+                  onInput={(value) => props.onTextareaInput(value)}
+                  enableMarkdown={
+                    !!props.viewedFile() &&
+                    parseFileName(props.viewedFile()!.fileName).ext.startsWith(
+                      ".md",
+                    )
+                  }
+                  inputValue={props.inputValue}
+                  setInputValue={props.setInputValue}
+                  filteredClipboardFileNames={props.filteredParsedClipboardFileNames}
+                  filteredDirectoryFileNames={props.filteredParsedDirectoryFileNames}
+                  onSave={props.onSave}
+                />
+              </Show>
+            </Match>
+            <Match when={props.fileViewerMode() === FileViewerMode.MdReader}>
+              <MdReader
+                content={props.displayedFileContent}
+                clipboard={props.clipboard}
+                activeDirectoryName={props.activeDirectoryName}
+                setViewedFile={props.setViewedFile}
+              />
+            </Match>
+          </Switch>
+        }
+      >
+        <div id="IMAGE_VIEWER">
+          <img src={imageObjectUrl()!} alt={props.viewedFile()?.fileName ?? "image"} />
+        </div>
+      </Show>
       <Switch>
         <Match
           when={

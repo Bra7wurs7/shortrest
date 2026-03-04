@@ -43,18 +43,6 @@ interface HistoryEntry {
   outputs: Record<string, HistoryOutputNode>;
 }
 
-interface QueueEntry {
-  prompt_id: string;
-  number: number;
-}
-
-export interface QueueStatus {
-  /** Entries currently being executed. */
-  running: QueueEntry[];
-  /** Entries waiting in the queue. */
-  pending: QueueEntry[];
-}
-
 // ---------------------------------------------------------------------------
 // Error
 // ---------------------------------------------------------------------------
@@ -199,16 +187,6 @@ export class ComfyApi {
     return URL.createObjectURL(blob);
   }
 
-  /** Download all output images for a completed prompt. */
-  async getImages(promptId: string): Promise<ImageInfo[]> {
-    const history = await this.getHistory(promptId);
-    const images: ImageInfo[] = [];
-    for (const output of Object.values(history.outputs)) {
-      if (output.images) images.push(...output.images);
-    }
-    return images;
-  }
-
   // ---- Models --------------------------------------------------------------
 
   /**
@@ -224,55 +202,6 @@ export class ComfyApi {
       );
     }
     return res.json() as Promise<string[]>;
-  }
-
-  // ---- Queue management ----------------------------------------------------
-
-  /**
-   * Get the current queue status (running and pending entries).
-   */
-  async getQueue(): Promise<QueueStatus> {
-    const res = await fetch(`${this.baseUrl}/queue`);
-    if (!res.ok) {
-      throw new ComfyApiError(
-        `Failed to get queue (HTTP ${res.status})`,
-        res.status,
-      );
-    }
-    const data = (await res.json()) as {
-      queue_running: [number, string, ...unknown[]][];
-      queue_pending: [number, string, ...unknown[]][];
-    };
-    return {
-      running: data.queue_running.map(([number, prompt_id]) => ({ prompt_id, number })),
-      pending: data.queue_pending.map(([number, prompt_id]) => ({ prompt_id, number })),
-    };
-  }
-
-  /**
-   * Cancel the currently executing generation.
-   * Does nothing if the queue is idle.
-   */
-  async interrupt(): Promise<void> {
-    await fetch(`${this.baseUrl}/interrupt`, { method: "POST" });
-  }
-
-  /**
-   * Delete a pending prompt from the queue by its ID.
-   * Has no effect if the prompt is already executing or has completed.
-   */
-  async deleteFromQueue(promptId: string): Promise<void> {
-    const res = await fetch(`${this.baseUrl}/queue`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ delete: [promptId] }),
-    });
-    if (!res.ok) {
-      throw new ComfyApiError(
-        `Failed to delete from queue (HTTP ${res.status})`,
-        res.status,
-      );
-    }
   }
 
   // ---- WebSocket progress --------------------------------------------------

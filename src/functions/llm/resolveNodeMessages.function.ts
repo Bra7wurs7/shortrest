@@ -283,8 +283,9 @@ export async function resolveNodeMessages(
         if (clipboardEntry) {
           content = clipboardEntry.content();
         } else if (activeDirectoryName) {
-          // Fall back to IDB
-          content = (await getFileContent(activeDirectoryName, fileName)) ?? "";
+          // Fall back to IDB (binary files are not usable as message content)
+          const fetched = await getFileContent(activeDirectoryName, fileName);
+          content = fetched instanceof Blob ? "" : (fetched ?? "");
         }
         break;
       }

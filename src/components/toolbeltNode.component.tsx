@@ -1,3 +1,4 @@
+import "./toolbeltNode.component.css";
 import { Accessor, For, JSXElement, Show } from "solid-js";
 import { MessageNodeConfig, ToolbeltToolConfig } from "../types/messageNode.interface";
 
@@ -17,6 +18,11 @@ const TOOL_DEFINITIONS: { name: string; label: string; description: string }[] =
     name: "write",
     label: "write",
     description: "Append text to the end of the currently viewed file.",
+  },
+  {
+    name: "generateImage",
+    label: "generateImage",
+    description: "Generate an image via ComfyUI and save it to the active directory.",
   },
 ];
 

@@ -1,0 +1,91 @@
+.ollama_node .prompt_header {
+    background-color: var(--color_background_soft);
+}
+
+.llm_status_text {
+    font-style: italic;
+    color: var(--color_foreground_soft);
+}
+
+.node_loop_btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    border: none;
+    color: var(--color_border_light);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: small;
+    &:hover {
+        color: var(--color_foreground);
+    }
+    &.active {
+        color: var(--aqua);
+    }
+}
+
+.node_run_btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    border: var(--size_border) var(--style_border) var(--color_border);
+    color: var(--color_foreground);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: small;
+    &:hover {
+        border-color: var(--color_border_light);
+    }
+    &.abort {
+        border-color: var(--yellow-dim);
+        color: var(--yellow);
+    }
+    &:disabled {
+        cursor: default;
+        color: var(--color_border_light);
+    }
+    &.loading {
+        border-color: var(--aqua-dim);
+        color: var(--aqua);
+    }
+}
+
+.no_models_message {
+    padding: var(--size_padding_large);
+    font-size: small;
+    color: var(--color_foreground_soft);
+    p {
+        margin: 4px 0;
+    }
+    a {
+        color: var(--blue);
+        &:hover {
+            color: var(--aqua);
+        }
+    }
+    code {
+        font-family: var(--mono);
+        background-color: var(--color_background_hard);
+        padding: 1px 4px;
+        border-radius: 3px;
+    }
+}
+
+.model_select {
+    width: 100%;
+    background-color: var(--color_background);
+    color: var(--color_foreground);
+    border: var(--size_border) var(--style_border) var(--color_border);
+    padding: var(--size_padding);
+    &:hover {
+        border-color: var(--color_border_light);
+    }
+    &:focus {
+        outline: none;
+        border-color: var(--color_foreground);
+    }
+}

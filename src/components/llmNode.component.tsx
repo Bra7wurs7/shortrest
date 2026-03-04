@@ -1,3 +1,4 @@
+import "./llmNode.component.css";
 import { Accessor, For, JSXElement, Match, Show, Switch } from "solid-js";
 import { LLMModelInfo, LLMProviderType } from "../types/llmProvider.interface";
 import { PipelineInstance } from "../hooks/usePipelineState";

@@ -1,3 +1,4 @@
+import "./nodePipeline.component.css";
 import { Accessor, Index, JSXElement, Match, Switch } from "solid-js";
 import { LLMModelInfo, LLMProviderType } from "../types/llmProvider.interface";
 import { MessageNodeConfig } from "../types/messageNode.interface";
@@ -8,6 +9,7 @@ import { MessageNode } from "./messageNode.component";
 import { HistoryNode } from "./historyNode.component";
 import { ToolbeltNode } from "./toolbeltNode.component";
 import { LlmNode } from "./llmNode.component";
+import { ComfyuiNode } from "./comfyuiNode.component";
 import { PipelineOutput } from "./pipelineOutput.component";
 
 export interface NodePipelineProps {
@@ -36,6 +38,10 @@ export interface NodePipelineProps {
   pipelines: Accessor<PipelineInstance[]>;
 
   onAbortSubPipeline: (pipelineId: string) => void;
+
+  // ComfyUI connection
+  comfyuiUrl: Accessor<string>;
+  setComfyuiUrl: (url: string) => void;
 }
 
 export function NodePipeline(props: NodePipelineProps): JSXElement {
@@ -70,7 +76,12 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
                   onMove={props.onMoveNode}
                 />
               </Match>
-              <Match when={node().acquisitionMode !== "history" && node().acquisitionMode !== "toolbelt"}>
+              <Match
+                when={
+                  node().acquisitionMode !== "history" &&
+                  node().acquisitionMode !== "toolbelt"
+                }
+              >
                 <MessageNode
                   node={node}
                   index={index}
@@ -79,7 +90,9 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
                   onRemove={props.onRemoveNode}
                   onMove={props.onMoveNode}
                   clipboard={props.clipboard}
-                  activeDirectoryParsedFileNames={props.activeDirectoryParsedFileNames}
+                  activeDirectoryParsedFileNames={
+                    props.activeDirectoryParsedFileNames
+                  }
                   pipelines={props.pipelines}
                   ownPipelineId={p().id}
                 />
@@ -87,6 +100,13 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
             </Switch>
           )}
         </Index>
+        <ComfyuiNode
+          pipeline={p}
+          comfyuiUrl={props.comfyuiUrl}
+          setComfyuiUrl={props.setComfyuiUrl}
+        />
+      </div>
+      <div id="P_S_BOTTOM">
         <LlmNode
           pipeline={p}
           llmUrl={props.llmUrl}
@@ -97,8 +117,6 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
           llmModels={props.llmModels}
           onSubmit={props.onSubmit}
         />
-      </div>
-      <div id="P_S_BOTTOM">
         <PipelineOutput
           pipeline={p}
           pipelines={props.pipelines}

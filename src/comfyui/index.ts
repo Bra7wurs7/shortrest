@@ -1,5 +1,5 @@
 /**
- * ComfyUI Flux + SDXL API
+ * ComfyUI Flux API
  *
  * Drop this folder into your SolidJS project and import from here.
  *
@@ -18,19 +18,14 @@
  * const imageUrl = await api.getImageUrl(promptId);
  * ```
  *
- * ## High-level (stateful FluxClient / SdxlClient)
+ * ## High-level (stateful FluxClient)
  * Manages settings and wraps the low-level calls:
  *
  * ```ts
- * import { FluxClient, SdxlClient } from "./comfyui";
+ * import { FluxClient } from "./comfyui";
  *
- * // Flux
- * const flux = new FluxClient("http://127.0.0.1:8188", { steps: 10, width: 1024, height: 1024 });
- * const imageUrl = await flux.generate("a cat");
- *
- * // SDXL
- * const sdxl = new SdxlClient("http://127.0.0.1:8188", { negativePrompt: "blurry, ugly" });
- * const imageUrl2 = await sdxl.generate("a cat");
+ * const client = new FluxClient("http://127.0.0.1:8188", { steps: 10, width: 1024, height: 1024 });
+ * const imageUrl = await client.generate("a cat");
  * ```
  *
  * ## SolidJS progress tracking
@@ -47,29 +42,12 @@
 export { GraphBuilder, type NodeOutput } from "./graph.js";
 
 export {
-  // Flux
   buildFlux,
   buildFluxLoop,
   buildFluxImg2img,
   DEFAULT_FLUX_SETTINGS,
   type FluxSamplerSettings,
   type FluxWorkflowParams,
-  // SDXL
-  buildSdxl,
-  buildSdxlImg2img,
-  DEFAULT_SDXL_SETTINGS,
-  type SdxlSamplerSettings,
-  type SdxlWorkflowParams,
-  // Option constants
-  SAMPLER_NAMES,
-  SCHEDULER_NAMES,
-  STEPS_OPTIONS,
-  CFG_OPTIONS,
-  DENOISE_OPTIONS,
-  WIDTH_OPTIONS,
-  HEIGHT_OPTIONS,
-  type SamplerName,
-  type SchedulerName,
 } from "./workflow.js";
 
 export {
@@ -78,7 +56,6 @@ export {
   type Progress,
   type ComfyMessage,
   type ImageInfo,
-  type QueueStatus,
 } from "./api.js";
 
 // ---------------------------------------------------------------------------
@@ -96,7 +73,7 @@ export function randomSeed(): number {
 }
 
 // ---------------------------------------------------------------------------
-// FluxClient — high-level stateful client for Flux workflows
+// FluxClient — high-level stateful client
 // ---------------------------------------------------------------------------
 
 import {
@@ -106,13 +83,6 @@ import {
   DEFAULT_FLUX_SETTINGS,
   type FluxSamplerSettings,
   type FluxWorkflowParams,
-} from "./workflow.js";
-import {
-  buildSdxl,
-  buildSdxlImg2img,
-  DEFAULT_SDXL_SETTINGS,
-  type SdxlSamplerSettings,
-  type SdxlWorkflowParams,
 } from "./workflow.js";
 import { ComfyApi, type ComfyMessage } from "./api.js";
 
@@ -194,13 +164,6 @@ export class FluxClient {
     return this.api.getImageUrl(promptId);
   }
 
-  // ---- Queue management ----------------------------------------------------
-
-  /** Cancel the currently executing generation. */
-  interrupt(): Promise<void> {
-    return this.api.interrupt();
-  }
-
   // ---- Progress ------------------------------------------------------------
 
   /**
@@ -217,104 +180,34 @@ export class FluxClient {
   listenProgress(onMessage: (msg: ComfyMessage) => void): () => void {
     return this.api.listenProgress(onMessage);
   }
-}
-
-// ---------------------------------------------------------------------------
-// SdxlClient — high-level stateful client for SDXL workflows
-// ---------------------------------------------------------------------------
-
-export class SdxlClient {
-  private readonly api: ComfyApi;
-
-  /** Mutable settings — change these between calls or bind to a SolidJS store. */
-  settings: SdxlSamplerSettings;
-
-  constructor(baseUrl = "http://127.0.0.1:8188", settings?: Partial<SdxlSamplerSettings>) {
-    this.api = new ComfyApi(baseUrl);
-    this.settings = { ...DEFAULT_SDXL_SETTINGS, ...settings };
-  }
-
-  get clientId(): string {
-    return this.api.clientId;
-  }
-
-  // ---- Connection ----------------------------------------------------------
-
-  checkConnection(): Promise<boolean> {
-    return this.api.checkConnection();
-  }
-
-  /** List available SDXL checkpoint models (from the checkpoints folder). */
-  listModels(): Promise<string[]> {
-    return this.api.listModels("checkpoints");
-  }
-
-  // ---- Generation ----------------------------------------------------------
 
   /**
-   * Queue a txt2img generation.
-   * @returns prompt_id — pass to `getImageUrl` once the WebSocket signals completion.
+   * Queue a txt2img generation and wait for it to complete, returning the
+   * output image as a Blob. Listens for WebSocket progress internally.
    */
-  async generate(prompt: string, seed = randomSeed()): Promise<string> {
-    const params: SdxlWorkflowParams = { ...this.settings, prompt, seed };
-    return this.api.queuePrompt(buildSdxl(params));
-  }
-
-  /**
-   * Queue an img2img generation.
-   * Upload the source image first with `uploadImage`, then pass the returned
-   * filename here. Use `settings.denoise` to control strength (0.9 = strong,
-   * 0.3 = subtle).
-   * @returns prompt_id
-   */
-  async generateImg2Img(
+  async generateBlob(
     prompt: string,
-    inputImageFilename: string,
-    seed = randomSeed(),
-  ): Promise<string> {
-    const params: SdxlWorkflowParams = { ...this.settings, prompt, seed };
-    return this.api.queuePrompt(buildSdxlImg2img(params, inputImageFilename));
-  }
-
-  // ---- Image I/O -----------------------------------------------------------
-
-  /**
-   * Upload a File or Blob to ComfyUI's input folder.
-   * @returns the filename ComfyUI stored it under — pass to `generateImg2Img`.
-   */
-  uploadImage(file: File | Blob, filename?: string): Promise<string> {
-    return this.api.uploadImage(file, filename);
-  }
-
-  /**
-   * Download the output image as an object URL.
-   * Call `URL.revokeObjectURL(url)` when the image is no longer needed.
-   */
-  getImageUrl(promptId: string): Promise<string> {
-    return this.api.getImageUrl(promptId);
-  }
-
-  // ---- Queue management ----------------------------------------------------
-
-  /** Cancel the currently executing generation. */
-  interrupt(): Promise<void> {
-    return this.api.interrupt();
-  }
-
-  // ---- Progress ------------------------------------------------------------
-
-  /**
-   * Subscribe to WebSocket progress messages.
-   * Returns a cleanup function — pass directly to SolidJS `onCleanup`.
-   *
-   * @example
-   * onMount(() => onCleanup(client.listenProgress((msg) => {
-   *   if (msg.type === "progress") setProgress(msg.progress);
-   *   if (msg.type === "executionComplete") setDone(true);
-   *   if (msg.type === "error") setError(msg.message);
-   * })));
-   */
-  listenProgress(onMessage: (msg: ComfyMessage) => void): () => void {
-    return this.api.listenProgress(onMessage);
+    seed?: number,
+    overrides?: Partial<FluxSamplerSettings>,
+  ): Promise<Blob> {
+    const savedSettings = this.settings;
+    if (overrides) this.settings = { ...this.settings, ...overrides };
+    let promptId: string;
+    try {
+      promptId = await this.generate(prompt, "standard", seed);
+    } finally {
+      this.settings = savedSettings;
+    }
+    return new Promise<Blob>((resolve, reject) => {
+      const cleanup = this.api.listenProgress((msg) => {
+        if (msg.type === "executionComplete") {
+          cleanup();
+          this.api.getImage(promptId).then(resolve).catch(reject);
+        } else if (msg.type === "error") {
+          cleanup();
+          reject(new Error(`ComfyUI error: ${msg.message}`));
+        }
+      });
+    });
   }
 }
