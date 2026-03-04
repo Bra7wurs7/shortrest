@@ -30,6 +30,13 @@ export interface ResolveNodeMessagesOptions {
   /** Internal: pipeline IDs currently on the call stack, for cycle detection */
   _callStack?: ReadonlySet<string>;
   /**
+   * Shared memoization cache for sub-pipeline results within one resolution pass.
+   * Keyed by (pipelineId, params, directInputValue). Created fresh per top-level
+   * resolveNodeMessages call so multiple nodes pointing to the same sub-pipeline
+   * share a single in-flight LLM request.
+   */
+  _subPipelineCache?: Map<string, Promise<string>>;
+  /**
    * Called immediately before a sub-pipeline's LLM request is sent (before the
    * stream opens). Use this to show a loading indicator.
    */
@@ -46,8 +53,82 @@ export interface ResolveNodeMessagesOptions {
   ) => void;
 }
 
+/**
+ * DFS over the sub-pipeline reference graph starting from startId.
+ * Returns the cycle as an array of pipeline IDs (the repeated ID appears at
+ * both ends), or null if the graph is acyclic from startId.
+ * Disabled nodes and nodes without a sourcePipelineId are skipped.
+ */
+export function findSubPipelineCycle(
+  startId: string,
+  pipelines: PipelineInstance[],
+): string[] | null {
+  const fullyVisited = new Set<string>();
+
+  function dfs(id: string, path: string[]): string[] | null {
+    const loopIndex = path.indexOf(id);
+    if (loopIndex !== -1) {
+      return [...path.slice(loopIndex), id];
+    }
+    if (fullyVisited.has(id)) return null;
+
+    const pipeline = pipelines.find((p) => p.id === id);
+    if (!pipeline) return null;
+
+    const newPath = [...path, id];
+    for (const node of pipeline.messageNodes()) {
+      if (
+        node.disabled ||
+        node.acquisitionMode !== "sub-pipeline" ||
+        !node.sourcePipelineId
+      )
+        continue;
+      const cycle = dfs(node.sourcePipelineId, newPath);
+      if (cycle) return cycle;
+    }
+
+    fullyVisited.add(id);
+    return null;
+  }
+
+  return dfs(startId, []);
+}
+
+/** Stable cache key for a sub-pipeline invocation. */
+function subPipelineCacheKey(
+  node: MessageNodeConfig,
+  directInputValue: string,
+): string {
+  const sortedParams = [...node.subPipelineParams]
+    .sort((a, b) => a.targetNodeId.localeCompare(b.targetNodeId))
+    .map((p) => `${p.targetNodeId}=${p.value}`)
+    .join(",");
+  return `${node.sourcePipelineId}::${directInputValue}::${sortedParams}`;
+}
+
 /** Build and start a single sub-pipeline, returning a promise for its output. */
-async function startSubPipeline(
+function startSubPipeline(
+  node: MessageNodeConfig,
+  options: ResolveNodeMessagesOptions,
+  callStack: ReadonlySet<string>,
+): Promise<string> {
+  // Return the cached promise if this exact invocation was already started.
+  const cache = options._subPipelineCache;
+  const cacheKey = cache ? subPipelineCacheKey(node, options.directInputValue) : null;
+  if (cache && cacheKey && cache.has(cacheKey)) {
+    return cache.get(cacheKey)!;
+  }
+
+  const promise = _runSubPipeline(node, options, callStack);
+
+  if (cache && cacheKey) {
+    cache.set(cacheKey, promise);
+  }
+
+  return promise;
+}
+
+async function _runSubPipeline(
   node: MessageNodeConfig,
   options: ResolveNodeMessagesOptions,
   callStack: ReadonlySet<string>,
@@ -59,10 +140,11 @@ async function startSubPipeline(
   if (!subPipeline) return "";
 
   if (callStack.has(subPipeline.id)) {
-    console.warn(
-      `Sub-pipeline cycle detected: pipeline "${subPipeline.id}" is already in the call stack. Skipping.`,
+    // Static detection in handlePipelineSubmit should prevent reaching here.
+    // If we do reach it (e.g. dynamic pipeline mutation mid-run), throw loudly.
+    throw new Error(
+      `Circular sub-pipeline reference: "${subPipeline.id}" is already executing in this call stack.`,
     );
-    return "";
   }
 
   const overrides = new Map(
@@ -94,6 +176,7 @@ async function startSubPipeline(
     model: options.model,
     ownPipelineId: subPipeline.id,
     _callStack: new Set([...callStack, subPipeline.id]),
+    _subPipelineCache: options._subPipelineCache,
     onSubPipelineLoading: options.onSubPipelineLoading,
     onSubPipelineStateChange: options.onSubPipelineStateChange,
   });

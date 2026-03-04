@@ -33,7 +33,7 @@ import {
 import { useLLMConnection } from "./hooks/useLLMConnection";
 import type { LLMAbortableStream } from "./types/llmProvider.interface";
 
-import { resolveNodeMessages } from "./functions/llm/resolveNodeMessages.function";
+import { resolveNodeMessages, findSubPipelineCycle } from "./functions/llm/resolveNodeMessages.function";
 import { runWithTools } from "./functions/llm/runWithTools.function";
 import { hasEnabledToolbelt, buildNativeToolDefinitions } from "./functions/llm/toolbeltExecutor.function";
 import { NodePipeline } from "./components/nodePipeline.component";
@@ -354,6 +354,15 @@ function App(): JSXElement {
     const providerNonNull = provider;
     const modelNonNull = model;
 
+    // Reject cyclic sub-pipeline graphs before making any LLM calls.
+    const cycle = findSubPipelineCycle(p.id, pipelineMgr.pipelines());
+    if (cycle) {
+      p.setModelOutput(
+        `*Error: circular sub-pipeline reference — ${cycle.join(" → ")}*`,
+      );
+      return;
+    }
+
     // Clear stale output from any sub-pipelines referenced by this pipeline's nodes
     // so that if a sub-pipeline doesn't run this time, its output area shows nothing.
     const allPipelines = pipelineMgr.pipelines();
@@ -371,9 +380,13 @@ function App(): JSXElement {
       }
     }
 
-    // Extracted so the tool loop can re-resolve on every agent iteration
-    const resolveCurrentMessages = () =>
-      resolveNodeMessages({
+    // Extracted so the tool loop can re-resolve on every agent iteration.
+    // A fresh cache is created per call so that within a single resolution pass
+    // multiple nodes referencing the same sub-pipeline share one LLM request,
+    // while separate agentic iterations each start clean.
+    const resolveCurrentMessages = () => {
+      const subPipelineCache = new Map<string, Promise<string>>();
+      return resolveNodeMessages({
         nodes: p.messageNodes(),
         directInputValue: userPrompt(),
         clipboard: clipboard(),
@@ -384,6 +397,7 @@ function App(): JSXElement {
         provider,
         model,
         ownPipelineId: p.id,
+        _subPipelineCache: subPipelineCache,
         onSubPipelineLoading: (pipelineId) => {
           const target = pipelineMgr.pipelines().find((p) => p.id === pipelineId);
           if (!target) return;
@@ -407,6 +421,7 @@ function App(): JSXElement {
           }
         },
       });
+    };
 
     const messages = await resolveCurrentMessages();
 
