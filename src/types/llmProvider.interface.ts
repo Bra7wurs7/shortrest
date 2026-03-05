@@ -8,6 +8,8 @@ export interface NativeToolProperty {
   type: string;
   description?: string;
   enum?: unknown[];
+  /** For array types: describes the element type */
+  items?: NativeToolProperty;
 }
 
 /** Native tool definition passed to the LLM API */

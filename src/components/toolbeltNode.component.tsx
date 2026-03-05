@@ -5,20 +5,120 @@ import { MessageNodeConfig, ToolbeltToolConfig } from "../types/messageNode.inte
 type ToolDef = { name: string; label: string; description: string };
 
 const FILES_TOOLS: ToolDef[] = [
-  { name: "readFile",  label: "readFile",  description: "Read the full content of a named file from the active directory or clipboard." },
-  { name: "listFiles", label: "listFiles", description: "List all file names available in the active directory and clipboard." },
-  { name: "createFile",label: "createFile",description: "Create a new file in the clipboard with a given name and text content." },
-  { name: "writeFile", label: "writeFile", description: "Write (create or overwrite) a text file in the active directory." },
+  {
+    name: "readFile",
+    label: "readFile",
+    description: "Read the full content of a named file from the active directory or clipboard.",
+  },
+  {
+    name: "listFiles",
+    label: "listFiles",
+    description:
+      "List all file names in the active directory and clipboard. Modified (unsaved) files are marked.",
+  },
+  {
+    name: "searchFiles",
+    label: "searchFiles",
+    description:
+      "Search for files by name substring (case-insensitive) in the active directory and clipboard.",
+  },
+  {
+    name: "searchContent",
+    label: "searchContent",
+    description:
+      "Search the text content of all files in the active directory for a query string. Returns file names with excerpts.",
+  },
+  {
+    name: "searchByTag",
+    label: "searchByTag",
+    description:
+      "Find files that have one or more hashtag labels in their name (e.g. #draft, #project). Matches files with ALL specified tags.",
+  },
+  {
+    name: "createFile",
+    label: "createFile",
+    description: "Create a new file in the clipboard with a given name and text content.",
+  },
+  {
+    name: "writeFile",
+    label: "writeFile",
+    description: "Write (create or overwrite) a text file in the active directory.",
+  },
+  {
+    name: "appendToFile",
+    label: "appendToFile",
+    description:
+      "Append text to the end of an existing file in the active directory without overwriting it.",
+  },
+  {
+    name: "deleteFile",
+    label: "deleteFile",
+    description: "Permanently delete a file from the active directory.",
+  },
+  {
+    name: "renameFile",
+    label: "renameFile",
+    description:
+      "Rename a file in the active directory. Also used to add or remove hashtag labels in filenames.",
+  },
+  {
+    name: "listDirectories",
+    label: "listDirectories",
+    description: "List all available storage directories.",
+  },
+  {
+    name: "readFileFromDirectory",
+    label: "readFileFromDirectory",
+    description:
+      "Read a file from a specific named directory (not just the active one). Use listDirectories first.",
+  },
 ];
 
 const WORKSPACE_TOOLS: ToolDef[] = [
-  { name: "readWorkspace",  label: "readWorkspace",  description: "Read the full content of the currently viewed (active) file." },
-  { name: "writeWorkspace", label: "writeWorkspace", description: "Append text to the end of the currently viewed file." },
+  {
+    name: "readWorkspace",
+    label: "readWorkspace",
+    description: "Read the full content of the currently viewed (active) file.",
+  },
+  {
+    name: "appendWorkspace",
+    label: "appendWorkspace",
+    description:
+      "Append text to the end of the currently viewed file (must be open for editing).",
+  },
+  {
+    name: "overwriteWorkspace",
+    label: "overwriteWorkspace",
+    description:
+      "Fully replace the content of the currently viewed file (must be open for editing).",
+  },
+  {
+    name: "replaceInWorkspace",
+    label: "replaceInWorkspace",
+    description:
+      "Find and replace all occurrences of a string in the currently viewed file. Token-efficient for targeted edits.",
+  },
+  {
+    name: "getWorkspaceInfo",
+    label: "getWorkspaceInfo",
+    description:
+      "Get metadata about the currently viewed file: name, tags, extension, save status, word count, character count.",
+  },
 ];
 
 const IMAGE_TOOLS: ToolDef[] = [
-  { name: "generateImage",   label: "generateImage",   description: "Generate an image from a text prompt using ComfyUI (Flux) and save it to the active directory." },
-  { name: "generateImg2img", label: "generateImg2img", description: "Generate a new image based on an existing image and a text prompt using ComfyUI (Flux img2img)." },
+  {
+    name: "generateImage",
+    label: "generateImage",
+    description:
+      "Generate an image from a text prompt using ComfyUI (Flux) and save it to the active directory.",
+  },
+  {
+    name: "generateImg2img",
+    label: "generateImg2img",
+    description:
+      "Generate a new image based on an existing image and a text prompt using ComfyUI (Flux img2img).",
+  },
 ];
 
 const PRESET_URLS = [

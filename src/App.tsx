@@ -19,6 +19,7 @@ import {
   getFileContent,
   listAllDirectories,
   listFileNamesInDirectory,
+  removeFileFromDirectory,
 } from "./functions/dbFilesInterface.functions";
 import { ConfirmAction } from "./types/confirmAction.enum";
 import { parseFileName } from "./functions/parseFileName.function";
@@ -487,15 +488,23 @@ function App(): JSXElement {
             activeDirectoryName: activeDirectoryName(),
             viewedFileName: viewedFile()?.fileName ?? null,
             viewedFileContent: displayedFileContent(),
-            onWrite: (appended) => {
+            viewedFileModified: viewedFile() === null ? null : viewedFile()!.source === "clipboard",
+            onAppendWorkspace: (appended) => {
               const vf = viewedFile();
-              if (!vf) return;
-              if (vf.source === "clipboard") {
-                const entry = clipboard().find((c) => c.name() === vf.fileName);
-                if (entry) {
-                  entry.setContent(entry.content() + appended);
-                  storeClipboard(clipboard);
-                }
+              if (!vf || vf.source !== "clipboard") return;
+              const entry = clipboard().find((c) => c.name() === vf.fileName);
+              if (entry) {
+                entry.setContent(entry.content() + appended);
+                storeClipboard(clipboard);
+              }
+            },
+            onOverwriteWorkspace: (content) => {
+              const vf = viewedFile();
+              if (!vf || vf.source !== "clipboard") return;
+              const entry = clipboard().find((c) => c.name() === vf.fileName);
+              if (entry) {
+                entry.setContent(content);
+                storeClipboard(clipboard);
               }
             },
             onCreateClipboardFile: (name, content) => {
@@ -519,6 +528,23 @@ function App(): JSXElement {
               const dirName = activeDirectoryName();
               if (!dirName) return;
               await writeFileToDirectory(dirName, { name, content });
+              const names = await listFileNamesInDirectory(dirName);
+              setActiveDirectoryParsedFileNames(names.map((fn) => parseFileName(fn)));
+            },
+            onDeleteFile: async (name) => {
+              const dirName = activeDirectoryName();
+              if (!dirName) return;
+              await removeFileFromDirectory(dirName, name);
+              const names = await listFileNamesInDirectory(dirName);
+              setActiveDirectoryParsedFileNames(names.map((fn) => parseFileName(fn)));
+            },
+            onRenameFile: async (oldName, newName) => {
+              const dirName = activeDirectoryName();
+              if (!dirName) return;
+              const content = await getFileContent(dirName, oldName);
+              if (content === null) return;
+              await writeFileToDirectory(dirName, { name: newName, content });
+              await removeFileFromDirectory(dirName, oldName);
               const names = await listFileNamesInDirectory(dirName);
               setActiveDirectoryParsedFileNames(names.map((fn) => parseFileName(fn)));
             },

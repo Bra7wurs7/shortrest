@@ -196,7 +196,11 @@ function migrateNode(raw: unknown): MessageNodeConfig {
       Object.entries(
         (node.toolbeltTools as Record<string, Partial<ToolbeltToolConfig>>) ??
           {},
-      ).map(([name, cfg]) => [name, { enabled: cfg.enabled ?? false }]),
+      ).map(([name, cfg]) => [
+        // Migrate renamed tool
+        name === "writeWorkspace" ? "appendWorkspace" : name,
+        { enabled: cfg.enabled ?? false },
+      ]),
     ),
     toolbeltType: node.toolbeltType ?? "files",
     toolbeltImageConfig: node.toolbeltImageConfig ?? {
@@ -402,8 +406,16 @@ export function usePipelineManager(): UsePipelineManagerReturn {
       toolbeltTools: {
         readFile: { enabled: true },
         listFiles: { enabled: true },
+        searchFiles: { enabled: true },
+        searchContent: { enabled: true },
+        searchByTag: { enabled: true },
         createFile: { enabled: false },
         writeFile: { enabled: false },
+        appendToFile: { enabled: false },
+        deleteFile: { enabled: false },
+        renameFile: { enabled: false },
+        listDirectories: { enabled: false },
+        readFileFromDirectory: { enabled: false },
       },
     }]);
   }
@@ -416,7 +428,10 @@ export function usePipelineManager(): UsePipelineManagerReturn {
       toolbeltType: "workspace",
       toolbeltTools: {
         readWorkspace: { enabled: true },
-        writeWorkspace: { enabled: false },
+        appendWorkspace: { enabled: false },
+        overwriteWorkspace: { enabled: false },
+        replaceInWorkspace: { enabled: false },
+        getWorkspaceInfo: { enabled: false },
       },
     }]);
   }
