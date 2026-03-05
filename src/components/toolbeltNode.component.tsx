@@ -2,29 +2,46 @@ import "./toolbeltNode.component.css";
 import { Accessor, For, JSXElement, Show } from "solid-js";
 import { MessageNodeConfig, ToolbeltToolConfig } from "../types/messageNode.interface";
 
-/** Definitions for all available tools */
-const TOOL_DEFINITIONS: { name: string; label: string; description: string }[] = [
-  {
-    name: "readFile",
-    label: "readFile",
-    description: "Read the full content of a named file from the active directory or clipboard.",
-  },
-  {
-    name: "listFiles",
-    label: "listFiles",
-    description: "List all file names available in the active directory and clipboard.",
-  },
-  {
-    name: "write",
-    label: "write",
-    description: "Append text to the end of the currently viewed file.",
-  },
-  {
-    name: "generateImage",
-    label: "generateImage",
-    description: "Generate an image via ComfyUI and save it to the active directory.",
-  },
+type ToolDef = { name: string; label: string; description: string };
+
+const FILES_TOOLS: ToolDef[] = [
+  { name: "readFile",  label: "readFile",  description: "Read the full content of a named file from the active directory or clipboard." },
+  { name: "listFiles", label: "listFiles", description: "List all file names available in the active directory and clipboard." },
+  { name: "createFile",label: "createFile",description: "Create a new file in the clipboard with a given name and text content." },
+  { name: "writeFile", label: "writeFile", description: "Write (create or overwrite) a text file in the active directory." },
 ];
+
+const WORKSPACE_TOOLS: ToolDef[] = [
+  { name: "readWorkspace",  label: "readWorkspace",  description: "Read the full content of the currently viewed (active) file." },
+  { name: "writeWorkspace", label: "writeWorkspace", description: "Append text to the end of the currently viewed file." },
+];
+
+const IMAGE_TOOLS: ToolDef[] = [
+  { name: "generateImage",   label: "generateImage",   description: "Generate an image from a text prompt using ComfyUI (Flux) and save it to the active directory." },
+  { name: "generateImg2img", label: "generateImg2img", description: "Generate a new image based on an existing image and a text prompt using ComfyUI (Flux img2img)." },
+];
+
+const PRESET_URLS = [
+  { label: "Local", url: "http://127.0.0.1:8188" },
+];
+
+function toolsForType(type: MessageNodeConfig["toolbeltType"]): ToolDef[] {
+  if (type === "workspace") return WORKSPACE_TOOLS;
+  if (type === "image") return IMAGE_TOOLS;
+  return FILES_TOOLS;
+}
+
+function headerIcon(type: MessageNodeConfig["toolbeltType"]): string {
+  if (type === "workspace") return "bx-edit";
+  if (type === "image") return "bx-image-alt";
+  return "bx-folder";
+}
+
+function headerLabel(type: MessageNodeConfig["toolbeltType"]): string {
+  if (type === "workspace") return "Workspace";
+  if (type === "image") return "Image Toolbelt";
+  return "Files";
+}
 
 export interface ToolbeltNodeProps {
   node: Accessor<MessageNodeConfig>;
@@ -43,22 +60,24 @@ export function ToolbeltNode(props: ToolbeltNodeProps): JSXElement {
   }
 
   function setToolConfig(name: string, updates: Partial<ToolbeltToolConfig>) {
-    const current = getToolConfig(name);
     props.onUpdate(node().id, {
-      toolbeltTools: {
-        ...node().toolbeltTools,
-        [name]: { ...current, ...updates },
-      },
+      toolbeltTools: { ...node().toolbeltTools, [name]: { ...getToolConfig(name), ...updates } },
     });
   }
 
-  const enabledCount = () =>
-    TOOL_DEFINITIONS.filter((t) => getToolConfig(t.name).enabled).length;
+  function setImageConfig(updates: Partial<MessageNodeConfig["toolbeltImageConfig"]>) {
+    props.onUpdate(node().id, {
+      toolbeltImageConfig: { ...node().toolbeltImageConfig, ...updates },
+    });
+  }
+
+  const tools = () => toolsForType(node().toolbeltType);
+  const enabledCount = () => tools().filter((t) => getToolConfig(t.name).enabled).length;
 
   return (
     <div
       class={
-        "ai_section pipeline_node" +
+        "ai_section pipeline_node toolbelt_" + node().toolbeltType +
         (node().collapsed ? " collapsed" : "") +
         (node().disabled ? " node_disabled" : "")
       }
@@ -68,23 +87,14 @@ export function ToolbeltNode(props: ToolbeltNodeProps): JSXElement {
         onclick={() => props.onUpdate(node().id, { collapsed: !node().collapsed })}
       >
         <div class="left">
-          <i
-            class={
-              "bx " + (node().collapsed ? "bx-chevron-right" : "bx-chevron-down")
-            }
-          />
-          <i class="bx bx-wrench" />
+          <i class={"bx " + (node().collapsed ? "bx-chevron-right" : "bx-chevron-down")} />
+          <i class={"bx toolbelt_type_icon " + headerIcon(node().toolbeltType)} />
           <span>
-            Toolbelt
-            <Show when={enabledCount() > 0}>
-              {" "}· {enabledCount()}
-            </Show>
+            {headerLabel(node().toolbeltType)}
+            <Show when={enabledCount() > 0}>{" "}· {enabledCount()}</Show>
           </span>
         </div>
-        <div
-          class="right node_header_actions"
-          onclick={(e) => e.stopPropagation()}
-        >
+        <div class="right node_header_actions" onclick={(e) => e.stopPropagation()}>
           <i
             class={"bx bx-chevron-up" + (props.index === 0 ? " dim" : "")}
             onclick={() => props.onMove(node().id, "up")}
@@ -95,11 +105,7 @@ export function ToolbeltNode(props: ToolbeltNodeProps): JSXElement {
             onclick={() => props.onMove(node().id, "down")}
             title="Move down"
           />
-          <i
-            class="bx bx-x"
-            onclick={() => props.onRemove(node().id)}
-            title="Remove node"
-          />
+          <i class="bx bx-x" onclick={() => props.onRemove(node().id)} title="Remove node" />
           <div
             class="toggle"
             onclick={() => props.onUpdate(node().id, { disabled: !node().disabled })}
@@ -110,24 +116,20 @@ export function ToolbeltNode(props: ToolbeltNodeProps): JSXElement {
           </div>
         </div>
       </div>
+
       <Show when={!node().collapsed}>
         <div class="prompt_body toolbelt_body">
-          <For each={TOOL_DEFINITIONS}>
+          <For each={tools()}>
             {(tool) => {
               const cfg = () => getToolConfig(tool.name);
               return (
                 <div class={"toolbelt_tool_card" + (cfg().enabled ? " enabled" : "")}>
                   <div class="toolbelt_tool_header">
-                    <label
-                      class="toolbelt_enable_label"
-                      onclick={(e) => e.stopPropagation()}
-                    >
+                    <label class="toolbelt_enable_label" onclick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={cfg().enabled}
-                        onchange={(e) =>
-                          setToolConfig(tool.name, { enabled: e.currentTarget.checked })
-                        }
+                        onchange={(e) => setToolConfig(tool.name, { enabled: e.currentTarget.checked })}
                       />
                       <span class="toolbelt_tool_name">{tool.label}</span>
                     </label>
@@ -137,6 +139,55 @@ export function ToolbeltNode(props: ToolbeltNodeProps): JSXElement {
               );
             }}
           </For>
+
+          <Show when={node().toolbeltType === "image"}>
+            <div class="toolbelt_image_settings">
+              <div class="toolbelt_url_row">
+                <For each={PRESET_URLS}>
+                  {(preset) => (
+                    <button
+                      class={"preset_url_btn" + (node().toolbeltImageConfig.url === preset.url ? " active" : "")}
+                      onclick={() => setImageConfig({ url: preset.url })}
+                    >
+                      {preset.label}
+                    </button>
+                  )}
+                </For>
+                <input
+                  type="text"
+                  value={node().toolbeltImageConfig.url}
+                  placeholder="http://127.0.0.1:8188"
+                  oninput={(e) => setImageConfig({ url: e.currentTarget.value })}
+                />
+              </div>
+              <div class="toolbelt_image_dims">
+                <span class="toolbelt_dim_label">W</span>
+                <input
+                  type="number"
+                  class="toolbelt_dim_input"
+                  value={node().toolbeltImageConfig.width}
+                  min={64} step={64}
+                  oninput={(e) => setImageConfig({ width: Number(e.currentTarget.value) })}
+                />
+                <span class="toolbelt_dim_label">H</span>
+                <input
+                  type="number"
+                  class="toolbelt_dim_input"
+                  value={node().toolbeltImageConfig.height}
+                  min={64} step={64}
+                  oninput={(e) => setImageConfig({ height: Number(e.currentTarget.value) })}
+                />
+                <span class="toolbelt_dim_label">Steps</span>
+                <input
+                  type="number"
+                  class="toolbelt_dim_input"
+                  value={node().toolbeltImageConfig.steps}
+                  min={1} max={150}
+                  oninput={(e) => setImageConfig({ steps: Number(e.currentTarget.value) })}
+                />
+              </div>
+            </div>
+          </Show>
         </div>
       </Show>
     </div>

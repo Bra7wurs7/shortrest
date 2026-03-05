@@ -117,28 +117,22 @@
         color: var(--color_foreground);
         border-width: var(--size_border);
         border-color: var(--color_border);
-        min-width: 50px;
-        flex-grow: 1;
+        min-width: 0;
+        flex: 1;
+        box-sizing: border-box;
 
-        /* Chrome, Safari, Edge, Opera */
+        /* Hide spinners on number inputs */
         &::-webkit-outer-spin-button,
         &::-webkit-inner-spin-button {
             -webkit-appearance: none;
             margin: 0;
         }
-
-        /* Firefox */
         &[type="number"] {
             -moz-appearance: textfield;
         }
 
-        &:hover {
-            border-color: var(--color_border_light);
-        }
-        &:focus {
-            outline: none;
-            border-color: var(--color_foreground);
-        }
+        &:hover { border-color: var(--color_border_light); }
+        &:focus { outline: none; border-color: var(--color_foreground); }
     }
     select {
         background-color: var(--color_background);
@@ -147,14 +141,8 @@
         border-color: var(--color_border);
         flex: 1;
         min-width: 0;
-        width: 100%;
-        &:hover {
-            border-color: var(--color_border_light);
-        }
-        &:focus {
-            outline: none;
-            border-color: var(--color_foreground);
-        }
+        &:hover { border-color: var(--color_border_light); }
+        &:focus { outline: none; border-color: var(--color_foreground); }
     }
     button {
         transition: var(--transition_background_color);
@@ -338,6 +326,7 @@
     color: var(--color_border_light);
     font-size: small;
     padding: 2px 4px;
+    transition: color var(--transition_duration) ease-in;
     &:hover {
         color: var(--color_foreground);
     }
@@ -348,12 +337,12 @@
     align-items: center;
     .bx {
         cursor: pointer;
-        color: var(--dark3);
+        color: var(--color_border_light);
         &:hover {
             color: var(--color_foreground);
         }
         &.dim {
-            color: var(--dark2);
+            color: var(--color_border);
             cursor: default;
         }
     }

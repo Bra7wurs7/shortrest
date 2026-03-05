@@ -198,6 +198,32 @@ export class FluxClient {
     } finally {
       this.settings = savedSettings;
     }
+    return this._waitForBlob(promptId);
+  }
+
+  /**
+   * Upload a Blob as the source image, run img2img, and return the result as
+   * a Blob. Listens for WebSocket progress internally.
+   */
+  async generateImg2imgBlob(
+    prompt: string,
+    inputBlob: Blob,
+    seed?: number,
+    overrides?: Partial<FluxSamplerSettings>,
+  ): Promise<Blob> {
+    const uploadedFilename = await this.api.uploadImage(inputBlob);
+    const savedSettings = this.settings;
+    if (overrides) this.settings = { ...this.settings, ...overrides };
+    let promptId: string;
+    try {
+      promptId = await this.generateImg2Img(prompt, uploadedFilename, seed);
+    } finally {
+      this.settings = savedSettings;
+    }
+    return this._waitForBlob(promptId);
+  }
+
+  private _waitForBlob(promptId: string): Promise<Blob> {
     return new Promise<Blob>((resolve, reject) => {
       const cleanup = this.api.listenProgress((msg) => {
         if (msg.type === "executionComplete") {

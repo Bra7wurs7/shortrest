@@ -43,7 +43,6 @@ import {
   localStorageChatUserPrompt,
   localStorageActiveDirectoryName,
   localStorageFileViewerMode,
-  localStorageComfyuiUrl,
 } from "./constants/storageKeys";
 import { writeFileToDirectory } from "./functions/dbFilesInterface.functions";
 import { extractBracketQuery } from "./functions/extractBracketQuery.function";
@@ -159,14 +158,6 @@ function App(): JSXElement {
     setLLMApiKey,
     llmModels,
   } = useLLMConnection();
-
-  const [comfyuiUrl, setComfyuiUrl] = createSignal<string>(
-    localStorage.getItem(localStorageComfyuiUrl) ?? "http://127.0.0.1:8188",
-  );
-
-  createEffect(() => {
-    localStorage.setItem(localStorageComfyuiUrl, comfyuiUrl());
-  });
 
   // ============================================
   // Prompt / pipeline state
@@ -495,7 +486,7 @@ function App(): JSXElement {
             clipboard: clipboard(),
             activeDirectoryName: activeDirectoryName(),
             viewedFileName: viewedFile()?.fileName ?? null,
-            comfyuiUrl: comfyuiUrl(),
+            viewedFileContent: displayedFileContent(),
             onWrite: (appended) => {
               const vf = viewedFile();
               if (!vf) return;
@@ -506,6 +497,30 @@ function App(): JSXElement {
                   storeClipboard(clipboard);
                 }
               }
+            },
+            onCreateClipboardFile: (name, content) => {
+              const existing = clipboard().find((e) => e.name() === name);
+              if (existing) {
+                existing.setContent(content);
+              } else {
+                const [nameAcc, setNameAcc] = createSignal(name);
+                const [contentAcc, setContentAcc] = createSignal(content);
+                const entry: ClipboardEntry = {
+                  name: nameAcc, setName: setNameAcc,
+                  content: contentAcc, setContent: setContentAcc,
+                  originalName: name, originalContent: content,
+                  sourceDirectory: null,
+                };
+                setClipboard((prev) => [...prev, entry]);
+              }
+              storeClipboard(clipboard);
+            },
+            onWriteFile: async (name, content) => {
+              const dirName = activeDirectoryName();
+              if (!dirName) return;
+              await writeFileToDirectory(dirName, { name, content });
+              const names = await listFileNamesInDirectory(dirName);
+              setActiveDirectoryParsedFileNames(names.map((fn) => parseFileName(fn)));
             },
             onImageGenerated: async (filename, blob) => {
               const dirName = activeDirectoryName();
@@ -595,37 +610,6 @@ function App(): JSXElement {
         recordHistoryTurn(finalOutput);
       }
 
-      // ComfyUI image generation — runs after the LLM completes if enabled
-      const comfyCfg = p.comfyuiConfig();
-      if (comfyCfg.enabled) {
-        const imagePrompt =
-          comfyCfg.promptSource === "llm-output" ? finalOutput :
-          comfyCfg.promptSource === "user-prompt" ? userPrompt() :
-          comfyCfg.preparedPrompt;
-
-        const dirName = activeDirectoryName();
-        const filename = comfyCfg.filename.trim() || "generated.png";
-
-        if (imagePrompt.trim() && dirName) {
-          const { FluxClient, randomSeed } = await import("./comfyui/index");
-          const client = new FluxClient(comfyuiUrl());
-          const blob = await client.generateBlob(imagePrompt, randomSeed(), {
-            width: comfyCfg.width,
-            height: comfyCfg.height,
-            steps: comfyCfg.steps,
-          });
-          await writeFileToDirectory(dirName, { name: filename, content: blob });
-          const names = await listFileNamesInDirectory(dirName);
-          setActiveDirectoryParsedFileNames(names.map((fn) => parseFileName(fn)));
-          const newViewedFile: ViewedFile = {
-            source: "idb",
-            directoryName: dirName,
-            fileName: filename,
-          };
-          setViewedFile(newViewedFile);
-          storeViewedFile(newViewedFile);
-        }
-      }
     } catch (error: unknown) {
       p.setPromptLoading(false);
       p.setRunningPrompt(null);
@@ -864,8 +848,6 @@ function App(): JSXElement {
           setLLMApiKey={setLLMApiKey}
           llmProviderType={llmProviderType}
           llmModels={llmModels}
-          comfyuiUrl={comfyuiUrl}
-          setComfyuiUrl={setComfyuiUrl}
           onSubmit={handlePipelineSubmit}
           clipboard={clipboard}
           activeDirectoryParsedFileNames={activeDirectoryParsedFileNames}
@@ -969,10 +951,24 @@ function App(): JSXElement {
           </button>
           <button
             class="button_icon"
-            onclick={() => pipelineMgr.addToolbeltNode()}
-            title="Add Toolbelt node"
+            onclick={() => pipelineMgr.addFilesToolbeltNode()}
+            title="Add Files toolbelt"
           >
-            <i class="bx bx-wrench"></i>
+            <i class="bx bx-folder"></i>
+          </button>
+          <button
+            class="button_icon"
+            onclick={() => pipelineMgr.addWorkspaceToolbeltNode()}
+            title="Add Workspace toolbelt"
+          >
+            <i class="bx bx-edit"></i>
+          </button>
+          <button
+            class="button_icon"
+            onclick={() => pipelineMgr.addImageToolbeltNode()}
+            title="Add Image toolbelt"
+          >
+            <i class="bx bx-image-alt"></i>
           </button>
         </div>
       </div>

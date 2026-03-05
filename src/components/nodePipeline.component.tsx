@@ -9,7 +9,6 @@ import { MessageNode } from "./messageNode.component";
 import { HistoryNode } from "./historyNode.component";
 import { ToolbeltNode } from "./toolbeltNode.component";
 import { LlmNode } from "./llmNode.component";
-import { ComfyuiNode } from "./comfyuiNode.component";
 import { PipelineOutput } from "./pipelineOutput.component";
 
 export interface NodePipelineProps {
@@ -38,10 +37,6 @@ export interface NodePipelineProps {
   pipelines: Accessor<PipelineInstance[]>;
 
   onAbortSubPipeline: (pipelineId: string) => void;
-
-  // ComfyUI connection
-  comfyuiUrl: Accessor<string>;
-  setComfyuiUrl: (url: string) => void;
 }
 
 export function NodePipeline(props: NodePipelineProps): JSXElement {
@@ -100,11 +95,6 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
             </Switch>
           )}
         </Index>
-        <ComfyuiNode
-          pipeline={p}
-          comfyuiUrl={props.comfyuiUrl}
-          setComfyuiUrl={props.setComfyuiUrl}
-        />
       </div>
       <div id="P_S_BOTTOM">
         <LlmNode
