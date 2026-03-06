@@ -23,6 +23,8 @@ export interface ToolbeltContext {
   viewedFileContent: string | null;
   /** True if the viewed file is a clipboard (unsaved) entry; false if saved IDB; null if no file */
   viewedFileModified: boolean | null;
+  /** Blob of the currently viewed binary file (e.g. an image), or null if text/nothing viewed */
+  viewedFileBlob: Blob | null;
   /** Called when appendWorkspace appends content to the viewed file */
   onAppendWorkspace: (appended: string) => void;
   /** Called when overwriteWorkspace replaces the full content of the viewed file */
@@ -361,9 +363,9 @@ export async function executeTool(
       const cfg = getImageToolbeltConfig(ctx.nodes);
       if (!cfg) return "[generateImage: image toolbelt not configured]";
 
-      const width = typeof call.args.width === "number" ? call.args.width : cfg.width;
-      const height = typeof call.args.height === "number" ? call.args.height : cfg.height;
-      const steps = typeof call.args.steps === "number" ? call.args.steps : cfg.steps;
+      const width = cfg.forceResolution || typeof call.args.width !== "number" ? cfg.width : call.args.width;
+      const height = cfg.forceResolution || typeof call.args.height !== "number" ? cfg.height : call.args.height;
+      const steps = cfg.forceSteps || typeof call.args.steps !== "number" ? cfg.steps : call.args.steps;
 
       const client = new FluxClient(cfg.url);
       const blob = await client.generateBlob(prompt, randomSeed(), { width, height, steps });
@@ -384,20 +386,25 @@ export async function executeTool(
       const cfg = getImageToolbeltConfig(ctx.nodes);
       if (!cfg) return "[generateImg2img: image toolbelt not configured]";
 
-      // Load base image blob from IDB only (clipboard entries are text, not binary images)
+      // Load base image blob — "@workspace" uses the currently viewed binary file
       let baseBlob: Blob | null = null;
-      const content = await getFileContent(ctx.activeDirectoryName, baseFilename);
-      if (content instanceof Blob) {
-        baseBlob = content;
-      } else if (content !== null) {
-        return `[generateImg2img: "${baseFilename}" is not a binary image file]`;
+      if (baseFilename === "@workspace") {
+        baseBlob = ctx.viewedFileBlob;
+        if (!baseBlob) return "[generateImg2img: no image is currently viewed in the workspace]";
+      } else {
+        const content = await getFileContent(ctx.activeDirectoryName, baseFilename);
+        if (content instanceof Blob) {
+          baseBlob = content;
+        } else if (content !== null) {
+          return `[generateImg2img: "${baseFilename}" is not a binary image file]`;
+        }
+        if (!baseBlob) return `[generateImg2img: "${baseFilename}" not found]`;
       }
-      if (!baseBlob) return `[generateImg2img: "${baseFilename}" not found]`;
 
       const denoise = typeof call.args.denoise === "number" ? call.args.denoise : 0.75;
-      const width = typeof call.args.width === "number" ? call.args.width : cfg.width;
-      const height = typeof call.args.height === "number" ? call.args.height : cfg.height;
-      const steps = typeof call.args.steps === "number" ? call.args.steps : cfg.steps;
+      const width = cfg.forceResolution || typeof call.args.width !== "number" ? cfg.width : call.args.width;
+      const height = cfg.forceResolution || typeof call.args.height !== "number" ? cfg.height : call.args.height;
+      const steps = cfg.forceSteps || typeof call.args.steps !== "number" ? cfg.steps : call.args.steps;
 
       const client = new FluxClient(cfg.url);
       const blob = await client.generateImg2imgBlob(prompt, baseBlob, randomSeed(), {
@@ -772,7 +779,7 @@ export function buildNativeToolDefinitions(nodes: MessageNodeConfig[]): NativeTo
             prompt: { type: "string", description: "Text prompt guiding the generation." },
             base_filename: {
               type: "string",
-              description: "Filename of the existing image to use as input.",
+              description: 'Filename of the existing image to use as input, or "@workspace" to use the image currently viewed in the workspace.',
             },
             output_filename: {
               type: "string",

@@ -277,6 +277,14 @@ export function ToolbeltNode(props: ToolbeltNodeProps): JSXElement {
                   min={64} step={64}
                   oninput={(e) => setImageConfig({ height: Number(e.currentTarget.value) })}
                 />
+                <label class="toolbelt_force_label" title="Lock resolution — ignore LLM-provided width/height">
+                  <input
+                    type="checkbox"
+                    checked={node().toolbeltImageConfig.forceResolution}
+                    onchange={(e) => setImageConfig({ forceResolution: e.currentTarget.checked })}
+                  />
+                  Lock
+                </label>
                 <span class="toolbelt_dim_label">Steps</span>
                 <input
                   type="number"
@@ -285,6 +293,14 @@ export function ToolbeltNode(props: ToolbeltNodeProps): JSXElement {
                   min={1} max={150}
                   oninput={(e) => setImageConfig({ steps: Number(e.currentTarget.value) })}
                 />
+                <label class="toolbelt_force_label" title="Lock steps — ignore LLM-provided steps count">
+                  <input
+                    type="checkbox"
+                    checked={node().toolbeltImageConfig.forceSteps}
+                    onchange={(e) => setImageConfig({ forceSteps: e.currentTarget.checked })}
+                  />
+                  Lock
+                </label>
               </div>
             </div>
           </Show>

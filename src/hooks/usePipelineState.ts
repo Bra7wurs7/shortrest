@@ -44,7 +44,7 @@ function createDefaultNodes(): MessageNodeConfig[] {
       disabled: false,
       toolbeltTools: {},
       toolbeltType: "files",
-      toolbeltImageConfig: { url: "http://127.0.0.1:8188", width: 768, height: 768, steps: 7 },
+      toolbeltImageConfig: { url: "http://127.0.0.1:8188", width: 768, height: 768, steps: 7, forceResolution: false, forceSteps: false },
     },
     {
       id: generateId(),
@@ -60,7 +60,7 @@ function createDefaultNodes(): MessageNodeConfig[] {
       disabled: false,
       toolbeltTools: {},
       toolbeltType: "files",
-      toolbeltImageConfig: { url: "http://127.0.0.1:8188", width: 768, height: 768, steps: 7 },
+      toolbeltImageConfig: { url: "http://127.0.0.1:8188", width: 768, height: 768, steps: 7, forceResolution: false, forceSteps: false },
     },
     {
       id: generateId(),
@@ -76,7 +76,7 @@ function createDefaultNodes(): MessageNodeConfig[] {
       disabled: false,
       toolbeltTools: {},
       toolbeltType: "files",
-      toolbeltImageConfig: { url: "http://127.0.0.1:8188", width: 768, height: 768, steps: 7 },
+      toolbeltImageConfig: { url: "http://127.0.0.1:8188", width: 768, height: 768, steps: 7, forceResolution: false, forceSteps: false },
     },
   ];
 }
@@ -203,11 +203,14 @@ function migrateNode(raw: unknown): MessageNodeConfig {
       ]),
     ),
     toolbeltType: node.toolbeltType ?? "files",
-    toolbeltImageConfig: node.toolbeltImageConfig ?? {
+    toolbeltImageConfig: {
       url: "http://127.0.0.1:8188",
       width: 768,
       height: 768,
       steps: 7,
+      forceResolution: false,
+      forceSteps: false,
+      ...node.toolbeltImageConfig,
     },
   };
 }
@@ -357,7 +360,7 @@ export function usePipelineManager(): UsePipelineManagerReturn {
       disabled: false,
       toolbeltTools: {},
       toolbeltType: "files",
-      toolbeltImageConfig: { url: "http://127.0.0.1:8188", width: 768, height: 768, steps: 7 },
+      toolbeltImageConfig: { url: "http://127.0.0.1:8188", width: 768, height: 768, steps: 7, forceResolution: false, forceSteps: false },
     };
     p.setMessageNodes([...p.messageNodes(), newNode]);
   }
@@ -378,7 +381,7 @@ export function usePipelineManager(): UsePipelineManagerReturn {
       disabled: false,
       toolbeltTools: {},
       toolbeltType: "files",
-      toolbeltImageConfig: { url: "http://127.0.0.1:8188", width: 768, height: 768, steps: 7 },
+      toolbeltImageConfig: { url: "http://127.0.0.1:8188", width: 768, height: 768, steps: 7, forceResolution: false, forceSteps: false },
     };
     p.setMessageNodes([...p.messageNodes(), newNode]);
   }
@@ -394,7 +397,7 @@ export function usePipelineManager(): UsePipelineManagerReturn {
     subPipelineParams: [],
     collapsed: false,
     disabled: false,
-    toolbeltImageConfig: { url: "http://127.0.0.1:8188", width: 768, height: 768, steps: 7 },
+    toolbeltImageConfig: { url: "http://127.0.0.1:8188", width: 768, height: 768, steps: 7, forceResolution: false, forceSteps: false },
   };
 
   function addFilesToolbeltNode() {

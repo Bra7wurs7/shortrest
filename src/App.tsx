@@ -490,6 +490,7 @@ function App(): JSXElement {
             viewedFileName: viewedFile()?.fileName ?? null,
             viewedFileContent: displayedFileContent(),
             viewedFileModified: viewedFile() === null ? null : viewedFile()!.source === "clipboard",
+            viewedFileBlob: displayedFileBlob(),
             onAppendWorkspace: (appended) => {
               const vf = viewedFile();
               if (!vf || vf.source !== "clipboard") return;

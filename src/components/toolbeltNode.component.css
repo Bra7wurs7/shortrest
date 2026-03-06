@@ -117,18 +117,35 @@
     }
 
     /* Dims row — grid so inputs are always constrained:
-       Row 1: W [input]  H [input]
-       Row 2: Steps [input spanning both input cols] */
+       Row 1: W [input]  H [input]  Lock
+       Row 2: Steps [input spanning mid cols]  Lock */
     .toolbelt_image_dims {
         display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
+        grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr) auto;
         gap: 4px;
         align-items: center;
 
-        /* Steps input: span from col 2 to end */
-        & > :nth-child(6) {
-            grid-column: 2 / -1;
+        /* Steps input: span cols 2-4 */
+        & > :nth-child(7) {
+            grid-column: 2 / 5;
         }
+    }
+}
+
+.toolbelt_force_label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.76em;
+    color: var(--color_foreground_soft);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+
+    input[type="checkbox"] {
+        cursor: pointer;
+        accent-color: var(--tb-accent);
+        flex-shrink: 0;
     }
 }
 
