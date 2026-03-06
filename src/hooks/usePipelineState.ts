@@ -457,6 +457,7 @@ export function usePipelineManager(): UsePipelineManagerReturn {
     p.setMessageNodes(p.messageNodes().filter((n) => n.id !== id));
   }
 
+  /** @TODO Use index instead of direction t allow drag & drop */
   function moveNode(id: string, direction: "up" | "down") {
     const p = activePipeline();
     const nodes = [...p.messageNodes()];
