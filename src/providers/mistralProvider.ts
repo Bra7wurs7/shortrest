@@ -2,6 +2,7 @@ import { Mistral } from "@mistralai/mistralai";
 import {
   LLMAbortableStream,
   LLMFinalChunk,
+  LLMMessage,
   LLMModelInfo,
   LLMProvider,
   LLMStreamChunk,
@@ -9,14 +10,39 @@ import {
   NativeToolCall,
 } from "../types/llmProvider.interface";
 
+/** Convert a Blob to a base64 data URL (with MIME type prefix). */
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  const buffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  const mediaType = blob.type || "image/jpeg";
+  return `data:${mediaType};base64,${btoa(binary)}`;
+}
+
 export function createMistralProvider(serverURL: string, apiKey: string): LLMProvider {
   const client = new Mistral({ apiKey, serverURL });
 
   return {
     async chat({ model, messages, tools }) {
+      // Pre-process image blobs: Mistral (Pixtral) uses content arrays with image_url parts
+      const mistralMessages = await Promise.all(
+        messages.map(async (m: LLMMessage) => {
+          if (!m.images?.length) return m;
+          const parts: unknown[] = [];
+          if (m.content) parts.push({ type: "text", text: m.content });
+          for (const blob of m.images) {
+            parts.push({ type: "image_url", image_url: await blobToDataUrl(blob) });
+          }
+          return { role: m.role, content: parts };
+        }),
+      );
+
       const eventStream = await client.chat.stream({
         model,
-        messages: messages as Parameters<typeof client.chat.stream>[0]["messages"],
+        messages: mistralMessages as Parameters<typeof client.chat.stream>[0]["messages"],
         ...(tools ? { tools: tools as Parameters<typeof client.chat.stream>[0]["tools"] } : {}),
       });
 

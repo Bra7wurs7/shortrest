@@ -1,5 +1,4 @@
-import { LLMAbortableStream, LLMModelInfo, LLMProvider, NativeTool } from "../../types/llmProvider.interface";
-import { Message } from "ollama";
+import { LLMAbortableStream, LLMMessage, LLMModelInfo, LLMProvider, NativeTool } from "../../types/llmProvider.interface";
 import { executeTool, ToolbeltContext } from "./toolbeltExecutor.function";
 
 const MAX_TOOL_TURNS = 10;
@@ -7,7 +6,7 @@ const MAX_TOOL_TURNS = 10;
 export interface RunWithToolsOptions {
   provider: LLMProvider;
   model: LLMModelInfo;
-  messages: Message[];
+  messages: LLMMessage[];
   tools: NativeTool[];
   toolbeltCtx: ToolbeltContext;
   /**
@@ -15,7 +14,7 @@ export interface RunWithToolsOptions {
    * from scratch (fresh file contents, sub-pipeline outputs, etc.).
    * The tool exchange from the current iteration is appended on top.
    */
-  resolveMessages: () => Promise<Message[]>;
+  resolveMessages: () => Promise<LLMMessage[]>;
   /** Called when a new stream opens (so it can be stored for abort) */
   onStream: (stream: LLMAbortableStream) => void;
   /** Called with each streamed content chunk during the final (no-tool-calls) turn */
@@ -46,12 +45,14 @@ export async function runWithTools(
 
   // toolExchange accumulates the assistant+tool-result messages from this agentic session.
   // On each follow-up turn, fresh base messages are resolved and this exchange is appended.
-  const toolExchange: Message[] = [];
+  // Tool exchange messages use Ollama-style tool_calls on the assistant message; providers
+  // accept this via type cast since both SDKs understand the same wire format.
+  const toolExchange: LLMMessage[] = [];
 
   let finalOutput = "";
   let emittedFinal = false;
 
-  async function streamOnce(messages: Message[], withThink: boolean): Promise<{ content: string; stream: LLMAbortableStream }> {
+  async function streamOnce(messages: LLMMessage[], withThink: boolean): Promise<{ content: string; stream: LLMAbortableStream }> {
     const stream = await provider.chat({
       model: model.id,
       stream: true as const,
@@ -73,7 +74,7 @@ export async function runWithTools(
     return { content, stream };
   }
 
-  async function streamWithFallback(messages: Message[]): Promise<{ content: string; stream: LLMAbortableStream }> {
+  async function streamWithFallback(messages: LLMMessage[]): Promise<{ content: string; stream: LLMAbortableStream }> {
     try {
       return await streamOnce(messages, true);
     } catch (err: unknown) {
@@ -128,18 +129,18 @@ export async function runWithTools(
 
     // Append the assistant's tool-call turn and results to the exchange.
     // Both Ollama and Mistral accept { role: "tool", content: "..." } result messages.
-    // The assistant message must carry the tool_calls so the model knows what it did.
+    // The assistant message carries tool_calls so the model knows what it requested.
     toolExchange.push({
       role: "assistant",
       content: output,
-      // Ollama accepts tool_calls on the assistant message
+      // tool_calls is Ollama-style; passed through via type cast in both providers
       tool_calls: nativeToolCalls.map((tc) => ({
         function: { name: tc.name, arguments: tc.args as Record<string, string> },
       })),
-    } as Message);
+    } as unknown as LLMMessage);
 
     for (let i = 0; i < nativeToolCalls.length; i++) {
-      toolExchange.push({ role: "tool", content: resultLines[i] } as Message);
+      toolExchange.push({ role: "tool", content: resultLines[i] });
     }
 
     // Stop the loop after a write — the file has been modified; no further LLM turn needed.

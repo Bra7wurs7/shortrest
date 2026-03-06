@@ -2,6 +2,7 @@ import { Ollama } from "ollama";
 import {
   LLMAbortableStream,
   LLMFinalChunk,
+  LLMMessage,
   LLMModelInfo,
   LLMProvider,
   LLMStreamChunk,
@@ -9,17 +10,39 @@ import {
   NativeToolCall,
 } from "../types/llmProvider.interface";
 
+/** Convert a Blob to a base64-encoded string (no data-URL prefix). */
+async function blobToBase64(blob: Blob): Promise<string> {
+  const buffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let binary = "";
+  for (let i = 0; i < bytes.byteLength; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
 export function createOllamaProvider(host: string): LLMProvider {
   const ollama = new Ollama({ host });
 
   return {
     async chat({ model, messages, think, tools }) {
+      // Pre-process image blobs: Ollama accepts base64 strings in the `images` field
+      const ollamaMessages = await Promise.all(
+        messages.map(async (m: LLMMessage) => {
+          if (!m.images?.length) return m;
+          return {
+            ...m,
+            images: await Promise.all(m.images.map(blobToBase64)),
+          };
+        }),
+      );
+
       const stream = await ollama.chat({
         model,
         stream: true as const,
         ...(think ? { think: true } : {}),
         ...(tools ? { tools: tools as Parameters<typeof ollama.chat>[0]["tools"] } : {}),
-        messages,
+        messages: ollamaMessages as Parameters<typeof ollama.chat>[0]["messages"],
       });
 
       // Collect tool_calls from the final (done=true) message

@@ -1,5 +1,4 @@
-import { LLMAbortableStream, LLMModelInfo, LLMProvider } from "../../types/llmProvider.interface";
-import { Message } from "ollama";
+import { LLMAbortableStream, LLMMessage, LLMModelInfo, LLMProvider } from "../../types/llmProvider.interface";
 import { MessageNodeConfig } from "../../types/messageNode.interface";
 import { ClipboardEntry } from "../../types/clipboardEntry.interface";
 import { HistoryTurn, PipelineInstance } from "../../hooks/usePipelineState";
@@ -17,6 +16,8 @@ export interface ResolveNodeMessagesOptions {
   activeDirectoryName: string | null;
   /** Currently displayed file content (for "viewed-file" acquisition mode) */
   displayedFileContent: string;
+  /** Currently displayed file blob, if the viewed file is binary (for "viewed-file" with images) */
+  displayedFileBlob?: Blob | null;
   /** All pipeline instances (for "pipeline-output" and "sub-pipeline" acquisition modes) */
   pipelines: PipelineInstance[];
   /** History turns from the owning pipeline, injected by history nodes */
@@ -170,6 +171,7 @@ async function _runSubPipeline(
     clipboard: options.clipboard,
     activeDirectoryName: options.activeDirectoryName,
     displayedFileContent: options.displayedFileContent,
+    displayedFileBlob: options.displayedFileBlob,
     pipelines: options.pipelines,
     ownHistory: [],
     provider: options.provider,
@@ -210,22 +212,24 @@ async function _runSubPipeline(
 }
 
 /**
- * Resolves an ordered list of MessageNodeConfigs into an Ollama Message[].
+ * Resolves an ordered list of MessageNodeConfigs into an LLMMessage[].
  * Skips disabled nodes and nodes with empty resolved content.
  * Toolbelt nodes are skipped here — they contribute tool definitions to the API
  * call (via buildNativeToolDefinitions) rather than injecting prompt messages.
  * Sub-pipeline nodes are all started in parallel and awaited in order,
  * so multiple sub-pipelines run concurrently while message ordering is preserved.
+ * Binary image files are attached as Blob arrays on the message for vision models.
  */
 export async function resolveNodeMessages(
   options: ResolveNodeMessagesOptions,
-): Promise<Message[]> {
+): Promise<LLMMessage[]> {
   const {
     nodes,
     directInputValue,
     clipboard,
     activeDirectoryName,
     displayedFileContent,
+    displayedFileBlob,
     pipelines,
     ownHistory,
   } = options;
@@ -245,7 +249,7 @@ export async function resolveNodeMessages(
   });
 
   // Pass 2: resolve all nodes in order, awaiting each sub-pipeline promise as we reach it.
-  const messages: Message[] = [];
+  const messages: LLMMessage[] = [];
 
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
@@ -266,6 +270,7 @@ export async function resolveNodeMessages(
     if (node.acquisitionMode === "toolbelt") continue;
 
     let content = "";
+    let imageBlob: Blob | null = null;
 
     switch (node.acquisitionMode) {
       case "direct":
@@ -278,24 +283,34 @@ export async function resolveNodeMessages(
         const fileName = node.fileName.trim();
         if (!fileName) break;
 
-        // Check clipboard first
+        // Check clipboard first (clipboard entries are always text)
         const clipboardEntry = clipboard.find((e) => e.name() === fileName);
         if (clipboardEntry) {
           content = clipboardEntry.content();
         } else if (activeDirectoryName) {
-          // Fall back to IDB (binary files are not usable as message content)
           const fetched = await getFileContent(activeDirectoryName, fileName);
-          content = fetched instanceof Blob ? "" : (fetched ?? "");
+          if (fetched instanceof Blob) {
+            // Binary file (e.g. an image) — attach as image for vision models
+            imageBlob = fetched;
+          } else {
+            content = fetched ?? "";
+          }
         }
         break;
       }
-      case "viewed-file":
-        content = truncateContent(
-          displayedFileContent,
-          node.truncateLength,
-          node.truncateUnit,
-        );
+      case "viewed-file": {
+        if (displayedFileBlob) {
+          // Currently viewing a binary file (e.g. generated image) — attach as image
+          imageBlob = displayedFileBlob;
+        } else {
+          content = truncateContent(
+            displayedFileContent,
+            node.truncateLength,
+            node.truncateUnit,
+          );
+        }
         break;
+      }
       case "pipeline-output": {
         const source = pipelines.find((p) => p.id === node.sourcePipelineId);
         content = source?.modelOutput() ?? "";
@@ -307,8 +322,10 @@ export async function resolveNodeMessages(
         break;
     }
 
-    if (content) {
-      messages.push({ role: node.role, content });
+    if (content || imageBlob) {
+      const msg: LLMMessage = { role: node.role, content };
+      if (imageBlob) msg.images = [imageBlob];
+      messages.push(msg);
     }
   }
 

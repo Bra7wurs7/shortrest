@@ -1,10 +1,9 @@
-import { LLMAbortableStream, LLMModelInfo, LLMProvider } from "../../types/llmProvider.interface";
-import { Message } from "ollama";
+import { LLMAbortableStream, LLMMessage, LLMModelInfo, LLMProvider } from "../../types/llmProvider.interface";
 
 export interface RunSubPipelineOptions {
   provider: LLMProvider;
   model: LLMModelInfo;
-  messages: Message[];
+  messages: LLMMessage[];
   /** Called immediately after the stream is opened, before any tokens are consumed. */
   onStream?: (stream: LLMAbortableStream) => void;
 }

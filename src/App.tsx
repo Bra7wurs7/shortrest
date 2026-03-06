@@ -411,6 +411,7 @@ function App(): JSXElement {
         clipboard: clipboard(),
         activeDirectoryName: activeDirectoryName(),
         displayedFileContent: displayedFileContent(),
+        displayedFileBlob: displayedFileBlob(),
         pipelines: pipelineMgr.pipelines(),
         ownHistory: p.history(),
         provider,

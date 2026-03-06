@@ -49,10 +49,18 @@ export type LLMAbortableStream = AsyncIterable<LLMStreamChunk> & {
   final(): Promise<LLMFinalChunk>;
 };
 
+/** A message in the LLM conversation, optionally carrying image blobs for vision models */
+export interface LLMMessage {
+  role: string;
+  content: string;
+  /** Binary image blobs attached to this message (for vision models) */
+  images?: Blob[];
+}
+
 export interface LLMProvider {
   chat(params: {
     model: string;
-    messages: { role: string; content: string }[];
+    messages: LLMMessage[];
     stream: true;
     think?: boolean;
     tools?: NativeTool[];
