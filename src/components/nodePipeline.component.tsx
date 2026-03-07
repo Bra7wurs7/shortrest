@@ -9,7 +9,6 @@ import { MessageNode } from "./messageNode.component";
 import { HistoryNode } from "./historyNode.component";
 import { ToolbeltNode } from "./toolbeltNode.component";
 import { LlmNode } from "./llmNode.component";
-import { PipelineOutput } from "./pipelineOutput.component";
 
 export interface NodePipelineProps {
   // Active pipeline instance — owns all per-pipeline reactive state
@@ -36,7 +35,6 @@ export interface NodePipelineProps {
   // All pipeline instances (for cross-pipeline references)
   pipelines: Accessor<PipelineInstance[]>;
 
-  onAbortSubPipeline: (pipelineId: string) => void;
 }
 
 export function NodePipeline(props: NodePipelineProps): JSXElement {
@@ -106,11 +104,6 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
           llmProviderType={props.llmProviderType}
           llmModels={props.llmModels}
           onSubmit={props.onSubmit}
-        />
-        <PipelineOutput
-          pipeline={p}
-          pipelines={props.pipelines}
-          onAbortSubPipeline={props.onAbortSubPipeline}
         />
       </div>
     </div>

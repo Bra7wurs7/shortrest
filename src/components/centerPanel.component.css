@@ -266,6 +266,12 @@
     }
 }
 
+#CENTER > #PIPELINE_OUTPUT {
+    overflow-y: auto;
+    max-height: 35%;
+    flex-shrink: 0;
+}
+
 #CENTRAL_PROMPT_INPUT {
     border: var(--size_border) var(--style_border) transparent;
     background-color: var(--color_background_soft);

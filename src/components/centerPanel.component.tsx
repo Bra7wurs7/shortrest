@@ -10,6 +10,8 @@ import { AppMode } from "../constants/appModes";
 import { localStorageFileViewerMode } from "../constants/storageKeys";
 import { CodeMirrorEditor } from "./codeMirrorEditor.component";
 import { MdReader } from "./mdReader.component";
+import { PipelineOutput } from "./pipelineOutput.component";
+import { PipelineInstance } from "../hooks/usePipelineState";
 
 export interface CenterPanelProps {
   // View mode
@@ -46,6 +48,11 @@ export interface CenterPanelProps {
 
   // Image viewer
   displayedFileBlob: Accessor<Blob | null>;
+
+  // Pipeline output
+  pipeline: Accessor<PipelineInstance>;
+  pipelines: Accessor<PipelineInstance[]>;
+  onAbortSubPipeline: (pipelineId: string) => void;
 }
 
 export function CenterPanel(props: CenterPanelProps): JSXElement {
@@ -144,6 +151,13 @@ export function CenterPanel(props: CenterPanelProps): JSXElement {
           </div>
         </Match>
       </Switch>
+      <Show when={props.pipeline().modelOutput() || props.pipeline().modelThoughts()}>
+        <PipelineOutput
+          pipeline={props.pipeline}
+          pipelines={props.pipelines}
+          onAbortSubPipeline={props.onAbortSubPipeline}
+        />
+      </Show>
       <Switch>
         <Match
           when={

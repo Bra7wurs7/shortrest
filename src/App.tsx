@@ -880,6 +880,12 @@ function App(): JSXElement {
         clipboard={clipboard}
         activeDirectoryName={activeDirectoryName}
         setViewedFile={setViewedFile}
+        pipeline={pipelineMgr.activePipeline}
+        pipelines={pipelineMgr.pipelines}
+        onAbortSubPipeline={(pipelineId) => {
+          const target = pipelineMgr.pipelines().find((p) => p.id === pipelineId);
+          target?.runningPrompt()?.abort();
+        }}
       />
       <div id="RIGHT_SIDE">
         <NodePipeline
@@ -897,10 +903,6 @@ function App(): JSXElement {
           clipboard={clipboard}
           activeDirectoryParsedFileNames={activeDirectoryParsedFileNames}
           pipelines={pipelineMgr.pipelines}
-          onAbortSubPipeline={(pipelineId) => {
-            const target = pipelineMgr.pipelines().find((p) => p.id === pipelineId);
-            target?.runningPrompt()?.abort();
-          }}
         />
         <div id="RIGHT_TOOLBAR">
           <For each={pipelineMgr.pipelines()}>
