@@ -644,6 +644,8 @@ export function onRenameClipboardFile(
   oldName: string | null,
   newName: string | null,
   clipboard: Accessor<ClipboardEntry[]>,
+  viewedFile: Accessor<ViewedFile | null>,
+  setViewedFile: Setter<ViewedFile | null>,
 ) {
   const fileWithSameNameAlreadyExists = clipboard().some(
     (c) => c.name() === newName,
@@ -654,6 +656,12 @@ export function onRenameClipboardFile(
   const entryToRename = clipboard().find((c) => c.name() === oldName);
   if (entryToRename && newName !== null) {
     entryToRename.setName(newName);
+    const vf = viewedFile();
+    if (vf?.source === "clipboard" && vf.fileName === oldName) {
+      const updated = { ...vf, fileName: newName };
+      setViewedFile(updated);
+      storeViewedFile(updated);
+    }
   }
   storeClipboard(clipboard);
 }
@@ -666,6 +674,8 @@ export async function onRenameSavedFile(
   activeDirectoryName: Accessor<string | null>,
   directoryNames: Accessor<string[]>,
   setDirectoryNames: Setter<string[]>,
+  viewedFile: Accessor<ViewedFile | null>,
+  setViewedFile: Setter<ViewedFile | null>,
 ) {
   const activeDirName = activeDirectoryName();
   const activeDirFileNames = activeDirectorParsedFileNames();
@@ -690,5 +700,11 @@ export async function onRenameSavedFile(
         parseFileName(fn),
       ),
     );
+    const vf = viewedFile();
+    if (vf?.source === "idb" && vf.fileName === oldName && vf.directoryName === activeDirName) {
+      const updated = { ...vf, fileName: newName };
+      setViewedFile(updated);
+      storeViewedFile(updated);
+    }
   }
 }

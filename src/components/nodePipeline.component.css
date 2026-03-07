@@ -131,8 +131,13 @@
             -moz-appearance: textfield;
         }
 
-        &:hover { border-color: var(--color_border_light); }
-        &:focus { outline: none; border-color: var(--color_foreground); }
+        &:hover {
+            border-color: var(--color_border_light);
+        }
+        &:focus {
+            outline: none;
+            border-color: var(--color_foreground);
+        }
     }
     select {
         background-color: var(--color_background);
@@ -141,8 +146,13 @@
         border-color: var(--color_border);
         flex: 1;
         min-width: 0;
-        &:hover { border-color: var(--color_border_light); }
-        &:focus { outline: none; border-color: var(--color_foreground); }
+        &:hover {
+            border-color: var(--color_border_light);
+        }
+        &:focus {
+            outline: none;
+            border-color: var(--color_foreground);
+        }
     }
     button {
         transition: var(--transition_background_color);
@@ -220,8 +230,7 @@
         justify-content: space-between;
         align-items: center;
         background-color: var(--color_background);
-        border: var(--size_border) var(--style_border)
-            var(--color_border);
+        border: var(--size_border) var(--style_border) var(--color_border);
         color: var(--color_foreground_hard);
         font-family: var(--sans);
         font-size: small;
@@ -273,6 +282,10 @@
 
     &.sub_running .prompt_header {
         border-left: 2px solid var(--blue);
+    }
+
+    input {
+        box-shadow: var(--shadow_inset);
     }
 }
 

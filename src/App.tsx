@@ -665,34 +665,31 @@ function App(): JSXElement {
       const query = extractBracketQuery(value, cursorPos);
       if (query === null) return;
 
-      const clipboardMatches = filteredParsedClipboardFileNames().map(
-        (f) => f.fullName,
-      );
-      const dirMatches = (filteredParsedDirectoryFileNames() ?? []).map(
-        (f) => f.fullName,
-      );
-      const allMatches = [...clipboardMatches, ...dirMatches];
-      if (allMatches.length === 0) return;
+      const allParsedMatches = [
+        ...filteredParsedClipboardFileNames(),
+        ...(filteredParsedDirectoryFileNames() ?? []),
+      ];
+      if (allParsedMatches.length === 0) return;
 
-      const completion = longestCommonPrefix(allMatches);
+      const allFullNames = allParsedMatches.map((f) => f.fullName);
+      const completion = longestCommonPrefix(allFullNames);
       if (completion.length <= query.length) return;
 
       const bracketStart = cursorPos - query.length;
 
-      if (allMatches.length === 1) {
+      if (allParsedMatches.length === 1) {
+        const match = allParsedMatches[0];
+        const inserted = match.baseName + "](" + match.fullName + ")";
         const newValue =
           value.substring(0, bracketStart) +
-          completion +
-          "]" +
+          inserted +
           value.substring(cursorPos);
         setUserPrompt(newValue);
         setBracketMode(false);
         setInputValue("");
         requestAnimationFrame(() => {
-          input.setSelectionRange(
-            bracketStart + completion.length + 1,
-            bracketStart + completion.length + 1,
-          );
+          const pos = bracketStart + inserted.length;
+          input.setSelectionRange(pos, pos);
         });
       } else {
         const newValue =

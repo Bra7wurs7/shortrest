@@ -231,6 +231,17 @@ export function CodeMirrorEditor(props: CodeMirrorEditorProps) {
     });
   });
 
+  // Reconfigure language extension when enableMarkdown changes (e.g. file rename)
+  createEffect(() => {
+    if (!view) return;
+    const languageExtension = props.enableMarkdown
+      ? markdown({ base: markdownLanguage, codeLanguages: languages })
+      : [];
+    view.dispatch({
+      effects: languageCompartment.reconfigure(languageExtension),
+    });
+  });
+
   // Sync external content changes (file switching, LLM writes, etc.)
   // Uses minimal diffing to preserve scroll position, cursor, and selection.
   createEffect(() => {

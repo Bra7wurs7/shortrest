@@ -203,6 +203,8 @@ export function ClipboardFileEntry(props: ClipboardFileEntryProps): JSXElement {
                       props.rightClickedFile(),
                       props.rightClickedFileNewName(),
                       props.clipboard,
+                      props.viewedFile,
+                      props.setViewedFile,
                     );
                     props.setRightClickedFile(null);
                     props.setRightClickedFileNewName(null);

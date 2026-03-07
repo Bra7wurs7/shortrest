@@ -182,6 +182,8 @@ export function DirectoryFileEntry(props: DirectoryFileEntryProps): JSXElement {
                       props.activeDirectoryName,
                       props.directoryNames,
                       props.setDirectoryNames,
+                      props.viewedFile,
+                      props.setViewedFile,
                     );
                     props.setRightClickedFile(null);
                     props.setRightClickedFileNewName(null);
