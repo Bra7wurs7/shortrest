@@ -290,9 +290,11 @@ export function usePipelineManager(): UsePipelineManagerReturn {
     return pipelines().find((p) => p.id === id) ?? pipelines()[0];
   });
 
-  // Persist pipelines (node configs + collapsed state)
+  // Persist pipelines (node configs + collapsed state + selected model)
   createEffect(() => {
-    const data = pipelines().map(serializePipeline);
+    const currentPipelines = pipelines();
+    currentPipelines.forEach((p) => p.model()); // track model signals so changes trigger a save
+    const data = currentPipelines.map(serializePipeline);
     localStorage.setItem(localStoragePipelines, JSON.stringify(data));
   });
 

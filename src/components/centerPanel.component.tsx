@@ -6,7 +6,7 @@ import { ClipboardEntry } from "../types/clipboardEntry.interface";
 import { ParsedFileName } from "../types/parsedFileName.interface";
 import { parseFileName } from "../functions/parseFileName.function";
 import { extractBracketQuery } from "../functions/extractBracketQuery.function";
-import { appModes } from "../constants/appModes";
+import { AppMode } from "../constants/appModes";
 import { localStorageFileViewerMode } from "../constants/storageKeys";
 import { CodeMirrorEditor } from "./codeMirrorEditor.component";
 import { MdReader } from "./mdReader.component";
@@ -15,6 +15,7 @@ export interface CenterPanelProps {
   // View mode
   fileViewerMode: Accessor<FileViewerMode>;
   setFileViewerMode: Setter<FileViewerMode>;
+  availableModes: Accessor<AppMode[]>;
 
   // File data
   viewedFile: Accessor<ViewedFile | null>;
@@ -56,6 +57,23 @@ export function CenterPanel(props: CenterPanelProps): JSXElement {
     return url;
   });
 
+  // For SVG files viewed in ImageViewer mode, build a blob URL from the text content
+  const svgObjectUrl = createMemo<string | null>(() => {
+    if (props.fileViewerMode() !== FileViewerMode.ImageViewer) return null;
+    const vf = props.viewedFile();
+    if (!vf || parseFileName(vf.fileName).ext !== ".svg") return null;
+    const content = props.displayedFileContent();
+    if (!content) return null;
+    const blob = new Blob([content], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    onCleanup(() => URL.revokeObjectURL(url));
+    return url;
+  });
+
+  const displayedImageUrl = createMemo<string | null>(
+    () => imageObjectUrl() ?? svgObjectUrl(),
+  );
+
   return (
     <div id="CENTER">
       <div id="CENTRAL_HEADER">
@@ -65,7 +83,7 @@ export function CenterPanel(props: CenterPanelProps): JSXElement {
           </div>
         </div>
         <div class="central_header_side">
-          <For each={appModes}>
+          <For each={props.availableModes()}>
             {(am) => {
               return (
                 <button
@@ -85,47 +103,47 @@ export function CenterPanel(props: CenterPanelProps): JSXElement {
           </For>
         </div>
       </div>
-      <Show
-        when={imageObjectUrl()}
-        fallback={
-          <Switch>
-            <Match when={props.fileViewerMode() === FileViewerMode.AiWriter}>
-              <Show
-                when={props.viewedFile()}
-                fallback={<div id="CODEMIRROR_EDITOR" />}
-              >
-                <CodeMirrorEditor
-                  content={props.displayedFileContent}
-                  onInput={(value) => props.onTextareaInput(value)}
-                  enableMarkdown={
-                    !!props.viewedFile() &&
-                    parseFileName(props.viewedFile()!.fileName).ext.startsWith(
-                      ".md",
-                    )
-                  }
-                  inputValue={props.inputValue}
-                  setInputValue={props.setInputValue}
-                  filteredClipboardFileNames={props.filteredParsedClipboardFileNames}
-                  filteredDirectoryFileNames={props.filteredParsedDirectoryFileNames}
-                  onSave={props.onSave}
-                />
-              </Show>
-            </Match>
-            <Match when={props.fileViewerMode() === FileViewerMode.MdReader}>
-              <MdReader
-                content={props.displayedFileContent}
-                clipboard={props.clipboard}
-                activeDirectoryName={props.activeDirectoryName}
-                setViewedFile={props.setViewedFile}
-              />
-            </Match>
-          </Switch>
-        }
-      >
-        <div id="IMAGE_VIEWER">
-          <img src={imageObjectUrl()!} alt={props.viewedFile()?.fileName ?? "image"} />
-        </div>
-      </Show>
+      <Switch>
+        <Match when={props.fileViewerMode() === FileViewerMode.AiWriter}>
+          <Show
+            when={props.viewedFile()}
+            fallback={<div id="CODEMIRROR_EDITOR" />}
+          >
+            <CodeMirrorEditor
+              content={props.displayedFileContent}
+              onInput={(value) => props.onTextareaInput(value)}
+              language={(() => {
+                const vf = props.viewedFile();
+                if (!vf) return null;
+                const ext = parseFileName(vf.fileName).ext;
+                if (ext.startsWith(".md")) return "md";
+                if (ext === ".svg") return "xml";
+                return null;
+              })()}
+              inputValue={props.inputValue}
+              setInputValue={props.setInputValue}
+              filteredClipboardFileNames={props.filteredParsedClipboardFileNames}
+              filteredDirectoryFileNames={props.filteredParsedDirectoryFileNames}
+              onSave={props.onSave}
+            />
+          </Show>
+        </Match>
+        <Match when={props.fileViewerMode() === FileViewerMode.MdReader}>
+          <MdReader
+            content={props.displayedFileContent}
+            clipboard={props.clipboard}
+            activeDirectoryName={props.activeDirectoryName}
+            setViewedFile={props.setViewedFile}
+          />
+        </Match>
+        <Match when={props.fileViewerMode() === FileViewerMode.ImageViewer}>
+          <div id="IMAGE_VIEWER">
+            <Show when={displayedImageUrl()}>
+              <img src={displayedImageUrl()!} alt={props.viewedFile()?.fileName ?? "image"} />
+            </Show>
+          </div>
+        </Match>
+      </Switch>
       <Switch>
         <Match
           when={

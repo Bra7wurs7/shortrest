@@ -2937,6 +2937,7 @@
     "packageJson": {
       "dependencies": [
         "npm:@codemirror/lang-markdown@^6.5.0",
+        "npm:@codemirror/lang-xml@^6.1.0",
         "npm:@codemirror/language-data@^6.5.2",
         "npm:@codemirror/language@6",
         "npm:@codemirror/state@^6.5.4",

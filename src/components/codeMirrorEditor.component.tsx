@@ -9,6 +9,7 @@ import { EditorView, basicSetup } from "codemirror";
 import { EditorState, Compartment } from "@codemirror/state";
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { languages } from "@codemirror/language-data";
+import { xml } from "@codemirror/lang-xml";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { tags as t } from "@lezer/highlight";
 import { keymap } from "@codemirror/view";
@@ -93,7 +94,7 @@ const gruvboxHighlighting = HighlightStyle.define([
 export interface CodeMirrorEditorProps {
   content: Accessor<string>;
   onInput: (value: string) => void;
-  enableMarkdown: boolean;
+  language: "md" | "xml" | null;
   inputValue: Accessor<string>;
   setInputValue: Setter<string>;
   filteredClipboardFileNames: Accessor<{ fullName: string }[]>;
@@ -110,7 +111,7 @@ export function CodeMirrorEditor(props: CodeMirrorEditorProps) {
 
   // Update inputValue based on cursor position (for ]( pattern)
   const updateParenMode = (docText: string, cursorPos: number) => {
-    if (!props.enableMarkdown) {
+    if (props.language !== "md") {
       if (inParenMode) {
         inParenMode = false;
         props.setInputValue("");
@@ -200,10 +201,14 @@ export function CodeMirrorEditor(props: CodeMirrorEditorProps) {
     },
   ]);
 
+  const getLanguageExtension = () => {
+    if (props.language === "md") return markdown({ base: markdownLanguage, codeLanguages: languages });
+    if (props.language === "xml") return xml();
+    return [];
+  };
+
   onMount(() => {
-    const languageExtension = props.enableMarkdown
-      ? markdown({ base: markdownLanguage, codeLanguages: languages })
-      : [];
+    const languageExtension = getLanguageExtension();
 
     view = new EditorView({
       state: EditorState.create({
@@ -231,14 +236,11 @@ export function CodeMirrorEditor(props: CodeMirrorEditorProps) {
     });
   });
 
-  // Reconfigure language extension when enableMarkdown changes (e.g. file rename)
+  // Reconfigure language extension when language changes (e.g. file rename)
   createEffect(() => {
     if (!view) return;
-    const languageExtension = props.enableMarkdown
-      ? markdown({ base: markdownLanguage, codeLanguages: languages })
-      : [];
     view.dispatch({
-      effects: languageCompartment.reconfigure(languageExtension),
+      effects: languageCompartment.reconfigure(getLanguageExtension()),
     });
   });
 

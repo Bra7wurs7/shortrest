@@ -48,6 +48,7 @@ import {
 import { writeFileToDirectory } from "./functions/dbFilesInterface.functions";
 import { extractBracketQuery } from "./functions/extractBracketQuery.function";
 import { longestCommonPrefix } from "./functions/longestCommonPrefix.function";
+import { getModesForExt } from "./constants/appModes";
 
 import { LeftSidebar } from "./components/leftSidebar.component";
 import { LeftToolbar } from "./components/leftToolbar.component";
@@ -252,11 +253,29 @@ function App(): JSXElement {
     return null;
   });
 
+  // Viewer modes available for the currently viewed file type
+  const availableModes = createMemo(() => {
+    const vf = viewedFile();
+    const ext = vf ? parseFileName(vf.fileName).ext : null;
+    return getModesForExt(ext);
+  });
+
   // ============================================
   // Effects - Persistence
   // ============================================
   createEffect(() => {
     localStorage.setItem(localStorageChatUserPrompt, userPrompt());
+  });
+
+  // Reset fileViewerMode when the current mode is not valid for the new file
+  createEffect(() => {
+    const modes = availableModes();
+    const current = fileViewerMode();
+    if (!modes.some((m) => m.mode === current)) {
+      const next = modes[0].mode;
+      setFileViewerMode(next);
+      localStorage.setItem(localStorageFileViewerMode, next);
+    }
   });
 
   // ============================================
@@ -821,6 +840,7 @@ function App(): JSXElement {
       <CenterPanel
         fileViewerMode={fileViewerMode}
         setFileViewerMode={setFileViewerMode}
+        availableModes={availableModes}
         viewedFile={viewedFile}
         displayedFileContent={displayedFileContent}
         displayedFileBlob={displayedFileBlob}

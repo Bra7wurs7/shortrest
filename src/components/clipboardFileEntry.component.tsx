@@ -11,6 +11,7 @@ import {
   onInputExistingFileName,
   onRenameClipboardFile,
 } from "../app-handlers";
+import { getFileIcon } from "../functions/fileIcon.function";
 
 export interface ClipboardFileEntryProps {
   parsedName: ParsedFileName;
@@ -56,14 +57,7 @@ export function ClipboardFileEntry(props: ClipboardFileEntryProps): JSXElement {
           }}
         >
           <div class="filename bg">
-            <Switch>
-              <Match when={name.baseName}>
-                <i class="bx bxs-file"></i>
-              </Match>
-              <Match when={name.baseName === ""}>
-                <i class="bx bxs-tag-alt"></i>
-              </Match>
-            </Switch>
+            <i class={"bx " + getFileIcon(name.baseName, name.ext)}></i>
             {name.baseName}
           </div>
           <div class="tags">
