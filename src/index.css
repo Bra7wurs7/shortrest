@@ -19,42 +19,45 @@
 }
 
 :root {
-    --dark_h: #1d2021;
-    --dark: #282828;
-    --dark_s: #32302f;
+    /* Adwaita dark backgrounds */
+    --dark_h: #1d1d20;
+    --dark: #222226;
+    --dark_s: #2e2e32;
 
-    --dark1: #3c3836;
-    --dark2: #504945;
-    --dark3: #665c54;
-    --dark4: #7c6f64;
+    --dark1: #363639;
+    --dark2: #48484c;
+    --dark3: #5c5c5f;
+    --dark4: #76767a;
 
-    --light_h: #f9f5d7;
-    --light: #fbf1c7;
-    --light_s: #f2e5bc;
+    /* Adwaita light backgrounds / dark foregrounds */
+    --light_h: #fafafb;
+    --light: #ffffff;
+    --light_s: #ebebed;
 
-    --light1: #ebdbb2;
-    --light2: #d5c4a1;
-    --light3: #bdae93;
-    --light4: #a89984;
+    --light1: #d9d9dd;
+    --light2: #c4c4c8;
+    --light3: #ababaf;
+    --light4: #909094;
 
-    --gray: #928374;
-    --gray-dim: #a89984;
+    --gray: #76767a;
+    --gray-dim: #5c5c5f;
 
-    --red: #fb4934;
-    --orange: #fe8019;
-    --yellow: #fabd2f;
-    --green: #b8bb26;
-    --aqua: #8ec07c;
-    --blue: #83a598;
-    --purple: #d3869b;
+    /* Adwaita semantic colors */
+    --red: #e01b24;
+    --orange: #e66100;
+    --yellow: #e5a50a;
+    --green: #2ec27e;
+    --aqua: #0ab5d6;
+    --blue: #3584e4;
+    --purple: #9141ac;
 
-    --red-dim: #cc2412;
-    --orange-dim: #d65d0e;
-    --yellow-dim: #d79921;
-    --green-dim: #98971a;
-    --aqua-dim: #689d6a;
-    --blue-dim: #458588;
-    --purple-dim: #b16286;
+    --red-dim: #c01c28;
+    --orange-dim: #b5410a;
+    --yellow-dim: #cd9309;
+    --green-dim: #26a269;
+    --aqua-dim: #0891b2;
+    --blue-dim: #1c6ec9;
+    --purple-dim: #7a2fa0;
 
     --size_border: 2px;
     --size_border_wide: 4px;
@@ -100,6 +103,8 @@
     --color_foreground: var(--light);
     --color_foreground_soft: var(--light_s);
     --color_foreground_hard: var(--light_h);
+    --color_selection: rgba(53, 132, 228, 0.35);
+    --color_muted: var(--dark4);
 
     background-color: var(--dark_h);
 }
@@ -113,6 +118,12 @@
     --color_foreground: var(--dark);
     --color_foreground_soft: var(--dark_s);
     --color_foreground_hard: var(--dark_h);
+    --color_selection: rgba(53, 132, 228, 0.25);
+    --color_muted: var(--light4);
 
-    background-color: var(--dark_h);
+    background-color: var(--light_h);
+}
+
+.bx-spin {
+    display: block;
 }

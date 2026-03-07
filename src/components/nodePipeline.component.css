@@ -108,7 +108,7 @@
         }
 
         button.active {
-            border-color: var(--green);
+            border-color: var(--green-dim);
         }
     }
 
@@ -318,10 +318,6 @@
     transition: var(--transition_border_color);
     &:hover {
         border-color: var(--color_border_light);
-        color: var(--color_foreground);
-    }
-    &.active {
-        border-color: var(--green);
         color: var(--color_foreground);
     }
 }

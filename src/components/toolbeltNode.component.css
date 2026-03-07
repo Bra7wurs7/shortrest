@@ -4,12 +4,6 @@
 .toolbelt_workspace { --tb-accent: var(--aqua);   --tb-accent-dim: var(--aqua-dim);   }
 .toolbelt_image     { --tb-accent: var(--purple); --tb-accent-dim: var(--purple-dim); }
 
-/* Accent border on the header for all toolbelt types */
-.toolbelt_files .prompt_header,
-.toolbelt_workspace .prompt_header,
-.toolbelt_image .prompt_header {
-    border-left: 2px solid var(--tb-accent-dim);
-}
 
 /* Type icon in header */
 .toolbelt_type_icon {

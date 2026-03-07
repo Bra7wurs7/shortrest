@@ -14,10 +14,14 @@
         text-transform: uppercase;
         color: var(--color_border_light);
         background-color: var(--color_background_soft);
-        border-bottom: var(--size_border) var(--style_border)
-            var(--color_border);
+        border: var(--size_border) var(--style_border) transparent;
         flex-shrink: 0;
         user-select: none;
+        margin-top: var(--size_margin);
+
+        &:last-of-type {
+            margin-bottom: var(--size_margin);
+        }
 
         &.collapsible {
             cursor: pointer;
@@ -28,20 +32,14 @@
 
         &.thoughts_label {
             color: var(--purple-dim);
-            border-top: var(--size_border) var(--style_border)
-                var(--color_border);
         }
 
         &.output_label {
             color: var(--aqua-dim);
-            border-top: var(--size_border) var(--style_border)
-                var(--color_border);
         }
 
         &.sub_pipeline_output_label {
             color: var(--blue-dim);
-            border-top: var(--size_border) var(--style_border)
-                var(--color_border);
             border-left: 2px solid var(--blue-dim);
             padding-left: 6px;
 
@@ -64,8 +62,8 @@
             }
         }
 
-        &:not(:first-of-type) {
-            margin-top: var(--size_margin);
+        &:hover {
+            border-color: var(--color_border_light);
         }
 
         .bx {
@@ -120,8 +118,7 @@
         pre {
             overflow-x: auto;
             background-color: var(--color_background_hard);
-            border: var(--size_border) var(--style_border)
-                var(--color_border);
+            border: var(--size_border) var(--style_border) var(--color_border);
             border-radius: 4px;
             padding: 8px;
             margin: 4px 0;

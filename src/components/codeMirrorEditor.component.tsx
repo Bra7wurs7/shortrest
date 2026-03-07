@@ -16,7 +16,7 @@ import { keymap } from "@codemirror/view";
 import { extractParenQuery } from "../functions/extractParenQuery.function";
 import { longestCommonPrefix } from "../functions/longestCommonPrefix.function";
 
-const gruvboxTheme = EditorView.theme(
+const adwaitaTheme = EditorView.theme(
   {
     "&": {
       backgroundColor: "var(--color_background_soft)",
@@ -45,14 +45,14 @@ const gruvboxTheme = EditorView.theme(
       borderLeftColor: "var(--color_foreground_hard)",
     },
     "&.cm-focused .cm-selectionBackground": {
-      backgroundColor: "var(--dark2)",
+      backgroundColor: "var(--color_selection)",
     },
     ".cm-selectionBackground": {
-      backgroundColor: "var(--dark2)",
+      backgroundColor: "var(--color_selection)",
     },
     ".cm-gutters": {
       backgroundColor: "var(--color_background)",
-      color: "var(--dark4)",
+      color: "var(--color_muted)",
       border: "none",
     },
     ".cm-activeLineGutter": {
@@ -65,20 +65,20 @@ const gruvboxTheme = EditorView.theme(
   { dark: true },
 );
 
-const gruvboxHighlighting = HighlightStyle.define([
-  { tag: t.heading1, color: "var(--red)", fontWeight: "bold" },
-  { tag: t.heading2, color: "var(--orange)", fontWeight: "bold" },
-  { tag: t.heading3, color: "var(--yellow)", fontWeight: "bold" },
+const adwaitaHighlighting = HighlightStyle.define([
+  { tag: t.heading1, color: "var(--blue)", fontWeight: "bold" },
+  { tag: t.heading2, color: "var(--purple)", fontWeight: "bold" },
+  { tag: t.heading3, color: "var(--aqua)", fontWeight: "bold" },
   { tag: t.heading4, color: "var(--green)", fontWeight: "bold" },
-  { tag: t.heading5, color: "var(--aqua)", fontWeight: "bold" },
-  { tag: t.heading6, color: "var(--blue)", fontWeight: "bold" },
-  { tag: t.emphasis, color: "var(--green)", fontStyle: "italic" },
+  { tag: t.heading5, color: "var(--yellow)", fontWeight: "bold" },
+  { tag: t.heading6, color: "var(--orange)", fontWeight: "bold" },
+  { tag: t.emphasis, color: "var(--green-dim)", fontStyle: "italic" },
   { tag: t.strong, color: "var(--orange)", fontWeight: "bold" },
   { tag: t.link, color: "var(--blue)", textDecoration: "underline" },
   { tag: t.url, color: "var(--blue-dim)" },
   { tag: t.monospace, color: "var(--aqua)", fontFamily: "var(--mono)" },
   { tag: t.quote, color: "var(--gray)" },
-  { tag: t.list, color: "var(--yellow)" },
+  { tag: t.list, color: "var(--blue-dim)" },
   { tag: t.meta, color: "var(--purple)" },
   { tag: t.comment, color: "var(--gray)" },
   { tag: t.string, color: "var(--green)" },
@@ -215,8 +215,8 @@ export function CodeMirrorEditor(props: CodeMirrorEditorProps) {
         doc: props.content(),
         extensions: [
           basicSetup,
-          gruvboxTheme,
-          syntaxHighlighting(gruvboxHighlighting),
+          adwaitaTheme,
+          syntaxHighlighting(adwaitaHighlighting),
           languageCompartment.of(languageExtension),
           EditorView.lineWrapping,
           customKeymap,
