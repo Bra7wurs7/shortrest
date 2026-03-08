@@ -107,11 +107,13 @@ export function createMistralProvider(serverURL: string, apiKey: string): LLMPro
     async listModels(): Promise<LLMModelInfo[]> {
       const result = await client.models.list();
       const data = result.data ?? [];
+      const seen = new Set<string>();
       return data
         .map((m): LLMModelInfo => ({
           id: m.id,
           name: (m as { name?: string | null }).name || m.id,
         }))
+        .filter(({ name }) => (seen.has(name) ? false : (seen.add(name), true)))
         .sort((a, b) => a.id.localeCompare(b.id));
     },
   };
