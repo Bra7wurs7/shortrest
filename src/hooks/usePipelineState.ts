@@ -307,7 +307,7 @@ export function usePipelineManager(): UsePipelineManagerReturn {
     const data: PipelineData = {
       id: generateId(),
       nodes: createDefaultNodes(),
-      ollamaNodeCollapsed: false,
+      ollamaNodeCollapsed: true,
     };
     const instance = createPipelineInstance(data);
     setPipelines([...pipelines(), instance]);

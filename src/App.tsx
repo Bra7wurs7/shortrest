@@ -893,6 +893,11 @@ function App(): JSXElement {
           onUpdateNode={pipelineMgr.updateNode}
           onRemoveNode={pipelineMgr.removeNode}
           onMoveNode={pipelineMgr.moveNode}
+          onAddNode={pipelineMgr.addNode}
+          onAddHistoryNode={pipelineMgr.addHistoryNode}
+          onAddFilesToolbeltNode={pipelineMgr.addFilesToolbeltNode}
+          onAddWorkspaceToolbeltNode={pipelineMgr.addWorkspaceToolbeltNode}
+          onAddImageToolbeltNode={pipelineMgr.addImageToolbeltNode}
           llmUrl={llmUrl}
           setLLMUrl={setLLMUrl}
           llmApiKey={llmApiKey}
@@ -966,56 +971,6 @@ function App(): JSXElement {
             title="Add pipeline"
           >
             <i class="bx bx-plus"></i>
-          </button>
-          <div class="toolbar_spacer" />
-          <button
-            class="button_icon"
-            onclick={() => pipelineMgr.addNode("system")}
-            title="Add System node"
-          >
-            <i class="bx bx-info-circle"></i>
-          </button>
-          <button
-            class="button_icon"
-            onclick={() => pipelineMgr.addNode("assistant")}
-            title="Add Assistant node"
-          >
-            <i class="bx bx-bot"></i>
-          </button>
-          <button
-            class="button_icon"
-            onclick={() => pipelineMgr.addNode("user")}
-            title="Add User node"
-          >
-            <i class="bx bxs-user-voice"></i>
-          </button>
-          <button
-            class="button_icon"
-            onclick={() => pipelineMgr.addHistoryNode()}
-            title="Add History node"
-          >
-            <i class="bx bx-history"></i>
-          </button>
-          <button
-            class="button_icon"
-            onclick={() => pipelineMgr.addFilesToolbeltNode()}
-            title="Add Files toolbelt"
-          >
-            <i class="bx bx-folder"></i>
-          </button>
-          <button
-            class="button_icon"
-            onclick={() => pipelineMgr.addWorkspaceToolbeltNode()}
-            title="Add Workspace toolbelt"
-          >
-            <i class="bx bx-edit"></i>
-          </button>
-          <button
-            class="button_icon"
-            onclick={() => pipelineMgr.addImageToolbeltNode()}
-            title="Add Image toolbelt"
-          >
-            <i class="bx bx-image-alt"></i>
           </button>
         </div>
       </div>

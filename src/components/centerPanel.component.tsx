@@ -158,37 +158,28 @@ export function CenterPanel(props: CenterPanelProps): JSXElement {
           onAbortSubPipeline={props.onAbortSubPipeline}
         />
       </Show>
-      <Switch>
-        <Match
-          when={
-            props.fileViewerMode() === FileViewerMode.AiWriter ||
-            props.fileViewerMode() === FileViewerMode.MdReader
+      <input
+        id="CENTRAL_PROMPT_INPUT"
+        class={props.bracketMode() ? "bracket-active" : ""}
+        value={props.userPrompt()}
+        onInput={(e) => {
+          const value = e.currentTarget.value;
+          const cursorPos =
+            e.currentTarget.selectionStart ?? value.length;
+          props.setUserPrompt(value);
+          const query = extractBracketQuery(value, cursorPos);
+          if (query !== null) {
+            props.setBracketMode(true);
+            props.setInputValue(query);
+          } else if (props.bracketMode()) {
+            props.setBracketMode(false);
+            props.setInputValue("");
           }
-        >
-          <input
-            id="CENTRAL_PROMPT_INPUT"
-            class={props.bracketMode() ? "bracket-active" : ""}
-            value={props.userPrompt()}
-            onInput={(e) => {
-              const value = e.currentTarget.value;
-              const cursorPos =
-                e.currentTarget.selectionStart ?? value.length;
-              props.setUserPrompt(value);
-              const query = extractBracketQuery(value, cursorPos);
-              if (query !== null) {
-                props.setBracketMode(true);
-                props.setInputValue(query);
-              } else if (props.bracketMode()) {
-                props.setBracketMode(false);
-                props.setInputValue("");
-              }
-            }}
-            onKeyDown={props.onCentralInputKeyDown}
-            onKeyUp={props.onCentralInputKeyUp}
-            placeholder="Enter prompt..."
-          />
-        </Match>
-      </Switch>
+        }}
+        onKeyDown={props.onCentralInputKeyDown}
+        onKeyUp={props.onCentralInputKeyUp}
+        placeholder="Enter prompt..."
+      />
     </div>
   );
 }

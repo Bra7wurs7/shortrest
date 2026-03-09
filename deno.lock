@@ -2,6 +2,7 @@
   "version": "5",
   "specifiers": {
     "npm:@codemirror/lang-markdown@^6.5.0": "6.5.0",
+    "npm:@codemirror/lang-xml@^6.1.0": "6.1.0",
     "npm:@codemirror/language-data@^6.5.2": "6.5.2",
     "npm:@codemirror/language@6": "6.12.1",
     "npm:@codemirror/state@^6.5.4": "6.5.4",

@@ -75,7 +75,11 @@ export function LlmNode(props: LlmNodeProps): JSXElement {
         <div class="right" onclick={(e) => e.stopPropagation()}>
           <button
             class={"node_loop_btn" + (p().loopEnabled() ? " active" : "")}
-            title={p().loopEnabled() ? "Loop: on — click to disable" : "Loop: off — click to enable"}
+            title={
+              p().loopEnabled()
+                ? "Loop: on — click to disable"
+                : "Loop: off — click to enable"
+            }
             onClick={() => p().setLoopEnabled(!p().loopEnabled())}
           >
             <i class="bx bx-repeat" />
@@ -110,7 +114,7 @@ export function LlmNode(props: LlmNodeProps): JSXElement {
       </div>
       <Show when={!p().ollamaNodeCollapsed()}>
         <div class="prompt_settings">
-          <div class="settings_row preset_buttons">
+          <div class="settings_row">
             <For each={PRESET_URLS}>
               {(preset) => (
                 <button
