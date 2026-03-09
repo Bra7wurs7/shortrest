@@ -25,7 +25,6 @@ export function FileListHeader(props: FileListHeaderProps): JSXElement {
         <i class={"bx " + props.icon}></i>
         <span>{props.label}</span>
       </div>
-      <div class="right"></div>
     </div>
   );
 }

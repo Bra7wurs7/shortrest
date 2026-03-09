@@ -5,7 +5,6 @@ import {
   JSXElement,
   Match,
   Setter,
-  Show,
   Switch,
 } from "solid-js";
 import {
@@ -36,7 +35,6 @@ export function LeftToolbar(props: LeftToolbarProps): JSXElement {
 
   return (
     <div id="LEFT_TOOLBAR">
-      <div id="LM_S_ACTIONS"></div>
       <div id="LM_S_BOTTOM">
         <button
           class="button_icon"
@@ -80,32 +78,11 @@ export function LeftToolbar(props: LeftToolbarProps): JSXElement {
                       props.setHoveredDirectoryName(null);
                     }}
                   >
-                    <Show
-                      when={
-                        name === props.activeDirectoryName() && index() === 0
-                      }
-                    >
-                      <i class="bx bx-folder-open"></i>
-                    </Show>
-                    <Show
-                      when={name === props.activeDirectoryName() && index() > 0}
-                    >
-                      <i class="bx bxs-folder-open"></i>
-                    </Show>
-                    <Show
-                      when={
-                        !(name === props.activeDirectoryName()) && index() > 0
-                      }
-                    >
-                      <i class="bx bxs-folder"></i>
-                    </Show>
-                    <Show
-                      when={
-                        !(name === props.activeDirectoryName()) && index() === 0
-                      }
-                    >
-                      <i class="bx bx-folder-plus"></i>
-                    </Show>
+                    <i class={"bx " + (
+                      name === props.activeDirectoryName()
+                        ? (index() === 0 ? "bx-folder-open" : "bxs-folder-open")
+                        : (index() === 0 ? "bx-folder-plus" : "bxs-folder")
+                    )} />
                   </button>
                 </Match>
                 <Match

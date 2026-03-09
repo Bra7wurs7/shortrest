@@ -41,7 +41,7 @@
         &.sub_pipeline_output_label {
             color: var(--blue-dim);
             border-left: 2px solid var(--blue-dim);
-            padding-left: 666px;
+            padding-left: 6px;
 
             .sub_pipeline_abort_btn {
                 display: flex;

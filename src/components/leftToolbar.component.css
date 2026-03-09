@@ -2,18 +2,13 @@
     background-color: var(--color_background_soft);
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: end;
     overflow-y: hidden;
     flex-grow: 1;
     min-width: var(--size_toolbar_width);
     border-top-left-radius: var(--size_toolbar_width_half);
     border-bottom-left-radius: var(--size_toolbar_width_half);
 
-    #LM_S_ACTIONS {
-        display: flex;
-        flex-direction: column;
-        width: var(--size_toolbar_width);
-    }
     #LM_S_BOTTOM {
         display: flex;
         flex-direction: column;
@@ -27,68 +22,5 @@
                 border-bottom-left-radius: var(--size_toolbar_width_half);
             }
         }
-    }
-}
-
-.user_action {
-    transition: var(--transition_background_color);
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    border: var(--size_border) transparent var(--style_border);
-    height: var(--size_toolbar_width);
-    box-sizing: border-box;
-    color: var(--color_border_light);
-    background-color: var(--color_background);
-    width: 100%;
-    box-shadow: var(--shadow);
-
-    &.yellow_border {
-        border-color: var(--yellow-dim);
-    }
-
-    &:not(:disabled) {
-        cursor: pointer;
-        &:hover {
-            border-color: var(--color_border_light);
-            color: var(--color_foreground_soft);
-        }
-    }
-
-    &.active {
-        background-color: var(--color_background_soft);
-    }
-
-    &.icon_only {
-        justify-content: center;
-    }
-
-    &:focus {
-        outline: none;
-        border-color: var(--color_border_light);
-    }
-    &:active {
-        transition: background-color 0ms;
-        background-color: var(--color_foreground_soft);
-        color: var(--color_background_hard);
-        border: var(--size_border) var(--style_border) var(--color_foreground);
-    }
-    &.fixed_width_icon {
-        max-width: var(--size_toolbar_width);
-        min-width: var(--size_toolbar_width);
-        max-height: var(--size_toolbar_width);
-        min-height: var(--size_toolbar_width);
-        justify-content: center;
-    }
-
-    &:first-of-type {
-        border-top-left-radius: var(--size_toolbar_width_half);
-        border-bottom-left-radius: var(--size_toolbar_width_half);
-    }
-
-    &:last-of-type {
-        border-top-right-radius: var(--size_toolbar_width_half);
-        border-bottom-right-radius: var(--size_toolbar_width_half);
     }
 }
