@@ -120,14 +120,14 @@ export function LeftToolbar(props: LeftToolbarProps): JSXElement {
                       "button_icon red " +
                       (name === props.activeDirectoryName() ? "active" : "")
                     }
-                    onclick={() => {
-                      onClickDeleteDirectory(
+                    onclick={async () => {
+                      const result = await onClickDeleteDirectory(
                         name,
-                        props.directoryNames,
-                        props.setDirectoryNames,
-                        props.activeDirectoryName,
-                        props.setActiveDirectoryName,
+                        props.directoryNames(),
+                        props.activeDirectoryName(),
                       );
+                      props.setDirectoryNames(result.directoryNames);
+                      props.setActiveDirectoryName(result.activeDirectoryName);
                       resetRightClick();
                     }}
                     onmouseleave={resetRightClick}

@@ -110,8 +110,8 @@ export async function executeTool(
       const fileName = String(call.args.filename ?? "").trim();
       if (!fileName) return "[readFile: no filename provided]";
 
-      const entry = ctx.clipboard.find((e) => e.name() === fileName);
-      if (entry) return entry.content();
+      const entry = ctx.clipboard.find((e) => e.name === fileName);
+      if (entry) return entry.content;
 
       if (ctx.activeDirectoryName) {
         const content = await getFileContent(ctx.activeDirectoryName, fileName);
@@ -122,7 +122,7 @@ export async function executeTool(
     }
 
     case "listFiles": {
-      const clipboardSet = new Set(ctx.clipboard.map((e) => e.name()));
+      const clipboardSet = new Set(ctx.clipboard.map((e) => e.name));
       const idbNames = ctx.activeDirectoryName
         ? await listFileNamesInDirectory(ctx.activeDirectoryName)
         : [];
@@ -137,7 +137,7 @@ export async function executeTool(
       const query = String(call.args.query ?? "").trim();
       if (!query) return "[searchFiles: no query provided]";
       const lower = query.toLowerCase();
-      const clipboardNames = ctx.clipboard.map((e) => e.name());
+      const clipboardNames = ctx.clipboard.map((e) => e.name);
       const idbNames = ctx.activeDirectoryName
         ? await listFileNamesInDirectory(ctx.activeDirectoryName)
         : [];
@@ -156,12 +156,12 @@ export async function executeTool(
 
       // Search clipboard files (already in memory)
       for (const entry of ctx.clipboard) {
-        const content = entry.content();
+        const content = entry.content;
         if (!content) continue;
         const excerpts = findExcerpts(content, lowerQuery);
         if (excerpts.length > 0) {
           results.push(
-            `${entry.name()} [modified]:\n${excerpts.map((e) => `  ${e}`).join("\n")}`,
+            `${entry.name} [modified]:\n${excerpts.map((e) => `  ${e}`).join("\n")}`,
           );
         }
         if (results.length >= 10) break;
@@ -173,7 +173,7 @@ export async function executeTool(
         for (const name of names) {
           if (results.length >= 10) break;
           // Skip if already found via clipboard
-          if (ctx.clipboard.some((e) => e.name() === name)) continue;
+          if (ctx.clipboard.some((e) => e.name === name)) continue;
           const content = await getFileContent(ctx.activeDirectoryName, name);
           if (typeof content !== "string") continue;
           const excerpts = findExcerpts(content, lowerQuery);
@@ -200,7 +200,7 @@ export async function executeTool(
       if (queryTags.length === 0 || queryTags[0] === "#") {
         return "[searchByTag: no tags provided]";
       }
-      const clipboardNames = ctx.clipboard.map((e) => e.name());
+      const clipboardNames = ctx.clipboard.map((e) => e.name);
       const idbNames = ctx.activeDirectoryName
         ? await listFileNamesInDirectory(ctx.activeDirectoryName)
         : [];

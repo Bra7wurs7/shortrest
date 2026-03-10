@@ -21,6 +21,8 @@ export function createDefaultNode(role: MessageRole): MessageNodeConfig {
     collapsed: false,
     disabled: false,
     toolbeltTools: {},
+    toolbeltType: "files",
+    toolbeltImageConfig: { url: "", width: 512, height: 512, steps: 20, forceResolution: false, forceSteps: false },
   };
 }
 
@@ -47,6 +49,8 @@ export function addHistoryNodeToNodes(
     collapsed: false,
     disabled: false,
     toolbeltTools: {},
+    toolbeltType: "files",
+    toolbeltImageConfig: { url: "", width: 512, height: 512, steps: 20, forceResolution: false, forceSteps: false },
   };
   return [...nodes, node];
 }
@@ -71,6 +75,8 @@ export function addToolbeltNodeToNodes(
       listFiles: { enabled: true },
       write: { enabled: true },
     },
+    toolbeltType: "files",
+    toolbeltImageConfig: { url: "", width: 512, height: 512, steps: 20, forceResolution: false, forceSteps: false },
   };
   return [...nodes, node];
 }

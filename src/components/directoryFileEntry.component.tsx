@@ -4,11 +4,12 @@ import { ViewedFile } from "../types/viewedFile.interface";
 import { ClipboardEntry } from "../types/clipboardEntry.interface";
 import { ConfirmAction } from "../types/confirmAction.enum";
 import {
-  onClickSavedFile,
+  resolveFileView,
   onClickDownloadSavedFile,
-  onClickTrashSavedFile,
+  trashSavedFile,
   onInputExistingFileName,
-  onRenameSavedFile,
+  renameSavedFile,
+  updateDirectories,
 } from "../app-handlers";
 import { getFileIcon } from "../functions/fileIcon.function";
 
@@ -48,11 +49,8 @@ export function DirectoryFileEntry(props: DirectoryFileEntryProps): JSXElement {
           onclick={() => {
             const activeDirName = props.activeDirectoryName();
             if (activeDirName) {
-              onClickSavedFile(
-                name.fullName,
-                activeDirName,
-                props.clipboard,
-                props.setViewedFile,
+              props.setViewedFile(
+                resolveFileView(name.fullName, activeDirName, props.clipboard()),
               );
             }
           }}
@@ -97,7 +95,7 @@ export function DirectoryFileEntry(props: DirectoryFileEntryProps): JSXElement {
               e.stopPropagation();
             }}
             oninput={(e) => {
-              onInputExistingFileName(e, props.setRightClickedFileNewName);
+              props.setRightClickedFileNewName(onInputExistingFileName(e));
             }}
           >
             {name.fullName ?? "unnamed file"}
@@ -113,11 +111,11 @@ export function DirectoryFileEntry(props: DirectoryFileEntryProps): JSXElement {
                 <button
                   class="button_icon"
                   onclick={(e) => {
+                    e.stopPropagation();
                     onClickDownloadSavedFile(
-                      props.activeDirectoryName,
+                      props.activeDirectoryName(),
                       name.fullName,
                     );
-                    e.stopPropagation();
                   }}
                 >
                   <i class="bx bxs-download"></i>
@@ -131,17 +129,28 @@ export function DirectoryFileEntry(props: DirectoryFileEntryProps): JSXElement {
                   }
                   onclick={(e) => {
                     e.stopPropagation();
-                    onClickTrashSavedFile(
+                    trashSavedFile(
                       name.fullName,
-                      props.activeDirectoryName,
-                      props.activeDirectoryParsedFileNames,
-                      props.setActiveDirectoryParsedFileNames,
-                      props.directoryNames,
-                      props.setDirectoryNames,
-                      props.confirmAction,
-                      props.setConfirmAction,
-                      props.setRightClickedFile,
-                    ).then();
+                      props.activeDirectoryName(),
+                      props.activeDirectoryParsedFileNames(),
+                      props.confirmAction(),
+                    ).then(async (result) => {
+                      if (result) {
+                        props.setActiveDirectoryParsedFileNames(result.dirFileNames);
+                        props.setConfirmAction(result.confirmAction);
+                        if (result.clearRightClick) {
+                          props.setRightClickedFile(null);
+                        }
+                        if (result.directoryNeedsUpdate) {
+                          props.setDirectoryNames(
+                            await updateDirectories(
+                              props.directoryNames(),
+                              props.activeDirectoryName(),
+                            ),
+                          );
+                        }
+                      }
+                    });
                   }}
                 >
                   <i class="bx bxs-trash-alt"></i>
@@ -168,17 +177,18 @@ export function DirectoryFileEntry(props: DirectoryFileEntryProps): JSXElement {
                   class="button_icon"
                   onclick={(e) => {
                     e.stopPropagation();
-                    onRenameSavedFile(
+                    renameSavedFile(
                       name.fullName,
-                      props.rightClickedFileNewName(),
-                      props.activeDirectoryParsedFileNames,
-                      props.setActiveDirectoryParsedFileNames,
-                      props.activeDirectoryName,
-                      props.directoryNames,
-                      props.setDirectoryNames,
-                      props.viewedFile,
-                      props.setViewedFile,
-                    );
+                      props.rightClickedFileNewName()!,
+                      props.activeDirectoryName(),
+                      props.activeDirectoryParsedFileNames(),
+                      props.viewedFile(),
+                    ).then((result) => {
+                      if (result) {
+                        props.setActiveDirectoryParsedFileNames(result.dirFileNames);
+                        props.setViewedFile(result.viewedFile);
+                      }
+                    });
                     props.setRightClickedFile(null);
                     props.setRightClickedFileNewName(null);
                   }}

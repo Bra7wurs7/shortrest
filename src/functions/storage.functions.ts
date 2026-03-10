@@ -1,18 +1,9 @@
-import { Accessor, createSignal } from "solid-js";
 import {
   localStorageClipboardKey,
   localStorageViewedFileKey,
 } from "../constants/storageKeys";
 import { ClipboardEntry } from "../types/clipboardEntry.interface";
 import { ViewedFile } from "../types/viewedFile.interface";
-
-interface SerializedClipboardEntry {
-  name: string;
-  content: string;
-  originalName: string;
-  originalContent: string;
-  sourceDirectory: string | null;
-}
 
 /**
  * Loads clipboard entries from localStorage
@@ -32,20 +23,8 @@ export function loadClipboard(): ClipboardEntry[] {
 /**
  * Persists clipboard entries to localStorage
  */
-export function storeClipboard(entries: Accessor<ClipboardEntry[]>) {
-  const serializedEntries: SerializedClipboardEntry[] = entries().map(
-    (entry) => ({
-      name: entry.name(),
-      content: entry.content(),
-      originalName: entry.originalName,
-      originalContent: entry.originalContent,
-      sourceDirectory: entry.sourceDirectory,
-    }),
-  );
-  localStorage.setItem(
-    localStorageClipboardKey,
-    JSON.stringify(serializedEntries),
-  );
+export function storeClipboard(entries: ClipboardEntry[]) {
+  localStorage.setItem(localStorageClipboardKey, JSON.stringify(entries));
 }
 
 /**
@@ -86,7 +65,7 @@ export function storeViewedFile(viewedFile: ViewedFile | null) {
  * Parses a JSON string into ClipboardEntry array. Throws on invalid input.
  */
 function parseClipboard(clipboardJson: string): ClipboardEntry[] {
-  const entries: SerializedClipboardEntry[] = JSON.parse(clipboardJson);
+  const entries: ClipboardEntry[] = JSON.parse(clipboardJson);
 
   if (!Array.isArray(entries)) {
     throw new Error("Clipboard data is not an array");
@@ -111,20 +90,5 @@ function parseClipboard(clipboardJson: string): ClipboardEntry[] {
     throw new Error("Clipboard data contains invalid entries");
   }
 
-  return entries.map(
-    ({ name, content, originalName, originalContent, sourceDirectory }) => {
-      const [n, setN] = createSignal(name);
-      const [c, setC] = createSignal(content);
-
-      return {
-        name: n,
-        setName: setN,
-        content: c,
-        setContent: setC,
-        originalName,
-        originalContent,
-        sourceDirectory,
-      };
-    },
-  );
+  return entries;
 }

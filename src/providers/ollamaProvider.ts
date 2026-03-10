@@ -59,10 +59,10 @@ export function createOllamaProvider(host: string): LLMProvider {
               if (result.done) {
                 // The done=true chunk carries the final assembled message which is
                 // the primary place Ollama puts tool_calls. Check it before resolving.
-                const finalMsg = result.value?.message;
+                const finalMsg = (result.value as any)?.message;
                 if (finalMsg?.tool_calls && finalMsg.tool_calls.length > 0) {
                   finalChunk = {
-                    toolCalls: finalMsg.tool_calls.map((tc) => ({
+                    toolCalls: finalMsg.tool_calls.map((tc: any) => ({
                       name: tc.function.name,
                       args: tc.function.arguments as Record<string, unknown>,
                     })),

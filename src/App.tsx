@@ -26,9 +26,9 @@ import { parseFileName } from "./functions/parseFileName.function";
 import { ParsedFileName } from "./types/parsedFileName.interface";
 
 import {
-  onSaveClipboardFile,
-  onInputKeyUp,
-  onUpdateDirectory,
+  saveClipboardFile,
+  handleSearchKeyUp,
+  updateDirectories,
   getOrCreateEditableFile,
   ensureEmptyClipboardFile,
 } from "./app-handlers";
@@ -195,9 +195,9 @@ function App(): JSXElement {
   const filteredParsedClipboardFileNames = createMemo<ParsedFileName[]>(() => {
     return clipboard()
       .filter((entry) =>
-        entry.name().toLowerCase().includes(inputValue().toLowerCase()),
+        entry.name.toLowerCase().includes(inputValue().toLowerCase()),
       )
-      .map((entry) => parseFileName(entry.name()));
+      .map((entry) => parseFileName(entry.name));
   });
 
   const filteredParsedDirectoryFileNames = createMemo<ParsedFileName[] | null>(
@@ -218,8 +218,8 @@ function App(): JSXElement {
     if (!vf) return "";
 
     if (vf.source === "clipboard") {
-      const entry = clipboard().find((c) => c.name() === vf.fileName);
-      return entry?.content() ?? "";
+      const entry = clipboard().find((c) => c.name === vf.fileName);
+      return entry?.content ?? "";
     }
 
     // IDB source - return the fetched content
@@ -248,7 +248,7 @@ function App(): JSXElement {
   const currentClipboardEntry = createMemo<ClipboardEntry | null>(() => {
     const vf = viewedFile();
     if (vf?.source === "clipboard") {
-      return clipboard().find((c) => c.name() === vf.fileName) ?? null;
+      return clipboard().find((c) => c.name === vf.fileName) ?? null;
     }
     return null;
   });
@@ -327,47 +327,48 @@ function App(): JSXElement {
   // Effects - Ensure clipboard always has an empty file
   // ============================================
   createEffect(() => {
-    // Track clipboard changes to ensure there's always an empty file ready
-    clipboard();
-    ensureEmptyClipboardFile(clipboard, setClipboard, activeDirectoryName);
+    const current = clipboard();
+    const ensured = ensureEmptyClipboardFile(current, activeDirectoryName());
+    if (ensured !== current) {
+      setClipboard(ensured);
+      storeClipboard(ensured);
+    }
   });
 
   // ============================================
   // Initialization
   // ============================================
   listAllDirectories()
-    .then((names) => {
+    .then(async (names) => {
       setDirectoryNames(names);
-      onUpdateDirectory(
-        directoryNames,
-        setDirectoryNames,
-        activeDirectoryName,
-      ).then(() => {
-        const storedDirName = activeDirectoryName();
-        const currentDirNames = directoryNames();
+      const updatedDirNames = await updateDirectories(
+        names,
+        activeDirectoryName(),
+      );
+      setDirectoryNames(updatedDirNames);
 
-        if (!storedDirName || !currentDirNames.includes(storedDirName)) {
-          const emptyDirectory = currentDirNames[0];
-          if (emptyDirectory) {
-            setActiveDirectoryName(emptyDirectory);
-            localStorage.setItem(
-              localStorageActiveDirectoryName,
-              emptyDirectory,
-            );
-          }
+      const storedDirName = activeDirectoryName();
+      if (!storedDirName || !updatedDirNames.includes(storedDirName)) {
+        const emptyDirectory = updatedDirNames[0];
+        if (emptyDirectory) {
+          setActiveDirectoryName(emptyDirectory);
+          localStorage.setItem(
+            localStorageActiveDirectoryName,
+            emptyDirectory,
+          );
         }
+      }
 
-        // Validate viewed file: if it points to a directory that no longer exists, clear it
-        const vf = viewedFile();
-        if (
-          vf?.source === "idb" &&
-          vf.directoryName &&
-          !currentDirNames.includes(vf.directoryName)
-        ) {
-          setViewedFile(null);
-          storeViewedFile(null);
-        }
-      });
+      // Validate viewed file: if it points to a directory that no longer exists, clear it
+      const vf = viewedFile();
+      if (
+        vf?.source === "idb" &&
+        vf.directoryName &&
+        !updatedDirNames.includes(vf.directoryName)
+      ) {
+        setViewedFile(null);
+        storeViewedFile(null);
+      }
     })
     .catch((err) => {
       console.error("Failed to load directories on startup:", err);
@@ -513,37 +514,42 @@ function App(): JSXElement {
             onAppendWorkspace: (appended) => {
               const vf = viewedFile();
               if (!vf || vf.source !== "clipboard") return;
-              const entry = clipboard().find((c) => c.name() === vf.fileName);
-              if (entry) {
-                entry.setContent(entry.content() + appended);
-                storeClipboard(clipboard);
-              }
+              setClipboard((prev) =>
+                prev.map((e) =>
+                  e.name === vf.fileName
+                    ? { ...e, content: e.content + appended }
+                    : e,
+                ),
+              );
+              storeClipboard(clipboard());
             },
             onOverwriteWorkspace: (content) => {
               const vf = viewedFile();
               if (!vf || vf.source !== "clipboard") return;
-              const entry = clipboard().find((c) => c.name() === vf.fileName);
-              if (entry) {
-                entry.setContent(content);
-                storeClipboard(clipboard);
-              }
+              setClipboard((prev) =>
+                prev.map((e) =>
+                  e.name === vf.fileName ? { ...e, content } : e,
+                ),
+              );
+              storeClipboard(clipboard());
             },
             onCreateClipboardFile: (name, content) => {
-              const existing = clipboard().find((e) => e.name() === name);
+              const existing = clipboard().find((e) => e.name === name);
               if (existing) {
-                existing.setContent(content);
+                setClipboard((prev) =>
+                  prev.map((e) => (e.name === name ? { ...e, content } : e)),
+                );
               } else {
-                const [nameAcc, setNameAcc] = createSignal(name);
-                const [contentAcc, setContentAcc] = createSignal(content);
                 const entry: ClipboardEntry = {
-                  name: nameAcc, setName: setNameAcc,
-                  content: contentAcc, setContent: setContentAcc,
-                  originalName: name, originalContent: content,
+                  name,
+                  content,
+                  originalName: name,
+                  originalContent: content,
                   sourceDirectory: null,
                 };
                 setClipboard((prev) => [...prev, entry]);
               }
-              storeClipboard(clipboard);
+              storeClipboard(clipboard());
             },
             onWriteFile: async (name, content) => {
               const dirName = activeDirectoryName();
@@ -746,24 +752,27 @@ function App(): JSXElement {
     const vf = viewedFile();
 
     if (vf?.source === "clipboard") {
-      // Already viewing clipboard file - update directly
-      const entry = clipboard().find((c) => c.name() === vf.fileName);
-      if (entry) {
-        entry.setContent(value);
-        storeClipboard(clipboard);
-      }
+      // Already viewing clipboard file - update immutably
+      setClipboard((prev) =>
+        prev.map((e) => (e.name === vf.fileName ? { ...e, content: value } : e)),
+      );
+      storeClipboard(clipboard());
     } else {
       // Viewing IDB file or nothing - need to create clipboard entry
-      const entry = getOrCreateEditableFile(
-        viewedFile,
-        setViewedFile,
-        clipboard,
-        setClipboard,
-        idbFileContent,
-        activeDirectoryName,
+      const result = getOrCreateEditableFile(
+        viewedFile(),
+        clipboard(),
+        idbFileContent(),
+        activeDirectoryName(),
       );
-      entry.setContent(value);
-      storeClipboard(clipboard);
+      // Apply the entry with the new content
+      const updatedClipboard = result.clipboard.map((e) =>
+        e === result.entry ? { ...e, content: value } : e,
+      );
+      setClipboard(updatedClipboard);
+      setViewedFile(result.viewedFile);
+      storeViewedFile(result.viewedFile);
+      storeClipboard(updatedClipboard);
     }
   }
 
@@ -778,16 +787,27 @@ function App(): JSXElement {
           id="LEFT_INPUT"
           value={inputValue()}
           onkeyup={(e) => {
-            onInputKeyUp(
-              e,
-              activeDirectoryName,
-              setInputValue,
-              clipboard,
-              setClipboard,
-              filteredParsedClipboardFileNames,
-              filteredParsedDirectoryFileNames,
-              setViewedFile,
+            setInputValue(e.currentTarget.value);
+            const result = handleSearchKeyUp(
+              e.key,
+              e.ctrlKey,
+              e.currentTarget.value,
+              activeDirectoryName(),
+              clipboard(),
+              filteredParsedClipboardFileNames(),
+              filteredParsedDirectoryFileNames(),
             );
+            if (result) {
+              if (result.clipboard !== clipboard()) {
+                setClipboard(result.clipboard);
+                storeClipboard(result.clipboard);
+              }
+              if (result.viewedFile) {
+                setViewedFile(result.viewedFile);
+                storeViewedFile(result.viewedFile);
+              }
+              setInputValue(result.inputValue);
+            }
           }}
         ></input>
       </div>
@@ -848,23 +868,31 @@ function App(): JSXElement {
         onSave={async () => {
           const entry = currentClipboardEntry();
           if (entry) {
-            const index = clipboard().indexOf(entry);
-            if (index !== -1) {
-              await onSaveClipboardFile(
-                index,
-                clipboard,
-                setClipboard,
-                directoryNames,
-                setDirectoryNames,
-                activeDirectoryParsedFileNames,
-                setActiveDirectoryParsedFileNames,
-                activeDirectoryName,
-                viewedFile,
-                setViewedFile,
-                setRightClickedClipboardFile,
-                setIdbFileContent,
-              );
+            const result = await saveClipboardFile(
+              entry,
+              clipboard(),
+              activeDirectoryName(),
+              activeDirectoryParsedFileNames(),
+              viewedFile(),
+            );
+            setClipboard(result.clipboard);
+            storeClipboard(result.clipboard);
+            if (result.dirFileNames !== activeDirectoryParsedFileNames()) {
+              setActiveDirectoryParsedFileNames(result.dirFileNames);
             }
+            if (result.viewedFile !== viewedFile()) {
+              setViewedFile(result.viewedFile);
+              storeViewedFile(result.viewedFile);
+            }
+            if (result.idbFileContent !== null) {
+              setIdbFileContent(result.idbFileContent);
+            }
+            setRightClickedClipboardFile(null);
+            const newDirNames = await updateDirectories(
+              directoryNames(),
+              activeDirectoryName(),
+            );
+            setDirectoryNames(newDirNames);
           }
         }}
         inputValue={inputValue}

@@ -4,12 +4,12 @@ import { ViewedFile } from "../types/viewedFile.interface";
 import { ClipboardEntry } from "../types/clipboardEntry.interface";
 import { ConfirmAction } from "../types/confirmAction.enum";
 import {
-  onClickClipboardFile,
+  createClipboardView,
   onClickDownloadClipboardFile,
-  onSaveClipboardFile,
-  onDiscardClipboardFile,
+  saveClipboardFile,
+  discardClipboardFile,
   onInputExistingFileName,
-  onRenameClipboardFile,
+  renameClipboardFile,
 } from "../app-handlers";
 import { getFileIcon } from "../functions/fileIcon.function";
 
@@ -25,8 +25,6 @@ export interface ClipboardFileEntryProps {
   setRightClickedFileNewName: Setter<string | null>;
   confirmAction: Accessor<ConfirmAction | null>;
   setConfirmAction: Setter<ConfirmAction | null>;
-  directoryNames: Accessor<string[]>;
-  setDirectoryNames: Setter<string[]>;
   activeDirectoryParsedFileNames: Accessor<ParsedFileName[] | null>;
   setActiveDirectoryParsedFileNames: Setter<ParsedFileName[] | null>;
   activeDirectoryName: Accessor<string | null>;
@@ -49,7 +47,7 @@ export function ClipboardFileEntry(props: ClipboardFileEntryProps): JSXElement {
             (props.rightClickedFile() === name.fullName ? "context_menu" : "")
           }
           onclick={() => {
-            onClickClipboardFile(name.fullName, props.setViewedFile);
+            props.setViewedFile(createClipboardView(name.fullName));
           }}
           oncontextmenu={(e: PointerEvent) => {
             e.preventDefault();
@@ -92,7 +90,7 @@ export function ClipboardFileEntry(props: ClipboardFileEntryProps): JSXElement {
               e.stopPropagation();
             }}
             oninput={(e) => {
-              onInputExistingFileName(e, props.setRightClickedFileNewName);
+              props.setRightClickedFileNewName(onInputExistingFileName(e));
             }}
           >
             {name.fullName ?? "unnamed file"}
@@ -110,7 +108,7 @@ export function ClipboardFileEntry(props: ClipboardFileEntryProps): JSXElement {
                   onclick={(e) => {
                     e.stopPropagation();
                     onClickDownloadClipboardFile(
-                      props.clipboard,
+                      props.clipboard(),
                       name.fullName,
                     );
                   }}
@@ -121,24 +119,25 @@ export function ClipboardFileEntry(props: ClipboardFileEntryProps): JSXElement {
                   class="button_icon"
                   onclick={(e) => {
                     e.stopImmediatePropagation();
-                    const clipboardIndex = props
+                    const entry = props
                       .clipboard()
-                      .findIndex((c) => c.name() === name.fullName);
-                    if (clipboardIndex !== -1) {
-                      onSaveClipboardFile(
-                        clipboardIndex,
-                        props.clipboard,
-                        props.setClipboard,
-                        props.directoryNames,
-                        props.setDirectoryNames,
-                        props.activeDirectoryParsedFileNames,
-                        props.setActiveDirectoryParsedFileNames,
-                        props.activeDirectoryName,
-                        props.viewedFile,
-                        props.setViewedFile,
-                        props.setRightClickedFile,
-                        props.setIdbFileContent,
-                      );
+                      .find((c) => c.name === name.fullName);
+                    if (entry) {
+                      saveClipboardFile(
+                        entry,
+                        props.clipboard(),
+                        props.activeDirectoryName(),
+                        props.activeDirectoryParsedFileNames(),
+                        props.viewedFile(),
+                      ).then((result) => {
+                        props.setClipboard(result.clipboard);
+                        props.setActiveDirectoryParsedFileNames(result.dirFileNames);
+                        props.setViewedFile(result.viewedFile);
+                        if (result.idbFileContent !== null) {
+                          props.setIdbFileContent(result.idbFileContent);
+                        }
+                        props.setRightClickedFile(null);
+                      });
                     }
                   }}
                 >
@@ -155,18 +154,22 @@ export function ClipboardFileEntry(props: ClipboardFileEntryProps): JSXElement {
                     e.stopImmediatePropagation();
                     const clipboardIndex = props
                       .clipboard()
-                      .findIndex((c) => c.name() === name.fullName);
+                      .findIndex((c) => c.name === name.fullName);
                     if (clipboardIndex !== -1) {
-                      onDiscardClipboardFile(
+                      const result = discardClipboardFile(
                         clipboardIndex,
-                        props.clipboard,
-                        props.setClipboard,
-                        props.viewedFile,
-                        props.setViewedFile,
-                        props.confirmAction,
-                        props.setConfirmAction,
-                        props.setRightClickedFile,
-                      ).then();
+                        props.clipboard(),
+                        props.viewedFile(),
+                        props.confirmAction(),
+                      );
+                      if (result) {
+                        props.setClipboard(result.clipboard);
+                        props.setViewedFile(result.viewedFile);
+                        props.setConfirmAction(result.confirmAction);
+                        if (result.clearRightClick) {
+                          props.setRightClickedFile(null);
+                        }
+                      }
                     }
                   }}
                 >
@@ -193,13 +196,16 @@ export function ClipboardFileEntry(props: ClipboardFileEntryProps): JSXElement {
                   class="button_icon"
                   onclick={(e) => {
                     e.stopPropagation();
-                    onRenameClipboardFile(
-                      props.rightClickedFile(),
-                      props.rightClickedFileNewName(),
-                      props.clipboard,
-                      props.viewedFile,
-                      props.setViewedFile,
+                    const result = renameClipboardFile(
+                      props.rightClickedFile()!,
+                      props.rightClickedFileNewName()!,
+                      props.clipboard(),
+                      props.viewedFile(),
                     );
+                    if (result) {
+                      props.setClipboard(result.clipboard);
+                      props.setViewedFile(result.viewedFile);
+                    }
                     props.setRightClickedFile(null);
                     props.setRightClickedFileNewName(null);
                   }}

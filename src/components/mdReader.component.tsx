@@ -33,7 +33,7 @@ export function MdReader(props: MdReaderProps): JSXElement {
     const fileName = decodeURI(href);
 
     // First check clipboard
-    const clipboardEntry = props.clipboard().find((c) => c.name() === fileName);
+    const clipboardEntry = props.clipboard().find((c) => c.name === fileName);
     if (clipboardEntry) {
       const viewedFile: ViewedFile = {
         source: "clipboard",

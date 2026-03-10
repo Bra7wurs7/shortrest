@@ -284,9 +284,9 @@ export async function resolveNodeMessages(
         if (!fileName) break;
 
         // Check clipboard first (clipboard entries are always text)
-        const clipboardEntry = clipboard.find((e) => e.name() === fileName);
+        const clipboardEntry = clipboard.find((e) => e.name === fileName);
         if (clipboardEntry) {
-          content = clipboardEntry.content();
+          content = clipboardEntry.content;
         } else if (activeDirectoryName) {
           const fetched = await getFileContent(activeDirectoryName, fileName);
           if (fetched instanceof Blob) {

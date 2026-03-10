@@ -81,8 +81,6 @@ export function LeftSidebar(props: LeftSidebarProps): JSXElement {
                   setRightClickedFileNewName={props.setRightClickedClipboardFileNewName}
                   confirmAction={props.confirmAction}
                   setConfirmAction={props.setConfirmAction}
-                  directoryNames={props.directoryNames}
-                  setDirectoryNames={props.setDirectoryNames}
                   activeDirectoryParsedFileNames={props.activeDirectoryParsedFileNames}
                   setActiveDirectoryParsedFileNames={props.setActiveDirectoryParsedFileNames}
                   activeDirectoryName={props.activeDirectoryName}

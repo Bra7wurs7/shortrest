@@ -1,9 +1,8 @@
-import { Accessor, createSignal, Setter } from "solid-js";
+import { Accessor, Setter } from "solid-js";
 import { ClipboardEntry } from "./types/clipboardEntry.interface";
 import { ViewedFile } from "./types/viewedFile.interface";
 import { ParsedFileName } from "./types/parsedFileName.interface";
 import { ConfirmAction } from "./types/confirmAction.enum";
-import { BasicFile } from "./types/basicFile.interface";
 import {
   addDirectory,
   countFilesInDirectory,
@@ -23,19 +22,16 @@ import { localStorageActiveDirectoryName } from "./constants/storageKeys";
 
 /**
  * Ensures the clipboard always has one empty unnamed file ready for new content.
- * Similar to how directories always have one empty directory.
+ * Returns the clipboard unchanged if an empty file exists, or a new clipboard with one appended.
  */
 export function ensureEmptyClipboardFile(
-  clipboard: Accessor<ClipboardEntry[]>,
-  setClipboard: Setter<ClipboardEntry[]>,
-  activeDirectoryName: Accessor<string | null>,
-) {
-  const entries = clipboard();
-  const emptyEntries = entries.filter((e) => e.content() === "");
+  clipboard: ClipboardEntry[],
+  activeDirectoryName: string | null,
+): ClipboardEntry[] {
+  const emptyEntries = clipboard.filter((e) => e.content === "");
 
   if (emptyEntries.length === 0) {
-    // Find a unique name
-    const existingNames = entries.map((e) => e.name());
+    const existingNames = clipboard.map((e) => e.name);
     let newName = "New File";
     let counter = 2;
     while (existingNames.includes(newName)) {
@@ -43,426 +39,341 @@ export function ensureEmptyClipboardFile(
       counter++;
     }
 
-    const [name, setName] = createSignal(newName);
-    const [content, setContent] = createSignal("");
     const newEntry: ClipboardEntry = {
-      name,
-      setName,
-      content,
-      setContent,
+      name: newName,
+      content: "",
       originalName: newName,
       originalContent: "",
-      sourceDirectory: activeDirectoryName(),
+      sourceDirectory: activeDirectoryName,
     };
-    setClipboard([...entries, newEntry]);
-    storeClipboard(clipboard);
+    return [...clipboard, newEntry];
   }
+  return clipboard;
 }
 
 /**
- * Click a saved file in the directory listing.
+ * Resolve which ViewedFile to show when clicking a saved file.
  * Prefers clipboard file if one with the same name exists.
  */
-export function onClickSavedFile(
+export function resolveFileView(
   fileName: string,
   directoryName: string,
-  clipboard: Accessor<ClipboardEntry[]>,
-  setViewedFile: Setter<ViewedFile | null>,
-) {
-  const clipboardHasFile = clipboard().some((c) => c.name() === fileName);
+  clipboard: ClipboardEntry[],
+): ViewedFile {
+  const clipboardHasFile = clipboard.some((c) => c.name === fileName);
 
-  const viewedFile: ViewedFile = clipboardHasFile
+  return clipboardHasFile
     ? { source: "clipboard", directoryName: null, fileName }
     : { source: "idb", directoryName, fileName };
-
-  setViewedFile(viewedFile);
-  storeViewedFile(viewedFile);
 }
 
 /**
- * Click a clipboard entry to view it
+ * Create a ViewedFile pointing at a clipboard entry.
  */
-export function onClickClipboardFile(
-  fileName: string,
-  setViewedFile: Setter<ViewedFile | null>,
-) {
-  const viewedFile: ViewedFile = {
+export function createClipboardView(fileName: string): ViewedFile {
+  return {
     source: "clipboard",
     directoryName: null,
     fileName,
   };
-  setViewedFile(viewedFile);
-  storeViewedFile(viewedFile);
 }
 
 /**
  * Get or create an editable clipboard entry for the current context.
- * Used when user edits a file or LLM generates content.
+ * Returns { clipboard, viewedFile, entry } with the updated state.
  */
 export function getOrCreateEditableFile(
-  viewedFile: Accessor<ViewedFile | null>,
-  setViewedFile: Setter<ViewedFile | null>,
-  clipboard: Accessor<ClipboardEntry[]>,
-  setClipboard: Setter<ClipboardEntry[]>,
-  idbFileContent: Accessor<string>,
-  activeDirectoryName: Accessor<string | null>,
-): ClipboardEntry {
-  const vf = viewedFile();
-
+  viewedFile: ViewedFile | null,
+  clipboard: ClipboardEntry[],
+  idbFileContent: string,
+  activeDirectoryName: string | null,
+): { clipboard: ClipboardEntry[]; viewedFile: ViewedFile; entry: ClipboardEntry } {
   // If viewing a clipboard file, return that entry
-  if (vf?.source === "clipboard") {
-    const existingEntry = clipboard().find((c) => c.name() === vf.fileName);
+  if (viewedFile?.source === "clipboard") {
+    const existingEntry = clipboard.find((c) => c.name === viewedFile.fileName);
     if (existingEntry) {
-      return existingEntry;
+      return { clipboard, viewedFile, entry: existingEntry };
     }
   }
 
   // If viewing an IDB file, check if it's already in clipboard
-  if (vf?.source === "idb" && vf.fileName) {
-    const existingEntry = clipboard().find((c) => c.name() === vf.fileName);
+  if (viewedFile?.source === "idb" && viewedFile.fileName) {
+    const existingEntry = clipboard.find((c) => c.name === viewedFile.fileName);
     if (existingEntry) {
-      // Switch to clipboard view
-      const newViewedFile: ViewedFile = {
-        source: "clipboard",
-        directoryName: null,
-        fileName: vf.fileName,
-      };
-      setViewedFile(newViewedFile);
-      storeViewedFile(newViewedFile);
-      return existingEntry;
+      const newViewedFile = createClipboardView(viewedFile.fileName);
+      return { clipboard, viewedFile: newViewedFile, entry: existingEntry };
     }
 
     // Create new clipboard entry from IDB file
-    const content = idbFileContent();
-    const [name, setName] = createSignal(vf.fileName);
-    const [contentSignal, setContent] = createSignal(content);
     const newEntry: ClipboardEntry = {
-      name,
-      setName,
-      content: contentSignal,
-      setContent,
-      originalName: vf.fileName,
-      originalContent: content,
-      sourceDirectory: vf.directoryName,
+      name: viewedFile.fileName,
+      content: idbFileContent,
+      originalName: viewedFile.fileName,
+      originalContent: idbFileContent,
+      sourceDirectory: viewedFile.directoryName,
     };
-    setClipboard([...clipboard(), newEntry]);
-    storeClipboard(clipboard);
-
-    // Switch to clipboard view
-    const newViewedFile: ViewedFile = {
-      source: "clipboard",
-      directoryName: null,
-      fileName: vf.fileName,
-    };
-    setViewedFile(newViewedFile);
-    storeViewedFile(newViewedFile);
-    return newEntry;
+    const newClipboard = [...clipboard, newEntry];
+    const newViewedFile = createClipboardView(viewedFile.fileName);
+    return { clipboard: newClipboard, viewedFile: newViewedFile, entry: newEntry };
   }
 
   // No file is being viewed - create a new unnamed file
   const unnamedFileName = "unnamed file";
 
-  // Check if an unnamed file already exists in clipboard
-  const existingUnnamed = clipboard().find((c) => c.name() === unnamedFileName);
+  const existingUnnamed = clipboard.find((c) => c.name === unnamedFileName);
   if (existingUnnamed) {
-    const newViewedFile: ViewedFile = {
-      source: "clipboard",
-      directoryName: null,
-      fileName: unnamedFileName,
-    };
-    setViewedFile(newViewedFile);
-    storeViewedFile(newViewedFile);
-    return existingUnnamed;
+    const newViewedFile = createClipboardView(unnamedFileName);
+    return { clipboard, viewedFile: newViewedFile, entry: existingUnnamed };
   }
 
-  // Create new unnamed file
-  const [name, setName] = createSignal(unnamedFileName);
-  const [content, setContent] = createSignal("");
   const newEntry: ClipboardEntry = {
-    name,
-    setName,
-    content,
-    setContent,
+    name: unnamedFileName,
+    content: "",
     originalName: unnamedFileName,
     originalContent: "",
-    sourceDirectory: activeDirectoryName(),
+    sourceDirectory: activeDirectoryName,
   };
-  setClipboard([...clipboard(), newEntry]);
-  storeClipboard(clipboard);
-
-  const newViewedFile: ViewedFile = {
-    source: "clipboard",
-    directoryName: null,
-    fileName: unnamedFileName,
-  };
-  setViewedFile(newViewedFile);
-  storeViewedFile(newViewedFile);
-  return newEntry;
+  const newClipboard = [...clipboard, newEntry];
+  const newViewedFile = createClipboardView(unnamedFileName);
+  return { clipboard: newClipboard, viewedFile: newViewedFile, entry: newEntry };
 }
 
 /**
- * Discard a clipboard entry (close without saving)
+ * Discard a clipboard entry (close without saving).
+ * Returns the updated state, or null if the action requires confirmation.
  */
-export async function onDiscardClipboardFile(
+export function discardClipboardFile(
   index: number,
-  clipboard: Accessor<ClipboardEntry[]>,
-  setClipboard: Setter<ClipboardEntry[]>,
-  viewedFile: Accessor<ViewedFile | null>,
-  setViewedFile: Setter<ViewedFile | null>,
-  confirmAction: Accessor<ConfirmAction | null>,
-  setConfirmAction: Setter<ConfirmAction | null>,
-  setRightClickedClipboardFile: Setter<string | null>,
-) {
-  const currentClipboard = clipboard();
-  const entry = currentClipboard[index];
+  clipboard: ClipboardEntry[],
+  viewedFile: ViewedFile | null,
+  confirmAction: ConfirmAction | null,
+): {
+  clipboard: ClipboardEntry[];
+  viewedFile: ViewedFile | null;
+  confirmAction: ConfirmAction | null;
+  clearRightClick: boolean;
+} | null {
+  const entry = clipboard[index];
+  if (!entry) return null;
 
-  if (!entry) return;
+  const hasChanges = entry.content !== entry.originalContent;
 
-  const hasChanges = entry.content() !== entry.originalContent;
-
-  if (hasChanges) {
-    if (confirmAction() === ConfirmAction.DiscardChanges) {
-      currentClipboard.splice(index, 1);
-      setClipboard([...currentClipboard]);
-      setConfirmAction(null);
-      setRightClickedClipboardFile(null);
-
-      // If we were viewing this file, clear the view
-      const vf = viewedFile();
-      if (vf?.source === "clipboard" && vf.fileName === entry.name()) {
-        setViewedFile(null);
-        storeViewedFile(null);
-      }
-    } else {
-      setConfirmAction(ConfirmAction.DiscardChanges);
-    }
-  } else {
-    currentClipboard.splice(index, 1);
-    setClipboard([...currentClipboard]);
-    setConfirmAction(null);
-    setRightClickedClipboardFile(null);
-
-    // If we were viewing this file, clear the view
-    const vf = viewedFile();
-    if (vf?.source === "clipboard" && vf.fileName === entry.name()) {
-      setViewedFile(null);
-      storeViewedFile(null);
-    }
+  if (hasChanges && confirmAction !== ConfirmAction.DiscardChanges) {
+    // Needs confirmation
+    return {
+      clipboard,
+      viewedFile,
+      confirmAction: ConfirmAction.DiscardChanges,
+      clearRightClick: false,
+    };
   }
 
-  storeClipboard(clipboard);
+  // Confirmed or no changes — remove
+  const newClipboard = clipboard.filter((_, i) => i !== index);
+  let newViewedFile = viewedFile;
+  if (viewedFile?.source === "clipboard" && viewedFile.fileName === entry.name) {
+    newViewedFile = null;
+  }
+
+  return {
+    clipboard: newClipboard,
+    viewedFile: newViewedFile,
+    confirmAction: null,
+    clearRightClick: true,
+  };
 }
 
 /**
- * Save a clipboard entry to IDB
+ * Save a clipboard entry to IDB.
+ * Does async IDB writes, returns state changes to apply.
  */
-export async function onSaveClipboardFile(
-  index: number,
-  clipboard: Accessor<ClipboardEntry[]>,
-  setClipboard: Setter<ClipboardEntry[]>,
-  directoryNames: Accessor<string[]>,
-  setDirectoryNames: Setter<string[]>,
-  activeDirectoryFileNames: Accessor<ParsedFileName[] | null>,
-  setActiveDirectoryFileNames: Setter<ParsedFileName[] | null>,
-  activeDirectoryName: Accessor<string | null>,
-  viewedFile: Accessor<ViewedFile | null>,
-  setViewedFile: Setter<ViewedFile | null>,
-  setRightClickedClipboardFile: Setter<string | null>,
-  setIdbFileContent?: Setter<string>,
-) {
-  const entry = clipboard()[index];
-  const activeDirName = activeDirectoryName();
-  const activeDirFileNames = activeDirectoryFileNames();
+export async function saveClipboardFile(
+  entry: ClipboardEntry,
+  clipboard: ClipboardEntry[],
+  activeDirName: string | null,
+  activeDirFileNames: ParsedFileName[] | null,
+  viewedFile: ViewedFile | null,
+): Promise<{
+  clipboard: ClipboardEntry[];
+  dirFileNames: ParsedFileName[] | null;
+  viewedFile: ViewedFile | null;
+  idbFileContent: string | null;
+}> {
+  if (!activeDirName) {
+    return { clipboard, dirFileNames: activeDirFileNames, viewedFile, idbFileContent: null };
+  }
 
-  if (!entry || !activeDirName) return;
-
-  const targetDir = activeDirName;
-  const fileName = entry.name();
-  const savedContent = entry.content();
+  const fileName = entry.name;
+  const savedContent = entry.content;
   const fileAlreadyExists =
     activeDirFileNames?.some((f) => f.fullName === fileName) ?? false;
 
-  await writeFileToDirectory(targetDir, {
+  await writeFileToDirectory(activeDirName, {
     name: fileName,
     content: savedContent,
   });
 
   // Update directory file list if new file
+  let newDirFileNames = activeDirFileNames;
   if (!fileAlreadyExists && activeDirFileNames) {
-    setActiveDirectoryFileNames([
-      ...activeDirFileNames,
-      parseFileName(fileName),
-    ]);
+    newDirFileNames = [...activeDirFileNames, parseFileName(fileName)];
   }
 
-  // Remove from clipboard (re-find by reference since index may be stale after await)
-  const currentClipboard = clipboard();
-  const currentIndex = currentClipboard.indexOf(entry);
-  if (currentIndex !== -1) {
-    currentClipboard.splice(currentIndex, 1);
-  }
-  setClipboard([...currentClipboard]);
-  storeClipboard(clipboard);
-  setRightClickedClipboardFile(null);
+  // Remove from clipboard
+  const newClipboard = clipboard.filter((e) => e !== entry);
 
-  // Switch view to IDB source, pre-filling the content to avoid an empty flash
-  const vf = viewedFile();
-  if (vf?.source === "clipboard" && vf.fileName === fileName) {
-    if (setIdbFileContent) {
-      setIdbFileContent(savedContent);
-    }
-    const newViewedFile: ViewedFile = {
+  // Switch view to IDB source
+  let newViewedFile = viewedFile;
+  let idbFileContent: string | null = null;
+  if (viewedFile?.source === "clipboard" && viewedFile.fileName === fileName) {
+    idbFileContent = savedContent;
+    newViewedFile = {
       source: "idb",
-      directoryName: targetDir,
+      directoryName: activeDirName,
       fileName,
     };
-    setViewedFile(newViewedFile);
-    storeViewedFile(newViewedFile);
   }
 
-  await onUpdateDirectory(
-    directoryNames,
-    setDirectoryNames,
-    activeDirectoryName,
-  );
-}
-
-export async function onClickTrashSavedFile(
-  name: string,
-  activeDirectoryName: Accessor<string | null>,
-  activeDirectoryParsedFileNames: Accessor<ParsedFileName[] | null>,
-  setActiveDirectoryParsedFileNames: Setter<ParsedFileName[] | null>,
-  directoryNames: Accessor<string[]>,
-  setDirectoryNames: Setter<string[]>,
-  confirmAction: Accessor<ConfirmAction | null>,
-  setConfirmAction: Setter<ConfirmAction | null>,
-  setRightClickedSavedFile: Setter<string | null>,
-) {
-  const activeDirName = activeDirectoryName();
-  const activeDirFileNames = activeDirectoryParsedFileNames();
-
-  if (
-    confirmAction() === ConfirmAction.TrashFile &&
-    activeDirName !== null &&
-    activeDirFileNames !== null
-  ) {
-    await removeFileFromDirectory(activeDirName, name);
-    setActiveDirectoryParsedFileNames(
-      (await listFileNamesInDirectory(activeDirName)).map((fn) =>
-        parseFileName(fn),
-      ),
-    );
-    await onUpdateDirectory(
-      directoryNames,
-      setDirectoryNames,
-      activeDirectoryName,
-    );
-    setConfirmAction(null);
-    setRightClickedSavedFile(null);
-  } else {
-    setConfirmAction(ConfirmAction.TrashFile);
-  }
+  return {
+    clipboard: newClipboard,
+    dirFileNames: newDirFileNames,
+    viewedFile: newViewedFile,
+    idbFileContent,
+  };
 }
 
 /**
- * Handle keyboard input in the left sidebar search field
+ * Trash a saved file from a directory.
+ * Returns null if confirmation is needed (sets confirmAction).
  */
-export function onInputKeyUp(
-  e: KeyboardEvent & { currentTarget: HTMLInputElement; target: Element },
-  activeDirectoryName: Accessor<string | null>,
-  setInputValue: Setter<string>,
-  clipboard: Accessor<ClipboardEntry[]>,
-  setClipboard: Setter<ClipboardEntry[]>,
-  filteredParsedClipboardFileNames: Accessor<ParsedFileName[]>,
-  filteredParsedDirectoryFileNames: Accessor<ParsedFileName[] | null>,
-  setViewedFile: Setter<ViewedFile | null>,
-) {
-  const filtrdAllFileNames = filteredParsedDirectoryFileNames();
-  const filtrdClipboardFiles = filteredParsedClipboardFileNames();
-  const activeDirName = activeDirectoryName();
-
-  setInputValue(e.currentTarget.value);
-  switch (e.key) {
-    case "Enter":
-      if (e.ctrlKey) {
-        // Ctrl+Enter: create new file in clipboard
-        const newFileName = e.currentTarget.value || "unnamed file";
-        const existingEntry = clipboard().find((c) => c.name() === newFileName);
-
-        if (!existingEntry) {
-          const [name, setName] = createSignal(newFileName);
-          const [content, setContent] = createSignal("");
-          const newEntry: ClipboardEntry = {
-            name,
-            setName,
-            content,
-            setContent,
-            originalName: newFileName,
-            originalContent: "",
-            sourceDirectory: activeDirName,
-          };
-          setClipboard([...clipboard(), newEntry]);
-          storeClipboard(clipboard);
-        }
-
-        const viewedFile: ViewedFile = {
-          source: "clipboard",
-          directoryName: null,
-          fileName: newFileName,
-        };
-        setViewedFile(viewedFile);
-        storeViewedFile(viewedFile);
-        setInputValue("");
-      } else {
-        // Enter: select first matching file
-        if (filtrdClipboardFiles.length === 1) {
-          const viewedFile: ViewedFile = {
-            source: "clipboard",
-            directoryName: null,
-            fileName: filtrdClipboardFiles[0].fullName,
-          };
-          setViewedFile(viewedFile);
-          storeViewedFile(viewedFile);
-          setInputValue("");
-        } else if (
-          filtrdAllFileNames !== null &&
-          activeDirName !== null &&
-          filtrdAllFileNames.length === 1 &&
-          filtrdClipboardFiles.length === 0
-        ) {
-          const viewedFile: ViewedFile = {
-            source: "idb",
-            directoryName: activeDirName,
-            fileName: filtrdAllFileNames[0].fullName,
-          };
-          setViewedFile(viewedFile);
-          storeViewedFile(viewedFile);
-          setInputValue("");
-        }
-      }
-      break;
-    default:
-      break;
+export async function trashSavedFile(
+  name: string,
+  activeDirName: string | null,
+  activeDirFileNames: ParsedFileName[] | null,
+  confirmAction: ConfirmAction | null,
+): Promise<{
+  dirFileNames: ParsedFileName[] | null;
+  confirmAction: ConfirmAction | null;
+  clearRightClick: boolean;
+  directoryNeedsUpdate: boolean;
+} | null> {
+  if (
+    confirmAction !== ConfirmAction.TrashFile ||
+    activeDirName === null ||
+    activeDirFileNames === null
+  ) {
+    return {
+      dirFileNames: activeDirFileNames,
+      confirmAction: ConfirmAction.TrashFile,
+      clearRightClick: false,
+      directoryNeedsUpdate: false,
+    };
   }
+
+  await removeFileFromDirectory(activeDirName, name);
+  const newNames = (await listFileNamesInDirectory(activeDirName)).map((fn) =>
+    parseFileName(fn),
+  );
+
+  return {
+    dirFileNames: newNames,
+    confirmAction: null,
+    clearRightClick: true,
+    directoryNeedsUpdate: true,
+  };
 }
 
-export async function onUpdateDirectory(
-  directoryNames: Accessor<string[]>,
-  setDirectoryNames: Setter<string[]>,
-  activeDirectoryName?: Accessor<string | null>,
-) {
-  const activeDirName = activeDirectoryName?.();
-  const directoryNamesAndSize: { name: string; count: number }[] =
-    await Promise.all(
-      directoryNames().map(async (name) => {
-        return { name, count: await countFilesInDirectory(name) };
-      }),
-    );
+/**
+ * Handle keyboard input in the left sidebar search field.
+ * Returns new state to apply.
+ */
+export function handleSearchKeyUp(
+  key: string,
+  ctrlKey: boolean,
+  inputText: string,
+  activeDirName: string | null,
+  clipboard: ClipboardEntry[],
+  filteredClipboardNames: ParsedFileName[],
+  filteredDirNames: ParsedFileName[] | null,
+): {
+  clipboard: ClipboardEntry[];
+  viewedFile: ViewedFile | null;
+  inputValue: string;
+} | null {
+  if (key !== "Enter") return null;
+
+  if (ctrlKey) {
+    // Ctrl+Enter: create new file in clipboard
+    const newFileName = inputText || "unnamed file";
+    const existingEntry = clipboard.find((c) => c.name === newFileName);
+
+    let newClipboard = clipboard;
+    if (!existingEntry) {
+      const newEntry: ClipboardEntry = {
+        name: newFileName,
+        content: "",
+        originalName: newFileName,
+        originalContent: "",
+        sourceDirectory: activeDirName,
+      };
+      newClipboard = [...clipboard, newEntry];
+    }
+
+    return {
+      clipboard: newClipboard,
+      viewedFile: createClipboardView(newFileName),
+      inputValue: "",
+    };
+  }
+
+  // Enter: select first matching file
+  if (filteredClipboardNames.length === 1) {
+    return {
+      clipboard,
+      viewedFile: createClipboardView(filteredClipboardNames[0].fullName),
+      inputValue: "",
+    };
+  }
+
+  if (
+    filteredDirNames !== null &&
+    activeDirName !== null &&
+    filteredDirNames.length === 1 &&
+    filteredClipboardNames.length === 0
+  ) {
+    return {
+      clipboard,
+      viewedFile: {
+        source: "idb",
+        directoryName: activeDirName,
+        fileName: filteredDirNames[0].fullName,
+      },
+      inputValue: "",
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Reconcile directories: ensure exactly one empty directory exists.
+ * Returns the updated directory names list.
+ */
+export async function updateDirectories(
+  currentDirectoryNames: string[],
+  activeDirectoryName: string | null,
+): Promise<string[]> {
+  const directoryNamesAndSize = await Promise.all(
+    currentDirectoryNames.map(async (name) => ({
+      name,
+      count: await countFilesInDirectory(name),
+    })),
+  );
+
   let foundEmptyDirectory: string | null = null;
   for (const dns of directoryNamesAndSize) {
     if (dns.count === 0) {
-      // Prefer keeping the active directory as the empty slot
-      if (dns.name === activeDirName && !foundEmptyDirectory) {
+      if (dns.name === activeDirectoryName && !foundEmptyDirectory) {
         foundEmptyDirectory = dns.name;
       } else if (foundEmptyDirectory) {
         await removeDirectory(dns.name);
@@ -474,15 +385,14 @@ export async function onUpdateDirectory(
   if (foundEmptyDirectory === null) {
     await addDirectory(uuidv4());
   }
-  setDirectoryNames(await listAllDirectories());
+
+  return listAllDirectories();
 }
 
 export function onClickDownloadSavedFile(
-  activeDirectoryName: Accessor<string | null>,
+  activeDirName: string | null,
   name: string,
 ) {
-  const activeDirName = activeDirectoryName();
-
   if (activeDirName) {
     getFileContent(activeDirName, name)
       .then((content) => {
@@ -492,9 +402,7 @@ export function onClickDownloadSavedFile(
           const blob = new Blob([content], { type: "text/plain" });
           saveAs(blob, name);
         } else {
-          console.error(
-            `File ${name} not found in directory ${activeDirectoryName()}`,
-          );
+          console.error(`File ${name} not found in directory ${activeDirName}`);
         }
       })
       .catch((error) => {
@@ -504,14 +412,13 @@ export function onClickDownloadSavedFile(
 }
 
 export function onClickDownloadClipboardFile(
-  clipboard: Accessor<ClipboardEntry[]>,
+  clipboard: ClipboardEntry[],
   name: string,
 ) {
-  const entry = clipboard().find((c) => c.name() === name);
+  const entry = clipboard.find((c) => c.name === name);
 
   if (entry) {
-    const content = entry.content();
-    const blob = new Blob([content], { type: "text/plain" });
+    const blob = new Blob([entry.content], { type: "text/plain" });
     saveAs(blob, name);
   } else {
     console.error(`Clipboard file ${name} not found`);
@@ -559,10 +466,8 @@ export function onClickUploadDirectory(
     }
 
     await Promise.all(writePromises);
-    await onUpdateDirectory(
-      directoryNames,
-      setDirectoryNames,
-      activeDirectoryName,
+    setDirectoryNames(
+      await updateDirectories(directoryNames(), activeDirectoryName()),
     );
   };
 
@@ -608,21 +513,22 @@ export function onClickDownloadDirectory(name: string) {
 
 export async function onClickDeleteDirectory(
   name: string,
-  directoryNames: Accessor<string[]>,
-  setDirectoryNames: Setter<string[]>,
-  activeDirectoryName: Accessor<string | null>,
-  setActiveDirectoryName: Setter<string | null>,
-) {
+  directoryNames: string[],
+  activeDirectoryName: string | null,
+): Promise<{ directoryNames: string[]; activeDirectoryName: string | null }> {
   await removeDirectory(name);
-  setDirectoryNames(directoryNames().filter((n) => n !== name));
-  await onUpdateDirectory(directoryNames, setDirectoryNames, activeDirectoryName);
-  if (activeDirectoryName() === name) {
-    const next = directoryNames()[0] ?? null;
-    setActiveDirectoryName(next);
-    if (next) {
-      localStorage.setItem(localStorageActiveDirectoryName, next);
+  const filtered = directoryNames.filter((n) => n !== name);
+  const newDirNames = await updateDirectories(filtered, activeDirectoryName);
+
+  let newActiveDirName = activeDirectoryName;
+  if (activeDirectoryName === name) {
+    newActiveDirName = newDirNames[0] ?? null;
+    if (newActiveDirName) {
+      localStorage.setItem(localStorageActiveDirectoryName, newActiveDirName);
     }
   }
+
+  return { directoryNames: newDirNames, activeDirectoryName: newActiveDirName };
 }
 
 export function onInputExistingFileName(
@@ -630,81 +536,75 @@ export function onInputExistingFileName(
     currentTarget: HTMLDivElement;
     target: Element;
   },
-  fileNameChangeSetter: Setter<string | null>,
-) {
+): string | null {
   const newFileName: string | undefined = (
     newNameEvent.target.firstChild as (ChildNode | null) & { data: string }
   ).data;
-  if (newFileName !== undefined) {
-    fileNameChangeSetter(newFileName);
-  }
+  return newFileName ?? null;
 }
 
-export function onRenameClipboardFile(
-  oldName: string | null,
-  newName: string | null,
-  clipboard: Accessor<ClipboardEntry[]>,
-  viewedFile: Accessor<ViewedFile | null>,
-  setViewedFile: Setter<ViewedFile | null>,
-) {
-  const fileWithSameNameAlreadyExists = clipboard().some(
-    (c) => c.name() === newName,
+/**
+ * Rename a clipboard file. Returns updated clipboard, or null if name conflict.
+ */
+export function renameClipboardFile(
+  oldName: string,
+  newName: string,
+  clipboard: ClipboardEntry[],
+  viewedFile: ViewedFile | null,
+): { clipboard: ClipboardEntry[]; viewedFile: ViewedFile | null } | null {
+  if (clipboard.some((c) => c.name === newName)) return null;
+
+  const newClipboard = clipboard.map((c) =>
+    c.name === oldName ? { ...c, name: newName } : c,
   );
 
-  if (fileWithSameNameAlreadyExists) return;
-
-  const entryToRename = clipboard().find((c) => c.name() === oldName);
-  if (entryToRename && newName !== null) {
-    entryToRename.setName(newName);
-    const vf = viewedFile();
-    if (vf?.source === "clipboard" && vf.fileName === oldName) {
-      const updated = { ...vf, fileName: newName };
-      setViewedFile(updated);
-      storeViewedFile(updated);
-    }
+  let newViewedFile = viewedFile;
+  if (viewedFile?.source === "clipboard" && viewedFile.fileName === oldName) {
+    newViewedFile = { ...viewedFile, fileName: newName };
   }
-  storeClipboard(clipboard);
+
+  return { clipboard: newClipboard, viewedFile: newViewedFile };
 }
 
-export async function onRenameSavedFile(
-  oldName: string | null,
-  newName: string | null,
-  activeDirectorParsedFileNames: Accessor<ParsedFileName[] | null>,
-  setActiveDirectorParsedFileNames: Setter<ParsedFileName[] | null>,
-  activeDirectoryName: Accessor<string | null>,
-  directoryNames: Accessor<string[]>,
-  setDirectoryNames: Setter<string[]>,
-  viewedFile: Accessor<ViewedFile | null>,
-  setViewedFile: Setter<ViewedFile | null>,
-) {
-  const activeDirName = activeDirectoryName();
-  const activeDirFileNames = activeDirectorParsedFileNames();
-  const fileWithSameNameAlreadyExists =
-    activeDirFileNames !== null
-      ? activeDirFileNames.some((sf) => sf.baseName === newName)
-      : false;
+/**
+ * Rename a saved file in a directory.
+ */
+export async function renameSavedFile(
+  oldName: string,
+  newName: string,
+  activeDirName: string | null,
+  activeDirFileNames: ParsedFileName[] | null,
+  viewedFile: ViewedFile | null,
+): Promise<{
+  dirFileNames: ParsedFileName[] | null;
+  viewedFile: ViewedFile | null;
+} | null> {
+  if (!activeDirName || !activeDirFileNames) return null;
 
+  const fileWithSameNameAlreadyExists = activeDirFileNames.some(
+    (sf) => sf.baseName === newName,
+  );
+  if (fileWithSameNameAlreadyExists) return null;
+
+  const fileContent = await getFileContent(activeDirName, oldName);
+  await writeFileToDirectory(activeDirName, {
+    name: newName,
+    content: fileContent ?? "",
+  });
+  await removeFileFromDirectory(activeDirName, oldName);
+
+  const newDirFileNames = (
+    await listFileNamesInDirectory(activeDirName)
+  ).map((fn) => parseFileName(fn));
+
+  let newViewedFile = viewedFile;
   if (
-    activeDirName !== null &&
-    oldName !== null &&
-    newName !== null &&
-    !fileWithSameNameAlreadyExists &&
-    activeDirFileNames !== null
+    viewedFile?.source === "idb" &&
+    viewedFile.fileName === oldName &&
+    viewedFile.directoryName === activeDirName
   ) {
-    const fileContent = await getFileContent(activeDirName, oldName);
-    const newFile: BasicFile = { name: newName, content: fileContent ?? "" };
-    await writeFileToDirectory(activeDirName, newFile);
-    await removeFileFromDirectory(activeDirName, oldName);
-    setActiveDirectorParsedFileNames(
-      (await listFileNamesInDirectory(activeDirName)).map((fn) =>
-        parseFileName(fn),
-      ),
-    );
-    const vf = viewedFile();
-    if (vf?.source === "idb" && vf.fileName === oldName && vf.directoryName === activeDirName) {
-      const updated = { ...vf, fileName: newName };
-      setViewedFile(updated);
-      storeViewedFile(updated);
-    }
+    newViewedFile = { ...viewedFile, fileName: newName };
   }
+
+  return { dirFileNames: newDirFileNames, viewedFile: newViewedFile };
 }

@@ -32,7 +32,7 @@ export function MessageNode(props: MessageNodeProps): JSXElement {
   const node = props.node;
 
   function getAllFileNames(): string[] {
-    const clipNames = props.clipboard().map((e) => e.name());
+    const clipNames = props.clipboard().map((e) => e.name);
     const dirNames = (props.activeDirectoryParsedFileNames() ?? []).map(
       (f) => f.fullName,
     );
@@ -360,8 +360,8 @@ export function MessageNode(props: MessageNodeProps): JSXElement {
                   </select>
                 </div>
               </div>
-              <Show when={node().sourcePipelineId}>
-                {() => {
+              <Show when={node().sourcePipelineId} keyed>
+                {(_sourcePipelineId: string) => {
                   const subPipeline = () =>
                     props
                       .pipelines()

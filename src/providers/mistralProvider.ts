@@ -69,10 +69,10 @@ export function createMistralProvider(serverURL: string, apiKey: string): LLMPro
               const delta = choice?.delta;
 
               // Capture tool_calls when the model returns them instead of text
-              if (delta?.tool_calls && delta.tool_calls.length > 0) {
-                const calls: NativeToolCall[] = delta.tool_calls
-                  .filter((tc) => tc.function?.name)
-                  .map((tc) => {
+              if (delta?.toolCalls && delta.toolCalls.length > 0) {
+                const calls: NativeToolCall[] = delta.toolCalls
+                  .filter((tc: any) => tc.function?.name)
+                  .map((tc: any) => {
                     let args: Record<string, unknown> = {};
                     try {
                       args = JSON.parse(tc.function?.arguments ?? "{}");
