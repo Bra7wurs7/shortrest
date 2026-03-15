@@ -1,5 +1,6 @@
 .ollama_node .prompt_header {
     background-color: var(--color_background_soft);
+    border-top-left-radius: var(--size_toolbar_half);
 }
 
 .llm_status_text {

@@ -151,13 +151,11 @@ export function CenterPanel(props: CenterPanelProps): JSXElement {
           </div>
         </Match>
       </Switch>
-      <Show when={props.pipeline().modelOutput() || props.pipeline().modelThoughts()}>
-        <PipelineOutput
-          pipeline={props.pipeline}
-          pipelines={props.pipelines}
-          onAbortSubPipeline={props.onAbortSubPipeline}
-        />
-      </Show>
+      <PipelineOutput
+        pipeline={props.pipeline}
+        pipelines={props.pipelines}
+        onAbortSubPipeline={props.onAbortSubPipeline}
+      />
       <input
         id="CENTRAL_PROMPT_INPUT"
         class={props.bracketMode() ? "bracket-active" : ""}

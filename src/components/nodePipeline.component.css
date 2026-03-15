@@ -19,6 +19,7 @@
         display: flex;
         flex-direction: column;
         flex-shrink: 0;
+        margin-bottom: var(--size_margin);
 
         .add_node_options {
             display: grid;
@@ -56,8 +57,7 @@
             gap: var(--size_margin);
             height: var(--size_toolbar_width);
             padding: var(--size_padding);
-            background-color: var(--color_border);
-            border: var(--size_border) var(--style_border) var(--color_border);
+            border: var(--size_border) var(--style_border) transparent;
             color: var(--color_border_light);
             cursor: default;
             user-select: none;
@@ -65,10 +65,12 @@
             font-size: small;
             border-bottom-left-radius: var(--size_toolbar_width_half);
             border-top-left-radius: var(--size_toolbar_width_half);
+            background-color: var(--color_background_soft);
 
-            transition: color var(--transition_duration) ease-out;
-            transition: border-top-left-radius var(--transition_duration)
-                ease-in;
+            transition:
+                color var(--transition_duration) ease-out,
+                border-bottom-left-radius var(--transition_duration) ease-in,
+                background-color var(--transition_duration) ease-out;
 
             .bx {
                 display: flex;
@@ -78,11 +80,13 @@
         }
 
         &:hover .add_node_header {
+            background-color: var(--color_border);
+
             color: var(--color_foreground_soft);
-            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
         }
 
-        &:hover .add_node_header .bx {
+        &:hover .add_node_header .spin {
             transform: rotate(180deg);
         }
 
@@ -114,8 +118,8 @@
                 z-index: 1;
             }
 
-            &:first-of-type {
-                border-top-left-radius: var(--size_toolbar_width_half);
+            &:last-of-type {
+                border-bottom-left-radius: var(--size_toolbar_width_half);
             }
         }
     }
@@ -157,8 +161,8 @@
     padding: var(--size_padding);
     border: var(--size_border) var(--style_border) var(--color_border);
     color: var(--color_border_light);
-    background-color: var(--color_border);
     height: var(--size_toolbar_width);
+    background-color: var(--color_background);
     box-sizing: border-box;
     cursor: pointer;
     user-select: none;

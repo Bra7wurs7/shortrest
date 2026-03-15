@@ -95,13 +95,6 @@ export function PipelineOutput(props: PipelineOutputProps): JSXElement {
         {({ pipeline, index }) => {
           const [subCollapsed, setSubCollapsed] = createSignal(false);
 
-          // Auto-collapse sub-pipeline output once main output appears
-          createEffect(() => {
-            if (p().modelOutput()) {
-              setSubCollapsed(true);
-            }
-          });
-
           return (
             <Show when={pipeline.modelOutput() || pipeline.subPipelineRunning()}>
               <div

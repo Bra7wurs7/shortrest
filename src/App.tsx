@@ -463,10 +463,17 @@ function App(): JSXElement {
       });
     };
 
+    // Clear previous output and show loading before resolving messages,
+    // so sub-pipeline output is visible while it streams.
+    p.setModelOutput("");
+    p.setModelThoughts("");
+    p.setPromptLoading(true);
+
     const messages = await resolveCurrentMessages();
 
     if (messages.length === 0) {
       console.warn("Cannot submit pipeline: no messages resolved");
+      p.setPromptLoading(false);
       return;
     }
 
@@ -483,16 +490,11 @@ function App(): JSXElement {
       }
     }
 
-    // Clear previous output
-    p.setModelOutput("");
-    p.setModelThoughts("");
-
     const useToolLoop = hasEnabledToolbelt(p.messageNodes());
 
     let finalOutput = "";
 
     try {
-      p.setPromptLoading(true);
 
       if (useToolLoop) {
         // Agentic tool-use loop

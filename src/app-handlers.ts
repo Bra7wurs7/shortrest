@@ -444,12 +444,15 @@ export function onClickUploadDirectory(
     const writePromises: Promise<void>[] = [];
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
+      const isBinary = file.type.startsWith("image/") && file.type !== "image/svg+xml";
       writePromises.push(
         new Promise<void>((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = async () => {
             try {
-              const content = reader.result as string;
+              const content = isBinary
+                ? new Blob([reader.result as ArrayBuffer], { type: file.type })
+                : (reader.result as string);
               await writeFileToDirectory(directoryName, {
                 name: file.name,
                 content,
@@ -460,7 +463,11 @@ export function onClickUploadDirectory(
             }
           };
           reader.onerror = () => reject(reader.error);
-          reader.readAsText(file);
+          if (isBinary) {
+            reader.readAsArrayBuffer(file);
+          } else {
+            reader.readAsText(file);
+          }
         }),
       );
     }

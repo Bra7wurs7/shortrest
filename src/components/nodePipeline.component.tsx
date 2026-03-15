@@ -50,6 +50,70 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
   return (
     <div id="PIPELINE_SIDEBAR" class={isRunning() ? "running" : ""}>
       <div id="P_S_TOP">
+        <div id="P_S_ADD_NODE">
+          <div class="add_node_header prompt_header">
+            <div class="left">
+              <i class="spin bx bx-chevron-up" />
+              <span>Add node</span>
+            </div>
+            <div class="right">
+              <i class="bx bx-plus" />
+            </div>
+          </div>
+          <div class="add_node_options">
+            <div class="add_node_options_inner">
+              <button
+                class="add_node_btn"
+                onclick={() => props.onAddNode("system")}
+              >
+                <i class="bx bx-info-circle" />
+                <span>System Message</span>
+              </button>
+              <button
+                class="add_node_btn"
+                onclick={() => props.onAddNode("assistant")}
+              >
+                <i class="bx bx-bot" />
+                <span>Assistant Message</span>
+              </button>
+              <button
+                class="add_node_btn"
+                onclick={() => props.onAddNode("user")}
+              >
+                <i class="bx bxs-user-voice" />
+                <span>User Message</span>
+              </button>
+              <button
+                class="add_node_btn"
+                onclick={() => props.onAddHistoryNode()}
+              >
+                <i class="bx bx-history" />
+                <span>Message History</span>
+              </button>
+              <button
+                class="add_node_btn"
+                onclick={() => props.onAddFilesToolbeltNode()}
+              >
+                <i class="bx bx-folder" />
+                <span>Files Toolbelt</span>
+              </button>
+              <button
+                class="add_node_btn"
+                onclick={() => props.onAddWorkspaceToolbeltNode()}
+              >
+                <i class="bx bx-edit" />
+                <span>Workspace Toolbelt</span>
+              </button>
+              <button
+                class="add_node_btn"
+                onclick={() => props.onAddImageToolbeltNode()}
+              >
+                <i class="bx bx-image-alt" />
+                <span>Image Toolbelt</span>
+              </button>
+            </div>
+          </div>
+        </div>
         <Index each={p().messageNodes()}>
           {(node, index) => (
             <Switch>
@@ -111,65 +175,6 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
           llmModels={props.llmModels}
           onSubmit={props.onSubmit}
         />
-      </div>
-      <div id="P_S_ADD_NODE">
-        <div class="add_node_options">
-          <div class="add_node_options_inner">
-            <button
-              class="add_node_btn"
-              onclick={() => props.onAddNode("system")}
-            >
-              <i class="bx bx-info-circle" />
-              <span>System Message</span>
-            </button>
-            <button
-              class="add_node_btn"
-              onclick={() => props.onAddNode("assistant")}
-            >
-              <i class="bx bx-bot" />
-              <span>Assistant Message</span>
-            </button>
-            <button
-              class="add_node_btn"
-              onclick={() => props.onAddNode("user")}
-            >
-              <i class="bx bxs-user-voice" />
-              <span>User Message</span>
-            </button>
-            <button
-              class="add_node_btn"
-              onclick={() => props.onAddHistoryNode()}
-            >
-              <i class="bx bx-history" />
-              <span>Message History</span>
-            </button>
-            <button
-              class="add_node_btn"
-              onclick={() => props.onAddFilesToolbeltNode()}
-            >
-              <i class="bx bx-folder" />
-              <span>Files Toolbelt</span>
-            </button>
-            <button
-              class="add_node_btn"
-              onclick={() => props.onAddWorkspaceToolbeltNode()}
-            >
-              <i class="bx bx-edit" />
-              <span>Workspace Toolbelt</span>
-            </button>
-            <button
-              class="add_node_btn"
-              onclick={() => props.onAddImageToolbeltNode()}
-            >
-              <i class="bx bx-image-alt" />
-              <span>Image Toolbelt</span>
-            </button>
-          </div>
-        </div>
-        <div class="add_node_header">
-          <i class="bx bx-chevron-up" />
-          <span>Add node</span>
-        </div>
       </div>
     </div>
   );

@@ -43,7 +43,7 @@ export function LlmNode(props: LlmNodeProps): JSXElement {
   return (
     <div
       class={
-        "ai_section pipeline_node ollama_node" +
+        "pipeline_node ollama_node" +
         (p().ollamaNodeCollapsed() ? " collapsed" : "")
       }
     >

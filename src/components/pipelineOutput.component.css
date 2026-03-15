@@ -1,7 +1,6 @@
 #PIPELINE_OUTPUT {
     display: flex;
     flex-direction: column;
-    overflow: hidden;
 
     .pipeline_section_label {
         display: flex;
