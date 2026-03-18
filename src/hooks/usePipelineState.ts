@@ -43,15 +43,7 @@ function createDefaultNodes(): MessageNodeConfig[] {
       collapsed: true,
       disabled: false,
       toolbeltTools: {},
-      toolbeltType: "files",
-      toolbeltImageConfig: {
-        url: "http://127.0.0.1:8188",
-        width: 768,
-        height: 768,
-        steps: 3,
-        forceResolution: false,
-        forceSteps: false,
-      },
+      toolbeltType: "workspace",
     },
     {
       id: generateId(),
@@ -66,15 +58,7 @@ function createDefaultNodes(): MessageNodeConfig[] {
       collapsed: true,
       disabled: false,
       toolbeltTools: {},
-      toolbeltType: "files",
-      toolbeltImageConfig: {
-        url: "http://127.0.0.1:8188",
-        width: 768,
-        height: 768,
-        steps: 7,
-        forceResolution: false,
-        forceSteps: false,
-      },
+      toolbeltType: "workspace",
     },
   ];
 }
@@ -200,16 +184,7 @@ function migrateNode(raw: unknown): MessageNodeConfig {
         { enabled: cfg.enabled ?? false },
       ]),
     ),
-    toolbeltType: node.toolbeltType ?? "files",
-    toolbeltImageConfig: {
-      url: "http://127.0.0.1:8188",
-      width: 768,
-      height: 768,
-      steps: 7,
-      forceResolution: false,
-      forceSteps: false,
-      ...node.toolbeltImageConfig,
-    },
+    toolbeltType: "workspace",
   };
 }
 
@@ -256,9 +231,7 @@ export interface UsePipelineManagerReturn {
   // Node CRUD delegated to active pipeline
   addNode: (role: MessageRole) => void;
   addHistoryNode: () => void;
-  addFilesToolbeltNode: () => void;
   addWorkspaceToolbeltNode: () => void;
-  addImageToolbeltNode: () => void;
   removeNode: (id: string) => void;
   moveNode: (id: string, direction: "up" | "down") => void;
   updateNode: (id: string, updates: Partial<MessageNodeConfig>) => void;
@@ -359,15 +332,7 @@ export function usePipelineManager(): UsePipelineManagerReturn {
       collapsed: false,
       disabled: false,
       toolbeltTools: {},
-      toolbeltType: "files",
-      toolbeltImageConfig: {
-        url: "http://127.0.0.1:8188",
-        width: 768,
-        height: 768,
-        steps: 7,
-        forceResolution: false,
-        forceSteps: false,
-      },
+      toolbeltType: "workspace",
     };
     p.setMessageNodes([...p.messageNodes(), newNode]);
   }
@@ -387,15 +352,7 @@ export function usePipelineManager(): UsePipelineManagerReturn {
       collapsed: false,
       disabled: false,
       toolbeltTools: {},
-      toolbeltType: "files",
-      toolbeltImageConfig: {
-        url: "http://127.0.0.1:8188",
-        width: 768,
-        height: 768,
-        steps: 7,
-        forceResolution: false,
-        forceSteps: false,
-      },
+      toolbeltType: "workspace",
     };
     p.setMessageNodes([...p.messageNodes(), newNode]);
   }
@@ -414,41 +371,7 @@ export function usePipelineManager(): UsePipelineManagerReturn {
     subPipelineParams: [],
     collapsed: false,
     disabled: false,
-    toolbeltImageConfig: {
-      url: "http://127.0.0.1:8188",
-      width: 768,
-      height: 768,
-      steps: 7,
-      forceResolution: false,
-      forceSteps: false,
-    },
   };
-
-  function addFilesToolbeltNode() {
-    const p = activePipeline();
-    p.setMessageNodes([
-      ...p.messageNodes(),
-      {
-        ...DEFAULT_TOOLBELT_NODE_BASE,
-        id: generateId(),
-        toolbeltType: "files",
-        toolbeltTools: {
-          readFile: { enabled: true },
-          listFiles: { enabled: true },
-          searchFiles: { enabled: true },
-          searchContent: { enabled: true },
-          searchByTag: { enabled: true },
-          createFile: { enabled: false },
-          writeFile: { enabled: false },
-          appendToFile: { enabled: false },
-          deleteFile: { enabled: false },
-          renameFile: { enabled: false },
-          listDirectories: { enabled: false },
-          readFileFromDirectory: { enabled: false },
-        },
-      },
-    ]);
-  }
 
   function addWorkspaceToolbeltNode() {
     const p = activePipeline();
@@ -464,22 +387,6 @@ export function usePipelineManager(): UsePipelineManagerReturn {
           overwriteWorkspace: { enabled: false },
           replaceInWorkspace: { enabled: false },
           getWorkspaceInfo: { enabled: false },
-        },
-      },
-    ]);
-  }
-
-  function addImageToolbeltNode() {
-    const p = activePipeline();
-    p.setMessageNodes([
-      ...p.messageNodes(),
-      {
-        ...DEFAULT_TOOLBELT_NODE_BASE,
-        id: generateId(),
-        toolbeltType: "image",
-        toolbeltTools: {
-          generateImage: { enabled: true },
-          generateImg2img: { enabled: false },
         },
       },
     ]);
@@ -533,9 +440,7 @@ export function usePipelineManager(): UsePipelineManagerReturn {
     removePipeline,
     addNode,
     addHistoryNode,
-    addFilesToolbeltNode,
     addWorkspaceToolbeltNode,
-    addImageToolbeltNode,
     removeNode,
     moveNode,
     updateNode,

@@ -22,9 +22,7 @@ export interface NodePipelineProps {
   // Add-node callbacks
   onAddNode: (role: "system" | "assistant" | "user") => void;
   onAddHistoryNode: () => void;
-  onAddFilesToolbeltNode: () => void;
   onAddWorkspaceToolbeltNode: () => void;
-  onAddImageToolbeltNode: () => void;
 
   // LLM connection (shared across pipelines)
   llmUrl: Accessor<string>;
@@ -92,24 +90,10 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
               </button>
               <button
                 class="add_node_btn"
-                onclick={() => props.onAddFilesToolbeltNode()}
-              >
-                <i class="bx bx-folder" />
-                <span>Files Toolbelt</span>
-              </button>
-              <button
-                class="add_node_btn"
                 onclick={() => props.onAddWorkspaceToolbeltNode()}
               >
                 <i class="bx bx-edit" />
                 <span>Workspace Toolbelt</span>
-              </button>
-              <button
-                class="add_node_btn"
-                onclick={() => props.onAddImageToolbeltNode()}
-              >
-                <i class="bx bx-image-alt" />
-                <span>Image Toolbelt</span>
               </button>
             </div>
           </div>

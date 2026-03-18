@@ -507,12 +507,9 @@ function App(): JSXElement {
           resolveMessages: resolveCurrentMessages,
           toolbeltCtx: {
             nodes: p.messageNodes(),
-            clipboard: clipboard(),
-            activeDirectoryName: activeDirectoryName(),
             viewedFileName: viewedFile()?.fileName ?? null,
             viewedFileContent: displayedFileContent(),
             viewedFileModified: viewedFile() === null ? null : viewedFile()!.source === "clipboard",
-            viewedFileBlob: displayedFileBlob(),
             onAppendWorkspace: (appended) => {
               const vf = viewedFile();
               if (!vf || vf.source !== "clipboard") return;
@@ -535,64 +532,7 @@ function App(): JSXElement {
               );
               storeClipboard(clipboard());
             },
-            onCreateClipboardFile: (name, content) => {
-              const existing = clipboard().find((e) => e.name === name);
-              if (existing) {
-                setClipboard((prev) =>
-                  prev.map((e) => (e.name === name ? { ...e, content } : e)),
-                );
-              } else {
-                const entry: ClipboardEntry = {
-                  name,
-                  content,
-                  originalName: name,
-                  originalContent: content,
-                  sourceDirectory: null,
-                };
-                setClipboard((prev) => [...prev, entry]);
-              }
-              storeClipboard(clipboard());
-            },
-            onWriteFile: async (name, content) => {
-              const dirName = activeDirectoryName();
-              if (!dirName) return;
-              await writeFileToDirectory(dirName, { name, content });
-              const names = await listFileNamesInDirectory(dirName);
-              setActiveDirectoryParsedFileNames(names.map((fn) => parseFileName(fn)));
-            },
-            onDeleteFile: async (name) => {
-              const dirName = activeDirectoryName();
-              if (!dirName) return;
-              await removeFileFromDirectory(dirName, name);
-              const names = await listFileNamesInDirectory(dirName);
-              setActiveDirectoryParsedFileNames(names.map((fn) => parseFileName(fn)));
-            },
-            onRenameFile: async (oldName, newName) => {
-              const dirName = activeDirectoryName();
-              if (!dirName) return;
-              const content = await getFileContent(dirName, oldName);
-              if (content === null) return;
-              await writeFileToDirectory(dirName, { name: newName, content });
-              await removeFileFromDirectory(dirName, oldName);
-              const names = await listFileNamesInDirectory(dirName);
-              setActiveDirectoryParsedFileNames(names.map((fn) => parseFileName(fn)));
-            },
-            onImageGenerated: async (filename, blob) => {
-              const dirName = activeDirectoryName();
-              if (!dirName) return;
-              await writeFileToDirectory(dirName, { name: filename, content: blob });
-              const names = await listFileNamesInDirectory(dirName);
-              setActiveDirectoryParsedFileNames(names.map((fn) => parseFileName(fn)));
-              const newViewedFile: ViewedFile = {
-                source: "idb",
-                directoryName: dirName,
-                fileName: filename,
-              };
-              setViewedFile(newViewedFile);
-              storeViewedFile(newViewedFile);
-            },
           },
-          getClipboard: clipboard,
           onStream: (stream) => {
             p.setPromptLoading(false);
             p.setRunningPrompt(stream);
@@ -925,9 +865,7 @@ function App(): JSXElement {
           onMoveNode={pipelineMgr.moveNode}
           onAddNode={pipelineMgr.addNode}
           onAddHistoryNode={pipelineMgr.addHistoryNode}
-          onAddFilesToolbeltNode={pipelineMgr.addFilesToolbeltNode}
           onAddWorkspaceToolbeltNode={pipelineMgr.addWorkspaceToolbeltNode}
-          onAddImageToolbeltNode={pipelineMgr.addImageToolbeltNode}
           llmUrl={llmUrl}
           setLLMUrl={setLLMUrl}
           llmApiKey={llmApiKey}

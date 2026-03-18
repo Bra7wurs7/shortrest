@@ -1,12 +1,13 @@
 {
   "name": "shortrest",
-  "version": "0.4.0",
+  "version": "0.3.1",
   "description": "",
   "type": "module",
   "scripts": {
     "start": "vite",
     "dev": "vite",
     "build": "vite build",
+    "watch": "vite build --watch",
     "build-linux": "vite build --minify && cargo build --target x86_64-unknown-linux-gnu --release",
     "build-windows": "vite build --minify && cargo build --target x86_64-pc-windows-gnu --release",
     "build-apple": "vite build --minify && cargo build --target aarch64-apple-darwin --release",

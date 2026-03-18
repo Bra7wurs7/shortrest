@@ -25,8 +25,6 @@ export interface RunWithToolsOptions {
    * Called after each tool-call turn with a formatted summary of calls + results.
    */
   onToolTurnComplete: (formattedTurn: string) => void;
-  /** Called with the clipboard accessor so tool context always reads current state */
-  getClipboard: () => ToolbeltContext["clipboard"];
 }
 
 /**
@@ -41,7 +39,7 @@ export interface RunWithToolsOptions {
 export async function runWithTools(
   options: RunWithToolsOptions,
 ): Promise<string> {
-  const { provider, model, tools, toolbeltCtx, resolveMessages, onStream, onChunk, onThinkChunk, onToolTurnComplete, getClipboard } = options;
+  const { provider, model, tools, toolbeltCtx, resolveMessages, onStream, onChunk, onThinkChunk, onToolTurnComplete } = options;
 
   // toolExchange accumulates the assistant+tool-result messages from this agentic session.
   // On each follow-up turn, fresh base messages are resolved and this exchange is appended.
@@ -109,11 +107,7 @@ export async function runWithTools(
       break;
     }
 
-    // Execute all tool calls with a fresh clipboard snapshot
-    const ctx: ToolbeltContext = {
-      ...toolbeltCtx,
-      clipboard: getClipboard(),
-    };
+    const ctx: ToolbeltContext = toolbeltCtx;
 
     const resultLines: string[] = [];
     const callSummaryLines: string[] = [];

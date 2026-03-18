@@ -21,8 +21,7 @@ export function createDefaultNode(role: MessageRole): MessageNodeConfig {
     collapsed: false,
     disabled: false,
     toolbeltTools: {},
-    toolbeltType: "files",
-    toolbeltImageConfig: { url: "", width: 512, height: 512, steps: 20, forceResolution: false, forceSteps: false },
+    toolbeltType: "workspace",
   };
 }
 
@@ -49,34 +48,7 @@ export function addHistoryNodeToNodes(
     collapsed: false,
     disabled: false,
     toolbeltTools: {},
-    toolbeltType: "files",
-    toolbeltImageConfig: { url: "", width: 512, height: 512, steps: 20, forceResolution: false, forceSteps: false },
-  };
-  return [...nodes, node];
-}
-
-export function addToolbeltNodeToNodes(
-  nodes: MessageNodeConfig[],
-): MessageNodeConfig[] {
-  const node: MessageNodeConfig = {
-    id: generateId(),
-    role: "system",
-    acquisitionMode: "toolbelt",
-    preparedContent: "",
-    fileName: "",
-    truncateLength: 0,
-    truncateUnit: "all",
-    sourcePipelineId: "",
-    subPipelineParams: [],
-    collapsed: false,
-    disabled: false,
-    toolbeltTools: {
-      readFile: { enabled: true },
-      listFiles: { enabled: true },
-      write: { enabled: true },
-    },
-    toolbeltType: "files",
-    toolbeltImageConfig: { url: "", width: 512, height: 512, steps: 20, forceResolution: false, forceSteps: false },
+    toolbeltType: "workspace",
   };
   return [...nodes, node];
 }

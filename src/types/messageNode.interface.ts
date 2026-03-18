@@ -43,7 +43,5 @@ export interface MessageNodeConfig {
   /** For "toolbelt" mode: per-tool configuration keyed by tool name */
   toolbeltTools: Record<string, ToolbeltToolConfig>;
   /** For "toolbelt" mode: which category of tools this node provides */
-  toolbeltType: "files" | "workspace" | "image";
-  /** For "toolbelt" + toolbeltType === "image": image generation settings */
-  toolbeltImageConfig: { url: string; width: number; height: number; steps: number; forceResolution: boolean; forceSteps: boolean };
+  toolbeltType: "workspace";
 }
