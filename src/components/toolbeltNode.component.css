@@ -1,9 +1,9 @@
 /* ── Type-specific accent propagation ────────────────────────────────────── */
 
-.toolbelt_files     { --tb-accent: var(--green);  --tb-accent-dim: var(--green-dim);  }
-.toolbelt_workspace { --tb-accent: var(--aqua);   --tb-accent-dim: var(--aqua-dim);   }
-.toolbelt_image     { --tb-accent: var(--purple); --tb-accent-dim: var(--purple-dim); }
-
+.toolbelt_workspace {
+    --tb-accent: var(--aqua);
+    --tb-accent-dim: var(--aqua-dim);
+}
 
 /* Type icon in header */
 .toolbelt_type_icon {
@@ -35,7 +35,11 @@
 
     &.enabled {
         border-left-color: var(--tb-accent);
-        background-color: color-mix(in srgb, var(--tb-accent-dim) 10%, transparent);
+        background-color: color-mix(
+            in srgb,
+            var(--tb-accent-dim) 10%,
+            transparent
+        );
     }
 }
 
@@ -105,8 +109,13 @@
             padding: var(--size_padding);
             font-size: 0.82em;
 
-            &:hover { border-color: var(--color_border_light); }
-            &:focus { outline: none; border-color: var(--color_foreground); }
+            &:hover {
+                border-color: var(--color_border_light);
+            }
+            &:focus {
+                outline: none;
+                border-color: var(--color_foreground);
+            }
         }
     }
 
@@ -164,9 +173,19 @@
 
     /* Hide spinners */
     &::-webkit-outer-spin-button,
-    &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    &[type="number"] { -moz-appearance: textfield; }
+    &::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    &[type="number"] {
+        -moz-appearance: textfield;
+    }
 
-    &:hover { border-color: var(--color_border_light); }
-    &:focus { outline: none; border-color: var(--color_foreground); }
+    &:hover {
+        border-color: var(--color_border_light);
+    }
+    &:focus {
+        outline: none;
+        border-color: var(--color_foreground);
+    }
 }

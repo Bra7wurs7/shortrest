@@ -159,7 +159,7 @@
     justify-content: space-between;
     align-items: center;
     padding: var(--size_padding);
-    border: var(--size_border) var(--style_border) var(--color_border);
+    border: var(--size_border) var(--style_border) transparent;
     color: var(--color_border_light);
     height: var(--size_toolbar_width);
     background-color: var(--color_background);
@@ -198,8 +198,8 @@
         color: var(--color_foreground_soft);
         border-color: var(--color_border_light);
     }
-    &:first-of-type {
-        border-top-left-radius: var(--size_toolbar_width_half);
+    &:last-of-type {
+        border-bottom-left-radius: var(--size_toolbar_width_half);
     }
 }
 

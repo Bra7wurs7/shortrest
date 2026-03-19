@@ -93,7 +93,7 @@ export function NodePipeline(props: NodePipelineProps): JSXElement {
                 onclick={() => props.onAddWorkspaceToolbeltNode()}
               >
                 <i class="bx bx-edit" />
-                <span>Workspace Toolbelt</span>
+                <span>Miniagent Toolbelt</span>
               </button>
             </div>
           </div>

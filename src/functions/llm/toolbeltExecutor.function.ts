@@ -51,7 +51,8 @@ export async function executeTool(
 
     case "appendWorkspace": {
       const text = String(call.args.content ?? "");
-      if (!ctx.viewedFileName) return "[appendWorkspace: no file is currently viewed]";
+      if (!ctx.viewedFileName)
+        return "[appendWorkspace: no file is currently viewed]";
       if (!ctx.viewedFileModified)
         return "[appendWorkspace: file is saved — open it for editing first by clicking it in the file list]";
       ctx.onAppendWorkspace(text);
@@ -60,7 +61,8 @@ export async function executeTool(
 
     case "overwriteWorkspace": {
       const content = String(call.args.content ?? "");
-      if (!ctx.viewedFileName) return "[overwriteWorkspace: no file is currently viewed]";
+      if (!ctx.viewedFileName)
+        return "[overwriteWorkspace: no file is currently viewed]";
       if (!ctx.viewedFileModified)
         return "[overwriteWorkspace: file is saved — open it for editing first by clicking it in the file list]";
       ctx.onOverwriteWorkspace(content);
@@ -71,7 +73,8 @@ export async function executeTool(
       const search = String(call.args.search ?? "");
       const replace = String(call.args.replace ?? "");
       if (!search) return "[replaceInWorkspace: no search string provided]";
-      if (!ctx.viewedFileName) return "[replaceInWorkspace: no file is currently viewed]";
+      if (!ctx.viewedFileName)
+        return "[replaceInWorkspace: no file is currently viewed]";
       if (!ctx.viewedFileModified)
         return "[replaceInWorkspace: file is saved — open it for editing first by clicking it in the file list]";
       if (ctx.viewedFileContent === null)
@@ -82,29 +85,6 @@ export async function executeTool(
       const newContent = ctx.viewedFileContent.split(search).join(replace);
       ctx.onOverwriteWorkspace(newContent);
       return `[replaceInWorkspace: replaced ${count} occurrence${count !== 1 ? "s" : ""} in "${ctx.viewedFileName}"]`;
-    }
-
-    case "getWorkspaceInfo": {
-      if (!ctx.viewedFileName) return "[getWorkspaceInfo: no file is currently viewed]";
-      const content = ctx.viewedFileContent ?? "";
-      const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
-      const charCount = content.length;
-      const parsed = parseFileName(ctx.viewedFileName);
-      const tagsStr = parsed.tags.length > 0 ? parsed.tags.join(", ") : "none";
-      const statusStr =
-        ctx.viewedFileModified === null
-          ? "no file"
-          : ctx.viewedFileModified
-            ? "modified (unsaved)"
-            : "saved";
-      return [
-        `filename: ${ctx.viewedFileName}`,
-        `tags: ${tagsStr}`,
-        `extension: ${parsed.ext || "none"}`,
-        `status: ${statusStr}`,
-        `words: ${wordCount}`,
-        `characters: ${charCount}`,
-      ].join("\n");
     }
 
     default:
@@ -123,7 +103,9 @@ export function hasEnabledToolbelt(nodes: MessageNodeConfig[]): boolean {
 }
 
 /** Build native tool definitions for the LLM API from the enabled toolbelt tools */
-export function buildNativeToolDefinitions(nodes: MessageNodeConfig[]): NativeTool[] {
+export function buildNativeToolDefinitions(
+  nodes: MessageNodeConfig[],
+): NativeTool[] {
   const enabled = enabledTools(nodes);
   const tools: NativeTool[] = [];
 
@@ -132,7 +114,8 @@ export function buildNativeToolDefinitions(nodes: MessageNodeConfig[]): NativeTo
       type: "function",
       function: {
         name: "readWorkspace",
-        description: "Returns the full content of the currently viewed (active) file.",
+        description:
+          "Returns the full content of the currently viewed (active) file.",
         parameters: { type: "object", properties: {} },
       },
     });
@@ -166,7 +149,10 @@ export function buildNativeToolDefinitions(nodes: MessageNodeConfig[]): NativeTo
         parameters: {
           type: "object",
           properties: {
-            content: { type: "string", description: "The new full content for the file." },
+            content: {
+              type: "string",
+              description: "The new full content for the file.",
+            },
           },
           required: ["content"],
         },
@@ -184,23 +170,17 @@ export function buildNativeToolDefinitions(nodes: MessageNodeConfig[]): NativeTo
         parameters: {
           type: "object",
           properties: {
-            search: { type: "string", description: "The exact string to find." },
-            replace: { type: "string", description: "The string to replace it with." },
+            search: {
+              type: "string",
+              description: "The exact string to find.",
+            },
+            replace: {
+              type: "string",
+              description: "The string to replace it with.",
+            },
           },
           required: ["search", "replace"],
         },
-      },
-    });
-  }
-
-  if (enabled.has("getWorkspaceInfo")) {
-    tools.push({
-      type: "function",
-      function: {
-        name: "getWorkspaceInfo",
-        description:
-          "Returns metadata about the currently viewed file: name, tags, extension, save status, word count, and character count.",
-        parameters: { type: "object", properties: {} },
       },
     });
   }

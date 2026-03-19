@@ -43,5 +43,5 @@ export interface MessageNodeConfig {
   /** For "toolbelt" mode: per-tool configuration keyed by tool name */
   toolbeltTools: Record<string, ToolbeltToolConfig>;
   /** For "toolbelt" mode: which category of tools this node provides */
-  toolbeltType: "workspace";
+  toolbeltType: "miniagent";
 }

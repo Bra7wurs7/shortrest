@@ -43,7 +43,7 @@ function createDefaultNodes(): MessageNodeConfig[] {
       collapsed: true,
       disabled: false,
       toolbeltTools: {},
-      toolbeltType: "workspace",
+      toolbeltType: "miniagent",
     },
     {
       id: generateId(),
@@ -58,7 +58,7 @@ function createDefaultNodes(): MessageNodeConfig[] {
       collapsed: true,
       disabled: false,
       toolbeltTools: {},
-      toolbeltType: "workspace",
+      toolbeltType: "miniagent",
     },
   ];
 }
@@ -184,7 +184,7 @@ function migrateNode(raw: unknown): MessageNodeConfig {
         { enabled: cfg.enabled ?? false },
       ]),
     ),
-    toolbeltType: "workspace",
+    toolbeltType: "miniagent",
   };
 }
 
@@ -332,7 +332,7 @@ export function usePipelineManager(): UsePipelineManagerReturn {
       collapsed: false,
       disabled: false,
       toolbeltTools: {},
-      toolbeltType: "workspace",
+      toolbeltType: "miniagent",
     };
     p.setMessageNodes([...p.messageNodes(), newNode]);
   }
@@ -352,7 +352,7 @@ export function usePipelineManager(): UsePipelineManagerReturn {
       collapsed: false,
       disabled: false,
       toolbeltTools: {},
-      toolbeltType: "workspace",
+      toolbeltType: "miniagent",
     };
     p.setMessageNodes([...p.messageNodes(), newNode]);
   }
@@ -380,13 +380,12 @@ export function usePipelineManager(): UsePipelineManagerReturn {
       {
         ...DEFAULT_TOOLBELT_NODE_BASE,
         id: generateId(),
-        toolbeltType: "workspace",
+        toolbeltType: "miniagent",
         toolbeltTools: {
           readWorkspace: { enabled: true },
           appendWorkspace: { enabled: false },
           overwriteWorkspace: { enabled: false },
           replaceInWorkspace: { enabled: false },
-          getWorkspaceInfo: { enabled: false },
         },
       },
     ]);

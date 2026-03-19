@@ -21,7 +21,7 @@ export function createDefaultNode(role: MessageRole): MessageNodeConfig {
     collapsed: false,
     disabled: false,
     toolbeltTools: {},
-    toolbeltType: "workspace",
+    toolbeltType: "miniagent",
   };
 }
 
@@ -48,7 +48,7 @@ export function addHistoryNodeToNodes(
     collapsed: false,
     disabled: false,
     toolbeltTools: {},
-    toolbeltType: "workspace",
+    toolbeltType: "miniagent",
   };
   return [...nodes, node];
 }

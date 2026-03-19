@@ -1,10 +1,13 @@
 import "./toolbeltNode.component.css";
 import { Accessor, For, JSXElement, Show } from "solid-js";
-import { MessageNodeConfig, ToolbeltToolConfig } from "../types/messageNode.interface";
+import {
+  MessageNodeConfig,
+  ToolbeltToolConfig,
+} from "../types/messageNode.interface";
 
 type ToolDef = { name: string; label: string; description: string };
 
-const WORKSPACE_TOOLS: ToolDef[] = [
+const MINIAGENT_TOOLS: ToolDef[] = [
   {
     name: "readWorkspace",
     label: "readWorkspace",
@@ -28,12 +31,6 @@ const WORKSPACE_TOOLS: ToolDef[] = [
     description:
       "Find and replace all occurrences of a string in the currently viewed file. Token-efficient for targeted edits.",
   },
-  {
-    name: "getWorkspaceInfo",
-    label: "getWorkspaceInfo",
-    description:
-      "Get metadata about the currently viewed file: name, tags, extension, save status, word count, character count.",
-  },
 ];
 
 export interface ToolbeltNodeProps {
@@ -54,11 +51,15 @@ export function ToolbeltNode(props: ToolbeltNodeProps): JSXElement {
 
   function setToolConfig(name: string, updates: Partial<ToolbeltToolConfig>) {
     props.onUpdate(node().id, {
-      toolbeltTools: { ...node().toolbeltTools, [name]: { ...getToolConfig(name), ...updates } },
+      toolbeltTools: {
+        ...node().toolbeltTools,
+        [name]: { ...getToolConfig(name), ...updates },
+      },
     });
   }
 
-  const enabledCount = () => WORKSPACE_TOOLS.filter((t) => getToolConfig(t.name).enabled).length;
+  const enabledCount = () =>
+    MINIAGENT_TOOLS.filter((t) => getToolConfig(t.name).enabled).length;
 
   return (
     <div
@@ -70,33 +71,55 @@ export function ToolbeltNode(props: ToolbeltNodeProps): JSXElement {
     >
       <div
         class="prompt_header"
-        onclick={() => props.onUpdate(node().id, { collapsed: !node().collapsed })}
+        onclick={() =>
+          props.onUpdate(node().id, { collapsed: !node().collapsed })
+        }
       >
         <div class="left">
-          <i class={"bx " + (node().collapsed ? "bx-chevron-right" : "bx-chevron-down")} />
+          <i
+            class={
+              "bx " +
+              (node().collapsed ? "bx-chevron-right" : "bx-chevron-down")
+            }
+          />
           <i class="bx toolbelt_type_icon bx-edit" />
           <span>
-            Workspace
-            <Show when={enabledCount() > 0}>{" "}· {enabledCount()}</Show>
+            Miniagent
+            <Show when={enabledCount() > 0}> · {enabledCount()}</Show>
           </span>
         </div>
-        <div class="right node_header_actions" onclick={(e) => e.stopPropagation()}>
+        <div
+          class="right node_header_actions"
+          onclick={(e) => e.stopPropagation()}
+        >
           <i
             class={"bx bx-chevron-up" + (props.index === 0 ? " dim" : "")}
             onclick={() => props.onMove(node().id, "up")}
             title="Move up"
           />
           <i
-            class={"bx bx-chevron-down" + (props.index === props.totalNodes - 1 ? " dim" : "")}
+            class={
+              "bx bx-chevron-down" +
+              (props.index === props.totalNodes - 1 ? " dim" : "")
+            }
             onclick={() => props.onMove(node().id, "down")}
             title="Move down"
           />
-          <i class="bx bx-x" onclick={() => props.onRemove(node().id)} title="Remove node" />
+          <i
+            class="bx bx-x"
+            onclick={() => props.onRemove(node().id)}
+            title="Remove node"
+          />
           <div
             class="toggle"
-            onclick={() => props.onUpdate(node().id, { disabled: !node().disabled })}
+            onclick={() =>
+              props.onUpdate(node().id, { disabled: !node().disabled })
+            }
           >
-            <Show when={node().disabled} fallback={<i class="bx bx-check-square" />}>
+            <Show
+              when={node().disabled}
+              fallback={<i class="bx bx-check-square" />}
+            >
               <i class="bx bx-square" />
             </Show>
           </div>
@@ -105,17 +128,28 @@ export function ToolbeltNode(props: ToolbeltNodeProps): JSXElement {
 
       <Show when={!node().collapsed}>
         <div class="prompt_body toolbelt_body">
-          <For each={WORKSPACE_TOOLS}>
+          <For each={MINIAGENT_TOOLS}>
             {(tool) => {
               const cfg = () => getToolConfig(tool.name);
               return (
-                <div class={"toolbelt_tool_card" + (cfg().enabled ? " enabled" : "")}>
+                <div
+                  class={
+                    "toolbelt_tool_card" + (cfg().enabled ? " enabled" : "")
+                  }
+                >
                   <div class="toolbelt_tool_header">
-                    <label class="toolbelt_enable_label" onclick={(e) => e.stopPropagation()}>
+                    <label
+                      class="toolbelt_enable_label"
+                      onclick={(e) => e.stopPropagation()}
+                    >
                       <input
                         type="checkbox"
                         checked={cfg().enabled}
-                        onchange={(e) => setToolConfig(tool.name, { enabled: e.currentTarget.checked })}
+                        onchange={(e) =>
+                          setToolConfig(tool.name, {
+                            enabled: e.currentTarget.checked,
+                          })
+                        }
                       />
                       <span class="toolbelt_tool_name">{tool.label}</span>
                     </label>
