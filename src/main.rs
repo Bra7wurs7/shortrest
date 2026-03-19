@@ -174,9 +174,17 @@ fn main() {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
             use ksni::TrayMethods as _;
-            let _handle: ksni::Handle<ShortRestTray> =
-                tray.spawn().await.expect("Failed to spawn tray service");
-            std::future::pending::<()>().await
+            match tray.spawn().await {
+                Ok(_handle) => {
+                    println!("   Tray icon active. Use it to quit or open in browser.");
+                    std::future::pending::<()>().await
+                }
+                Err(e) => {
+                    eprintln!("Tray icon unavailable ({}). Running without tray.", e);
+                    eprintln!("   Press Ctrl+C to stop the server.");
+                    std::future::pending::<()>().await
+                }
+            }
         });
     }
 
