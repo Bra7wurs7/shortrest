@@ -6,11 +6,14 @@ export interface RunSubPipelineOptions {
   messages: LLMMessage[];
   /** Called immediately after the stream is opened, before any tokens are consumed. */
   onStream?: (stream: LLMAbortableStream) => void;
+  /** Called with each content chunk as it arrives, enabling incremental display. */
+  onChunk?: (text: string) => void;
 }
 
 /**
- * Executes a sub-pipeline by sending messages to the LLM provider and accumulating the
- * full response. Non-streaming — the complete output is returned as a string.
+ * Executes a sub-pipeline by sending messages to the LLM provider and streaming the
+ * response. The complete output is returned as a string; if onChunk is provided, each
+ * content token is also emitted incrementally for live display.
  * Thinking tokens are discarded; only content is returned.
  * Falls back to non-thinking mode if the model does not support it.
  * The onStream callback receives the live stream so the caller can abort it.
@@ -18,7 +21,7 @@ export interface RunSubPipelineOptions {
 export async function runSubPipeline(
   options: RunSubPipelineOptions,
 ): Promise<string> {
-  const { provider, model, messages, onStream } = options;
+  const { provider, model, messages, onStream, onChunk } = options;
 
   async function attemptRun(withThink: boolean): Promise<string> {
     const stream = await provider.chat({
@@ -36,6 +39,7 @@ export async function runSubPipeline(
     for await (const chunk of stream) {
       if (chunk.content) {
         output += chunk.content;
+        onChunk?.(chunk.content);
       }
     }
     return output;

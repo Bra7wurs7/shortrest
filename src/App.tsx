@@ -423,6 +423,10 @@ function App(): JSXElement {
     // A fresh cache is created per call so that within a single resolution pass
     // multiple nodes referencing the same sub-pipeline share one LLM request,
     // while separate agentic iterations each start clean.
+    // Per-sub-pipeline RAF accumulators for incremental modelOutput updates.
+    // Created when a sub-pipeline stream opens, drained when it finishes.
+    const subPipelineAccumulators = new Map<string, ReturnType<typeof createRafAccumulator>>();
+
     const resolveCurrentMessages = () => {
       const subPipelineCache = new Map<string, Promise<string>>();
       return resolveNodeMessages({
@@ -454,11 +458,26 @@ function App(): JSXElement {
             // Stream has opened: transition from loading → running
             target.setPromptLoading(false);
             target.setRunningPrompt(streamOrOutput as LLMAbortableStream);
+            // Create a RAF accumulator for incremental modelOutput updates
+            subPipelineAccumulators.set(
+              pipelineId,
+              createRafAccumulator(target.setModelOutput),
+            );
           } else {
             target.setPromptLoading(false);
             target.setRunningPrompt(null);
+            // Drain any remaining buffered chunks before setting final output
+            const acc = subPipelineAccumulators.get(pipelineId);
+            if (acc) {
+              acc.cancel();
+              subPipelineAccumulators.delete(pipelineId);
+            }
             target.setModelOutput(streamOrOutput as string);
           }
+        },
+        onSubPipelineChunk: (pipelineId, text) => {
+          const acc = subPipelineAccumulators.get(pipelineId);
+          if (acc) acc(text);
         },
       });
     };

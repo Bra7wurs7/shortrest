@@ -52,6 +52,11 @@ export interface ResolveNodeMessagesOptions {
     running: boolean,
     streamOrOutput: LLMAbortableStream | string,
   ) => void;
+  /**
+   * Called with each content chunk from a sub-pipeline as it streams,
+   * enabling incremental display of sub-pipeline output.
+   */
+  onSubPipelineChunk?: (pipelineId: string, text: string) => void;
 }
 
 /**
@@ -181,6 +186,7 @@ async function _runSubPipeline(
     _subPipelineCache: options._subPipelineCache,
     onSubPipelineLoading: options.onSubPipelineLoading,
     onSubPipelineStateChange: options.onSubPipelineStateChange,
+    onSubPipelineChunk: options.onSubPipelineChunk,
   });
 
   if (subMessages.length === 0) {
@@ -201,6 +207,9 @@ async function _runSubPipeline(
       messages: subMessages,
       onStream: (stream) => {
         options.onSubPipelineStateChange?.(subPipeline.id, true, stream);
+      },
+      onChunk: (text) => {
+        options.onSubPipelineChunk?.(subPipeline.id, text);
       },
     });
     options.onSubPipelineStateChange?.(subPipeline.id, false, content);
