@@ -182,7 +182,6 @@ export function LlmNode(props: LlmNodeProps): JSXElement {
             }
           >
             <select
-              class="model_select"
               onchange={(e) => {
                 const model = props
                   .llmModels()

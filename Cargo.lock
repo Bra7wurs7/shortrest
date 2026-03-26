@@ -1826,6 +1826,37 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
+name = "libadwaita"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc0da4e27b20d3e71f830e5b0f0188d22c257986bf421c02cfde777fe07932a4"
+dependencies = [
+ "gdk4",
+ "gio 0.22.2",
+ "glib 0.22.3",
+ "gtk4",
+ "libadwaita-sys",
+ "libc",
+ "pango 0.22.0",
+]
+
+[[package]]
+name = "libadwaita-sys"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aaee067051c5d3c058d050d167688b80b67de1950cfca77730549aa761fc5d7d"
+dependencies = [
+ "gdk4-sys",
+ "gio-sys 0.22.0",
+ "glib-sys 0.22.3",
+ "gobject-sys 0.22.0",
+ "gtk4-sys",
+ "libc",
+ "pango-sys 0.22.0",
+ "system-deps 7.0.7",
+]
+
+[[package]]
 name = "libappindicator"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3130,9 +3161,9 @@ name = "shortrest"
 version = "0.3.1"
 dependencies = [
  "axum",
- "gtk4",
  "image",
  "ksni",
+ "libadwaita",
  "mime_guess",
  "muda",
  "rust-embed",

@@ -124,6 +124,30 @@
     background-color: var(--light_h);
 }
 
+select {
+    appearance: none;
+    background-color: var(--color_background);
+    color: var(--color_foreground);
+    border: var(--size_border) var(--style_border) var(--color_border);
+    padding: var(--size_padding) 22px var(--size_padding) 6px;
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+    background-size: 10px 6px;
+    cursor: pointer;
+    font-family: var(--sans);
+    font-size: inherit;
+    transition: var(--transition_border_color);
+    border-radius: 0;
+
+    &:hover {
+        border-color: var(--color_border_light);
+    }
+    &:focus {
+        outline: none;
+        border-color: var(--color_foreground);
+    }
+}
+
 .bx-spin {
     display: block;
 }

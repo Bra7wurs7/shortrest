@@ -248,21 +248,6 @@
             border-color: var(--color_foreground);
         }
     }
-    select {
-        background-color: var(--color_background);
-        color: var(--color_foreground);
-        border-width: var(--size_border);
-        border-color: var(--color_border);
-        flex: 1;
-        min-width: 0;
-        &:hover {
-            border-color: var(--color_border_light);
-        }
-        &:focus {
-            outline: none;
-            border-color: var(--color_foreground);
-        }
-    }
     button {
         transition: var(--transition_background_color);
         background-color: var(--color_background_soft);

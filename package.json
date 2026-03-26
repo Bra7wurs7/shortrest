@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "watch": "vite build --watch",
-    "build-linux": "vite build --minify && cargo build --target x86_64-unknown-linux-gnu --release",
+    "build-linux": "vite build --minify && cargo build --target x86_64-unknown-linux-gnu --release --features desktop",
     "build-windows": "vite build --minify && cargo build --target x86_64-pc-windows-gnu --release",
     "build-apple": "vite build --minify && cargo build --target aarch64-apple-darwin --release",
     "clean": "rm -rf ./dist",

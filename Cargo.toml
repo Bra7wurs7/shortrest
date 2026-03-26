@@ -13,12 +13,12 @@ image = { version = "0.25", default-features = false, features = ["png"] }
 
 [features]
 default = []
-desktop = ["dep:gtk4", "dep:webkit6"]
+desktop = ["dep:webkit6", "dep:adw"]
 
 [target.'cfg(target_os = "linux")'.dependencies]
 ksni = "0.3"
-gtk4 = { version = "0.11", optional = true }
 webkit6 = { version = "0.6", optional = true }
+adw = { package = "libadwaita", version = "0.9", optional = true }
 
 
 [target.'cfg(not(target_os = "linux"))'.dependencies]

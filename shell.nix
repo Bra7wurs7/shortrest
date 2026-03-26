@@ -7,6 +7,7 @@ pkgs.mkShell {
 
   buildInputs = with pkgs; [
     gtk4
+    libadwaita
     webkitgtk_6_0
     libsoup_3
     dbus

@@ -197,16 +197,22 @@ fn main() {
     // Linux desktop window via GTK4 + WebKitGTK 6.
     #[cfg(all(target_os = "linux", feature = "desktop"))]
     {
-        use gtk4::prelude::*;
+        use adw::gtk::prelude::*;
+        use adw::prelude::*;
         use webkit6::prelude::*;
 
-        let app = gtk4::Application::builder()
+        let app = adw::Application::builder()
             .application_id("io.shortrest.app")
             .build();
 
         let server_url_gtk = server_url.clone();
         app.connect_activate(move |app| {
-            let window = gtk4::ApplicationWindow::builder()
+            // Force dark color scheme so WebKitGTK renders native form controls
+            // (e.g. <select> dropdowns) with dark styling to match the web UI.
+            adw::StyleManager::default()
+                .set_color_scheme(adw::ColorScheme::ForceDark);
+
+            let window = adw::gtk::ApplicationWindow::builder()
                 .application(app)
                 .title("ShortRest")
                 .default_width(1280)
