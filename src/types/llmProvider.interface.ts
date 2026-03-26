@@ -10,6 +10,10 @@ export interface NativeToolProperty {
   enum?: unknown[];
   /** For array types: describes the element type */
   items?: NativeToolProperty;
+  /** For object types: nested property definitions */
+  properties?: Record<string, NativeToolProperty>;
+  /** For object types: required property names */
+  required?: string[];
 }
 
 /** Native tool definition passed to the LLM API */

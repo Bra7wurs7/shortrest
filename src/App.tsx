@@ -53,6 +53,9 @@ import { getModesForExt } from "./constants/appModes";
 import { LeftSidebar } from "./components/leftSidebar.component";
 import { LeftToolbar } from "./components/leftToolbar.component";
 import { CenterPanel } from "./components/centerPanel.component";
+import { RPGSimSidebar } from "./components/rpgsimSidebar.component";
+import { useRPGSimState } from "./hooks/useRPGSimState";
+import { runRPGSimRound } from "./functions/rpgsim/rpgsimOrchestrator.function";
 
 /**
  * Returns a flush function that accumulates string chunks and applies them
@@ -170,6 +173,18 @@ function App(): JSXElement {
 
   // Pipeline manager (multiple pipelines)
   const pipelineMgr = usePipelineManager();
+
+  // Right sidebar mode: "pipeline" or "rpgsim"
+  type RightSidebarMode = "pipeline" | "rpgsim";
+  const [rightSidebarMode, setRightSidebarMode] = createSignal<RightSidebarMode>(
+    (localStorage.getItem("rightSidebarMode") as RightSidebarMode) || "pipeline",
+  );
+  createEffect(() => {
+    localStorage.setItem("rightSidebarMode", rightSidebarMode());
+  });
+
+  // RPGSim state
+  const rpgSim = useRPGSimState();
 
   // Resolve each pipeline's model when the model list loads or when pipelines change
   createEffect(() => {
@@ -639,6 +654,86 @@ function App(): JSXElement {
     }
   }
 
+  // ============================================
+  // RPGSim round handler
+  // ============================================
+  async function handleRPGSimRound() {
+    const provider = llmProvider();
+    // Use the active pipeline's model for the RPGSim agents
+    const model = pipelineMgr.activePipeline().model();
+    if (!provider || !model) {
+      console.warn("Cannot run RPGSim round: missing provider or model");
+      return;
+    }
+
+    const st = rpgSim.state();
+    if (st.running || st.scene.characters.length === 0) return;
+
+    rpgSim.setRunning(true);
+    rpgSim.setPhase("characters");
+
+    // Pass full recent content — the orchestrator handles trimming to sentence boundaries
+    const recentStory = displayedFileContent();
+
+    try {
+      await runRPGSimRound({
+        provider,
+        model,
+        scene: st.scene,
+        round: st.round,
+        recentStory,
+        onCharacterStart: (characterId) => {
+          rpgSim.setActiveCharacterId(characterId);
+        },
+        onCharacterEnd: (result) => {
+          rpgSim.applyCharacterTurnResult(result);
+        },
+        onGMStart: () => {
+          rpgSim.setPhase("gm");
+          rpgSim.setActiveCharacterId(null);
+        },
+        onGMChunk: (text) => {
+          // Append to the currently viewed file (like appendWorkspace)
+          const vf = viewedFile();
+          if (vf?.source === "clipboard") {
+            setClipboard((prev) =>
+              prev.map((e) =>
+                e.name === vf.fileName
+                  ? { ...e, content: e.content + text }
+                  : e,
+              ),
+            );
+          }
+        },
+        onGMEnd: () => {
+          storeClipboard(clipboard());
+          rpgSim.incrementRound();
+          rpgSim.setPhase("idle");
+          rpgSim.setRunning(false);
+          rpgSim.setActiveCharacterId(null);
+        },
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("RPGSim round error:", error);
+      rpgSim.setPhase("idle");
+      rpgSim.setRunning(false);
+      rpgSim.setActiveCharacterId(null);
+      // Append error to viewed file
+      const vf = viewedFile();
+      if (vf?.source === "clipboard") {
+        setClipboard((prev) =>
+          prev.map((e) =>
+            e.name === vf.fileName
+              ? { ...e, content: e.content + `\n\n*RPGSim Error: ${message}*` }
+              : e,
+          ),
+        );
+        storeClipboard(clipboard());
+      }
+    }
+  }
+
   function handleCentralInputKeyDown(
     e: KeyboardEvent & { currentTarget: HTMLInputElement },
   ) {
@@ -877,87 +972,114 @@ function App(): JSXElement {
         }}
       />
       <div id="RIGHT_SIDE">
-        <NodePipeline
-          pipeline={pipelineMgr.activePipeline}
-          onUpdateNode={pipelineMgr.updateNode}
-          onRemoveNode={pipelineMgr.removeNode}
-          onMoveNode={pipelineMgr.moveNode}
-          onAddNode={pipelineMgr.addNode}
-          onAddHistoryNode={pipelineMgr.addHistoryNode}
-          onAddWorkspaceToolbeltNode={pipelineMgr.addWorkspaceToolbeltNode}
-          llmUrl={llmUrl}
-          setLLMUrl={setLLMUrl}
-          llmApiKey={llmApiKey}
-          setLLMApiKey={setLLMApiKey}
-          llmProviderType={llmProviderType}
-          llmModels={llmModels}
-          onSubmit={handlePipelineSubmit}
-          clipboard={clipboard}
-          activeDirectoryParsedFileNames={activeDirectoryParsedFileNames}
-          pipelines={pipelineMgr.pipelines}
-        />
+        {rightSidebarMode() === "pipeline" ? (
+          <NodePipeline
+            pipeline={pipelineMgr.activePipeline}
+            onUpdateNode={pipelineMgr.updateNode}
+            onRemoveNode={pipelineMgr.removeNode}
+            onMoveNode={pipelineMgr.moveNode}
+            onAddNode={pipelineMgr.addNode}
+            onAddHistoryNode={pipelineMgr.addHistoryNode}
+            onAddWorkspaceToolbeltNode={pipelineMgr.addWorkspaceToolbeltNode}
+            llmUrl={llmUrl}
+            setLLMUrl={setLLMUrl}
+            llmApiKey={llmApiKey}
+            setLLMApiKey={setLLMApiKey}
+            llmProviderType={llmProviderType}
+            llmModels={llmModels}
+            onSubmit={handlePipelineSubmit}
+            clipboard={clipboard}
+            activeDirectoryParsedFileNames={activeDirectoryParsedFileNames}
+            pipelines={pipelineMgr.pipelines}
+          />
+        ) : (
+          <RPGSimSidebar
+            rpgSim={rpgSim}
+            onNextRound={() => handleRPGSimRound()}
+          />
+        )}
         <div id="RIGHT_TOOLBAR">
-          <For each={pipelineMgr.pipelines()}>
-            {(p, index) => (
-              <button
-                class={(() => {
-                  const ownLoading = p.promptLoading() && p.runningPrompt() === null;
-                  const subLoading = !ownLoading && p.messageNodes().some((n) => {
-                    if (n.acquisitionMode !== "sub-pipeline" || n.disabled) return false;
-                    const sub = pipelineMgr.pipelines().find((q) => q.id === n.sourcePipelineId);
-                    return sub ? (sub.promptLoading() && sub.runningPrompt() === null) : false;
-                  });
-                  return (
-                    "button_icon pipeline_btn" +
-                    (pipelineMgr.activePipelineId() === p.id ? " active" : "") +
-                    (ownLoading || subLoading ? " loading" : "") +
-                    (p.runningPrompt() !== null ? " running" : "") +
-                    (p.subPipelineRunning() ? " sub_running" : "") +
-                    (pendingRemovePipelineId() === p.id ? " red" : "")
-                  );
-                })()}
-                onclick={() => {
-                  if (pendingRemovePipelineId() === p.id) {
-                    if (pipelineMgr.pipelines().length > 1) {
-                      pipelineMgr.removePipeline(p.id);
+          {rightSidebarMode() === "pipeline" ? (
+            <>
+              <For each={pipelineMgr.pipelines()}>
+                {(p, index) => (
+                  <button
+                    class={(() => {
+                      const ownLoading = p.promptLoading() && p.runningPrompt() === null;
+                      const subLoading = !ownLoading && p.messageNodes().some((n) => {
+                        if (n.acquisitionMode !== "sub-pipeline" || n.disabled) return false;
+                        const sub = pipelineMgr.pipelines().find((q) => q.id === n.sourcePipelineId);
+                        return sub ? (sub.promptLoading() && sub.runningPrompt() === null) : false;
+                      });
+                      return (
+                        "button_icon pipeline_btn" +
+                        (pipelineMgr.activePipelineId() === p.id ? " active" : "") +
+                        (ownLoading || subLoading ? " loading" : "") +
+                        (p.runningPrompt() !== null ? " running" : "") +
+                        (p.subPipelineRunning() ? " sub_running" : "") +
+                        (pendingRemovePipelineId() === p.id ? " red" : "")
+                      );
+                    })()}
+                    onclick={() => {
+                      if (pendingRemovePipelineId() === p.id) {
+                        if (pipelineMgr.pipelines().length > 1) {
+                          pipelineMgr.removePipeline(p.id);
+                        }
+                        setPendingRemovePipelineId(null);
+                      } else {
+                        setPendingRemovePipelineId(null);
+                        pipelineMgr.setActivePipelineId(p.id);
+                      }
+                    }}
+                    oncontextmenu={(e) => {
+                      e.preventDefault();
+                      if (pipelineMgr.pipelines().length > 1) {
+                        setPendingRemovePipelineId(p.id);
+                      }
+                    }}
+                    onmouseleave={() => {
+                      if (pendingRemovePipelineId() === p.id) {
+                        setPendingRemovePipelineId(null);
+                      }
+                    }}
+                    title={
+                      pendingRemovePipelineId() === p.id
+                        ? "Click to remove pipeline"
+                        : `Pipeline ${index() + 1}${p.promptLoading() && p.runningPrompt() === null ? " (loading)" : ""}${p.runningPrompt() !== null ? " (running)" : ""}${p.subPipelineRunning() ? " (sub-pipeline running)" : ""} — right-click to remove`
                     }
-                    setPendingRemovePipelineId(null);
-                  } else {
-                    setPendingRemovePipelineId(null);
-                    pipelineMgr.setActivePipelineId(p.id);
-                  }
-                }}
-                oncontextmenu={(e) => {
-                  e.preventDefault();
-                  if (pipelineMgr.pipelines().length > 1) {
-                    setPendingRemovePipelineId(p.id);
-                  }
-                }}
-                onmouseleave={() => {
-                  if (pendingRemovePipelineId() === p.id) {
-                    setPendingRemovePipelineId(null);
-                  }
-                }}
-                title={
-                  pendingRemovePipelineId() === p.id
-                    ? "Click to remove pipeline"
-                    : `Pipeline ${index() + 1}${p.promptLoading() && p.runningPrompt() === null ? " (loading)" : ""}${p.runningPrompt() !== null ? " (running)" : ""}${p.subPipelineRunning() ? " (sub-pipeline running)" : ""} — right-click to remove`
-                }
-              >
-                {pendingRemovePipelineId() === p.id ? (
-                  <i class="bx bx-x" />
-                ) : (
-                  index() + 1
+                  >
+                    {pendingRemovePipelineId() === p.id ? (
+                      <i class="bx bx-x" />
+                    ) : (
+                      index() + 1
+                    )}
+                  </button>
                 )}
+              </For>
+              <button
+                class="button_icon"
+                onclick={() => pipelineMgr.addPipeline()}
+                title="Add pipeline"
+              >
+                <i class="bx bx-plus"></i>
               </button>
-            )}
-          </For>
+            </>
+          ) : null}
+          {/* ── Mode switch buttons at bottom ── */}
+          <div class="toolbar_spacer" />
           <button
-            class="button_icon"
-            onclick={() => pipelineMgr.addPipeline()}
-            title="Add pipeline"
+            class={"button_icon" + (rightSidebarMode() === "pipeline" ? " active" : "")}
+            onclick={() => setRightSidebarMode("pipeline")}
+            title="Node Pipeline"
           >
-            <i class="bx bx-plus"></i>
+            <i class="bx bx-git-merge" />
+          </button>
+          <button
+            class={"button_icon" + (rightSidebarMode() === "rpgsim" ? " active" : "")}
+            onclick={() => setRightSidebarMode("rpgsim")}
+            title="RPG Simulator"
+          >
+            <i class="bx bx-book-open" />
           </button>
         </div>
       </div>

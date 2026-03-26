@@ -11,18 +11,21 @@ tokio = { version = "1.47.1", features = ["full"] }
 webbrowser = "1.0.5"
 image = { version = "0.25", default-features = false, features = ["png"] }
 
+[features]
+default = []
+desktop = ["dep:gtk4", "dep:webkit6"]
+
 [target.'cfg(target_os = "linux")'.dependencies]
 ksni = "0.3"
+gtk4 = { version = "0.11", optional = true }
+webkit6 = { version = "0.6", optional = true }
+
 
 [target.'cfg(not(target_os = "linux"))'.dependencies]
 tray-icon = { version = "0.19", default-features = false }
 muda = { version = "0.15", default-features = false }
-
-[target.'cfg(target_os = "windows")'.dependencies]
-windows-sys = { version = "0.59", features = ["Win32_UI_WindowsAndMessaging"] }
-
-[target.'cfg(target_os = "macos")'.dependencies]
-tao = { version = "0.30", default-features = false }
+tao = "0.30"
+wry = "0.47"
 
 [target.'cfg(target_os = "windows")'.build-dependencies]
 winresource = "0.1"
