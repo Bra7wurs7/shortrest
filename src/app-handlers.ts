@@ -432,45 +432,36 @@ export function onClickUploadDirectory(
 ) {
   const input = document.createElement("input");
   input.type = "file";
-  input.webkitdirectory = true;
+  input.accept = ".zip";
   input.onchange = async (event) => {
     const files = (event.target as HTMLInputElement).files;
+    if (!files || files.length === 0) return;
 
-    if (!files) return;
+    const zipFile = files[0];
+    const zip = await JSZip.loadAsync(zipFile);
 
     const directoryName = uuidv4();
     await addDirectory(directoryName);
 
     const writePromises: Promise<void>[] = [];
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const isBinary = file.type.startsWith("image/") && file.type !== "image/svg+xml";
+    zip.forEach((relativePath, entry) => {
+      if (entry.dir) return;
+      const fileName = relativePath.split("/").pop() || relativePath;
+      const isBinary = /\.(png|jpg|jpeg|gif|bmp|webp|ico|tiff?)$/i.test(fileName);
       writePromises.push(
-        new Promise<void>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = async () => {
-            try {
-              const content = isBinary
-                ? new Blob([reader.result as ArrayBuffer], { type: file.type })
-                : (reader.result as string);
-              await writeFileToDirectory(directoryName, {
-                name: file.name,
-                content,
-              });
-              resolve();
-            } catch (e) {
-              reject(e);
-            }
-          };
-          reader.onerror = () => reject(reader.error);
-          if (isBinary) {
-            reader.readAsArrayBuffer(file);
-          } else {
-            reader.readAsText(file);
-          }
-        }),
+        (isBinary ? entry.async("arraybuffer") : entry.async("string")).then(
+          async (content) => {
+            const fileContent = isBinary
+              ? new Blob([content as ArrayBuffer], { type: `image/${fileName.split(".").pop()}` })
+              : (content as string);
+            await writeFileToDirectory(directoryName, {
+              name: fileName,
+              content: fileContent,
+            });
+          },
+        ),
       );
-    }
+    });
 
     await Promise.all(writePromises);
     setDirectoryNames(
