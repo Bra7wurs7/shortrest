@@ -44,11 +44,15 @@ export interface CharacterMemory {
   content: string;
   /** Round number when this memory was created */
   round: number;
+  /** Pinned items survive round updates, clear, and reset */
+  pinned?: boolean;
 }
 
 export interface CharacterThought {
   id: string;
   content: string;
+  /** Pinned items survive round updates, clear, and reset */
+  pinned?: boolean;
 }
 
 export interface CharacterAction {
@@ -56,6 +60,8 @@ export interface CharacterAction {
   content: string;
   /** "planned" = intent declared by agent, "executed" = confirmed by game master */
   status: "planned" | "executed";
+  /** Pinned items survive round updates, clear, and reset */
+  pinned?: boolean;
 }
 
 export interface RPGCharacter {

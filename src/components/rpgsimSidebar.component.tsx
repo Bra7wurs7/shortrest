@@ -210,7 +210,18 @@ export function RPGSimSidebar(props: RPGSimSidebarProps): JSXElement {
                         </div>
                         <Index each={char().thoughts}>
                           {(thought) => (
-                            <div class="rpgsim_editable_item">
+                            <div class={"rpgsim_editable_item" + (thought().pinned ? " pinned" : "")}>
+                              <i
+                                class={"bx bx-pin rpgsim_pin_btn" + (thought().pinned ? " pinned" : "")}
+                                title={thought().pinned ? "Unpin" : "Pin (survives round updates)"}
+                                onclick={() =>
+                                  props.rpgSim.updateCharacter(char().id, {
+                                    thoughts: char().thoughts.map((t) =>
+                                      t.id === thought().id ? { ...t, pinned: !t.pinned } : t,
+                                    ),
+                                  })
+                                }
+                              />
                               <input
                                 class="rpgsim_inline_input"
                                 value={thought().content}
@@ -254,8 +265,19 @@ export function RPGSimSidebar(props: RPGSimSidebarProps): JSXElement {
                         <Index each={char().actions}>
                           {(action) => (
                             <div
-                              class={`rpgsim_editable_item action_${action().status}`}
+                              class={`rpgsim_editable_item action_${action().status}` + (action().pinned ? " pinned" : "")}
                             >
+                              <i
+                                class={"bx bx-pin rpgsim_pin_btn" + (action().pinned ? " pinned" : "")}
+                                title={action().pinned ? "Unpin" : "Pin (survives round updates)"}
+                                onclick={() =>
+                                  props.rpgSim.updateCharacter(char().id, {
+                                    actions: char().actions.map((a) =>
+                                      a.id === action().id ? { ...a, pinned: !a.pinned } : a,
+                                    ),
+                                  })
+                                }
+                              />
                               <span
                                 class="rpgsim_action_status"
                                 title="Click to toggle status"
@@ -310,7 +332,18 @@ export function RPGSimSidebar(props: RPGSimSidebarProps): JSXElement {
                         </div>
                         <Index each={char().memories}>
                           {(memory) => (
-                            <div class="rpgsim_editable_item">
+                            <div class={"rpgsim_editable_item" + (memory().pinned ? " pinned" : "")}>
+                              <i
+                                class={"bx bx-pin rpgsim_pin_btn" + (memory().pinned ? " pinned" : "")}
+                                title={memory().pinned ? "Unpin" : "Pin (survives round updates)"}
+                                onclick={() =>
+                                  props.rpgSim.updateCharacter(char().id, {
+                                    memories: char().memories.map((m) =>
+                                      m.id === memory().id ? { ...m, pinned: !m.pinned } : m,
+                                    ),
+                                  })
+                                }
+                              />
                               <span class="rpgsim_memory_round">R{memory().round}</span>
                               <input
                                 class="rpgsim_inline_input"

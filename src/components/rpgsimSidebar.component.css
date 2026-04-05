@@ -222,6 +222,27 @@
     &.action_executed {
         border-left-color: var(--green-dim);
     }
+    &.pinned {
+        border-left-color: var(--yellow);
+    }
+}
+
+.rpgsim_pin_btn {
+    cursor: pointer;
+    color: var(--color_border_light);
+    font-size: 0.75em;
+    display: flex;
+    align-items: center;
+    opacity: 0.3;
+    flex-shrink: 0;
+    &:hover {
+        opacity: 1;
+        color: var(--yellow);
+    }
+    &.pinned {
+        opacity: 1;
+        color: var(--yellow);
+    }
 }
 
 .rpgsim_action_status {

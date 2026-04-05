@@ -263,9 +263,9 @@ export function useRPGSimState(): UseRPGSimReturn {
     mapCharacter(charId, (c) => ({
       ...c,
       emotions: { ...DEFAULT_EMOTIONS },
-      memories: [],
-      thoughts: [],
-      actions: [],
+      memories: c.memories.filter((m) => m.pinned),
+      thoughts: c.thoughts.filter((t) => t.pinned),
+      actions: c.actions.filter((a) => a.pinned),
     }));
   }
 
@@ -281,9 +281,9 @@ export function useRPGSimState(): UseRPGSimReturn {
         characters: prev.scene.characters.map((c) => ({
           ...c,
           emotions: { ...DEFAULT_EMOTIONS },
-          memories: [],
-          thoughts: [],
-          actions: [],
+          memories: c.memories.filter((m) => m.pinned),
+          thoughts: c.thoughts.filter((t) => t.pinned),
+          actions: c.actions.filter((a) => a.pinned),
           collapsed: true,
         })),
       },
@@ -315,15 +315,18 @@ export function useRPGSimState(): UseRPGSimReturn {
               round: state().round,
             })),
           ].slice(-MAX_MEMORIES_PER_CHARACTER),
-          thoughts: result.thoughts.map((content) => ({
-            id: generateId(),
-            content,
-          })),
-          actions: result.plannedActions.map((content) => ({
-            id: generateId(),
-            content,
-            status: "planned" as const,
-          })),
+          thoughts: [
+            ...c.thoughts.filter((t) => t.pinned),
+            ...result.thoughts.map((content) => ({ id: generateId(), content })),
+          ],
+          actions: [
+            ...c.actions.filter((a) => a.pinned),
+            ...result.plannedActions.map((content) => ({
+              id: generateId(),
+              content,
+              status: "planned" as const,
+            })),
+          ],
         };
       }),
     }));
