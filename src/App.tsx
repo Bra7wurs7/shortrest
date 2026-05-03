@@ -35,9 +35,15 @@ import {
 import { useLLMConnection } from "./hooks/useLLMConnection";
 import type { LLMAbortableStream } from "./types/llmProvider.interface";
 
-import { resolveNodeMessages, findSubPipelineCycle } from "./functions/llm/resolveNodeMessages.function";
+import {
+  resolveNodeMessages,
+  findSubPipelineCycle,
+} from "./functions/llm/resolveNodeMessages.function";
 import { runWithTools } from "./functions/llm/runWithTools.function";
-import { hasEnabledToolbelt, buildNativeToolDefinitions } from "./functions/llm/toolbeltExecutor.function";
+import {
+  hasEnabledToolbelt,
+  buildNativeToolDefinitions,
+} from "./functions/llm/toolbeltExecutor.function";
 import { NodePipeline } from "./components/nodePipeline.component";
 import { usePipelineManager } from "./hooks/usePipelineState";
 import {
@@ -53,9 +59,6 @@ import { getModesForExt } from "./constants/appModes";
 import { LeftSidebar } from "./components/leftSidebar.component";
 import { LeftToolbar } from "./components/leftToolbar.component";
 import { CenterPanel } from "./components/centerPanel.component";
-import { RPGSimSidebar } from "./components/rpgsimSidebar.component";
-import { useRPGSimState } from "./hooks/useRPGSimState";
-import { runRPGSimRound } from "./functions/rpgsim/rpgsimOrchestrator.function";
 
 /**
  * Returns a flush function that accumulates string chunks and applies them
@@ -176,15 +179,14 @@ function App(): JSXElement {
 
   // Right sidebar mode: "pipeline" or "rpgsim"
   type RightSidebarMode = "pipeline" | "rpgsim";
-  const [rightSidebarMode, setRightSidebarMode] = createSignal<RightSidebarMode>(
-    (localStorage.getItem("rightSidebarMode") as RightSidebarMode) || "pipeline",
-  );
+  const [rightSidebarMode, setRightSidebarMode] =
+    createSignal<RightSidebarMode>(
+      (localStorage.getItem("rightSidebarMode") as RightSidebarMode) ||
+        "pipeline",
+    );
   createEffect(() => {
     localStorage.setItem("rightSidebarMode", rightSidebarMode());
   });
-
-  // RPGSim state
-  const rpgSim = useRPGSimState();
 
   // Resolve each pipeline's model when the model list loads or when pipelines change
   createEffect(() => {
@@ -367,10 +369,7 @@ function App(): JSXElement {
         const emptyDirectory = updatedDirNames[0];
         if (emptyDirectory) {
           setActiveDirectoryName(emptyDirectory);
-          localStorage.setItem(
-            localStorageActiveDirectoryName,
-            emptyDirectory,
-          );
+          localStorage.setItem(localStorageActiveDirectoryName, emptyDirectory);
         }
       }
 
@@ -440,7 +439,10 @@ function App(): JSXElement {
     // while separate agentic iterations each start clean.
     // Per-sub-pipeline RAF accumulators for incremental modelOutput updates.
     // Created when a sub-pipeline stream opens, drained when it finishes.
-    const subPipelineAccumulators = new Map<string, ReturnType<typeof createRafAccumulator>>();
+    const subPipelineAccumulators = new Map<
+      string,
+      ReturnType<typeof createRafAccumulator>
+    >();
 
     const resolveCurrentMessages = () => {
       const subPipelineCache = new Map<string, Promise<string>>();
@@ -458,7 +460,9 @@ function App(): JSXElement {
         ownPipelineId: p.id,
         _subPipelineCache: subPipelineCache,
         onSubPipelineLoading: (pipelineId) => {
-          const target = pipelineMgr.pipelines().find((p) => p.id === pipelineId);
+          const target = pipelineMgr
+            .pipelines()
+            .find((p) => p.id === pipelineId);
           if (!target) return;
           target.setPromptLoading(true);
           target.setRunningPrompt(null);
@@ -529,7 +533,6 @@ function App(): JSXElement {
     let finalOutput = "";
 
     try {
-
       if (useToolLoop) {
         // Agentic tool-use loop
         const flushThoughts = createRafAccumulator(p.setModelThoughts);
@@ -543,7 +546,10 @@ function App(): JSXElement {
             nodes: p.messageNodes(),
             viewedFileName: viewedFile()?.fileName ?? null,
             viewedFileContent: displayedFileContent(),
-            viewedFileModified: viewedFile() === null ? null : viewedFile()!.source === "clipboard",
+            viewedFileModified:
+              viewedFile() === null
+                ? null
+                : viewedFile()!.source === "clipboard",
             onAppendWorkspace: (appended) => {
               const vf = viewedFile();
               if (!vf || vf.source !== "clipboard") return;
@@ -638,7 +644,6 @@ function App(): JSXElement {
         finalOutput = accumulatedOutput;
         recordHistoryTurn(finalOutput);
       }
-
     } catch (error: unknown) {
       p.setPromptLoading(false);
       p.setRunningPrompt(null);
@@ -651,86 +656,6 @@ function App(): JSXElement {
     // Auto-rerun if loop mode is enabled
     if (p.loopEnabled()) {
       handlePipelineSubmit();
-    }
-  }
-
-  // ============================================
-  // RPGSim round handler
-  // ============================================
-  async function handleRPGSimRound() {
-    const provider = llmProvider();
-    // Use the active pipeline's model for the RPGSim agents
-    const model = pipelineMgr.activePipeline().model();
-    if (!provider || !model) {
-      console.warn("Cannot run RPGSim round: missing provider or model");
-      return;
-    }
-
-    const st = rpgSim.state();
-    if (st.running || st.scene.characters.length === 0) return;
-
-    rpgSim.setRunning(true);
-    rpgSim.setPhase("characters");
-
-    // Pass full recent content — the orchestrator handles trimming to sentence boundaries
-    const recentStory = displayedFileContent();
-
-    try {
-      await runRPGSimRound({
-        provider,
-        model,
-        scene: st.scene,
-        round: st.round,
-        recentStory,
-        onCharacterStart: (characterId) => {
-          rpgSim.setActiveCharacterId(characterId);
-        },
-        onCharacterEnd: (result) => {
-          rpgSim.applyCharacterTurnResult(result);
-        },
-        onGMStart: () => {
-          rpgSim.setPhase("gm");
-          rpgSim.setActiveCharacterId(null);
-        },
-        onGMChunk: (text) => {
-          // Append to the currently viewed file (like appendWorkspace)
-          const vf = viewedFile();
-          if (vf?.source === "clipboard") {
-            setClipboard((prev) =>
-              prev.map((e) =>
-                e.name === vf.fileName
-                  ? { ...e, content: e.content + text }
-                  : e,
-              ),
-            );
-          }
-        },
-        onGMEnd: () => {
-          storeClipboard(clipboard());
-          rpgSim.incrementRound();
-          rpgSim.setPhase("idle");
-          rpgSim.setRunning(false);
-          rpgSim.setActiveCharacterId(null);
-        },
-      });
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error("RPGSim round error:", error);
-      rpgSim.setPhase("idle");
-      rpgSim.setRunning(false);
-      rpgSim.setActiveCharacterId(null);
-      // Append error to viewed file
-      const vf = viewedFile();
-      if (vf?.source === "clipboard") {
-        setClipboard((prev) =>
-          prev.map((e) =>
-            e.name === vf.fileName
-              ? { ...e, content: e.content + `\n\n*RPGSim Error: ${message}*` }
-              : e,
-          ),
-        );
-        storeClipboard(clipboard());
-      }
     }
   }
 
@@ -810,7 +735,9 @@ function App(): JSXElement {
     if (vf?.source === "clipboard") {
       // Already viewing clipboard file - update immutably
       setClipboard((prev) =>
-        prev.map((e) => (e.name === vf.fileName ? { ...e, content: value } : e)),
+        prev.map((e) =>
+          e.name === vf.fileName ? { ...e, content: value } : e,
+        ),
       );
       storeClipboard(clipboard());
     } else {
@@ -967,37 +894,32 @@ function App(): JSXElement {
         pipeline={pipelineMgr.activePipeline}
         pipelines={pipelineMgr.pipelines}
         onAbortSubPipeline={(pipelineId) => {
-          const target = pipelineMgr.pipelines().find((p) => p.id === pipelineId);
+          const target = pipelineMgr
+            .pipelines()
+            .find((p) => p.id === pipelineId);
           target?.runningPrompt()?.abort();
         }}
       />
       <div id="RIGHT_SIDE">
-        {rightSidebarMode() === "pipeline" ? (
-          <NodePipeline
-            pipeline={pipelineMgr.activePipeline}
-            onUpdateNode={pipelineMgr.updateNode}
-            onRemoveNode={pipelineMgr.removeNode}
-            onMoveNode={pipelineMgr.moveNode}
-            onAddNode={pipelineMgr.addNode}
-            onAddHistoryNode={pipelineMgr.addHistoryNode}
-            onAddWorkspaceToolbeltNode={pipelineMgr.addWorkspaceToolbeltNode}
-            llmUrl={llmUrl}
-            setLLMUrl={setLLMUrl}
-            llmApiKey={llmApiKey}
-            setLLMApiKey={setLLMApiKey}
-            llmProviderType={llmProviderType}
-            llmModels={llmModels}
-            onSubmit={handlePipelineSubmit}
-            clipboard={clipboard}
-            activeDirectoryParsedFileNames={activeDirectoryParsedFileNames}
-            pipelines={pipelineMgr.pipelines}
-          />
-        ) : (
-          <RPGSimSidebar
-            rpgSim={rpgSim}
-            onNextRound={() => handleRPGSimRound()}
-          />
-        )}
+        <NodePipeline
+          pipeline={pipelineMgr.activePipeline}
+          onUpdateNode={pipelineMgr.updateNode}
+          onRemoveNode={pipelineMgr.removeNode}
+          onMoveNode={pipelineMgr.moveNode}
+          onAddNode={pipelineMgr.addNode}
+          onAddHistoryNode={pipelineMgr.addHistoryNode}
+          onAddWorkspaceToolbeltNode={pipelineMgr.addWorkspaceToolbeltNode}
+          llmUrl={llmUrl}
+          setLLMUrl={setLLMUrl}
+          llmApiKey={llmApiKey}
+          setLLMApiKey={setLLMApiKey}
+          llmProviderType={llmProviderType}
+          llmModels={llmModels}
+          onSubmit={handlePipelineSubmit}
+          clipboard={clipboard}
+          activeDirectoryParsedFileNames={activeDirectoryParsedFileNames}
+          pipelines={pipelineMgr.pipelines}
+        />
         <div id="RIGHT_TOOLBAR">
           {rightSidebarMode() === "pipeline" ? (
             <>
@@ -1005,15 +927,29 @@ function App(): JSXElement {
                 {(p, index) => (
                   <button
                     class={(() => {
-                      const ownLoading = p.promptLoading() && p.runningPrompt() === null;
-                      const subLoading = !ownLoading && p.messageNodes().some((n) => {
-                        if (n.acquisitionMode !== "sub-pipeline" || n.disabled) return false;
-                        const sub = pipelineMgr.pipelines().find((q) => q.id === n.sourcePipelineId);
-                        return sub ? (sub.promptLoading() && sub.runningPrompt() === null) : false;
-                      });
+                      const ownLoading =
+                        p.promptLoading() && p.runningPrompt() === null;
+                      const subLoading =
+                        !ownLoading &&
+                        p.messageNodes().some((n) => {
+                          if (
+                            n.acquisitionMode !== "sub-pipeline" ||
+                            n.disabled
+                          )
+                            return false;
+                          const sub = pipelineMgr
+                            .pipelines()
+                            .find((q) => q.id === n.sourcePipelineId);
+                          return sub
+                            ? sub.promptLoading() &&
+                                sub.runningPrompt() === null
+                            : false;
+                        });
                       return (
                         "button_icon pipeline_btn" +
-                        (pipelineMgr.activePipelineId() === p.id ? " active" : "") +
+                        (pipelineMgr.activePipelineId() === p.id
+                          ? " active"
+                          : "") +
                         (ownLoading || subLoading ? " loading" : "") +
                         (p.runningPrompt() !== null ? " running" : "") +
                         (p.subPipelineRunning() ? " sub_running" : "") +
@@ -1068,18 +1004,14 @@ function App(): JSXElement {
           {/* ── Mode switch buttons at bottom ── */}
           <div class="toolbar_spacer" />
           <button
-            class={"button_icon" + (rightSidebarMode() === "pipeline" ? " active" : "")}
+            class={
+              "button_icon" +
+              (rightSidebarMode() === "pipeline" ? " active" : "")
+            }
             onclick={() => setRightSidebarMode("pipeline")}
             title="Node Pipeline"
           >
             <i class="bx bx-git-merge" />
-          </button>
-          <button
-            class={"button_icon" + (rightSidebarMode() === "rpgsim" ? " active" : "")}
-            onclick={() => setRightSidebarMode("rpgsim")}
-            title="RPG Simulator"
-          >
-            <i class="bx bx-book-open" />
           </button>
         </div>
       </div>
