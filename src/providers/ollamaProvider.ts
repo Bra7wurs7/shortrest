@@ -1,4 +1,4 @@
-import { Ollama } from "ollama";
+import { Ollama } from "ollama/browser";
 import {
   LLMAbortableStream,
   LLMFinalChunk,
@@ -41,14 +41,20 @@ export function createOllamaProvider(host: string): LLMProvider {
         model,
         stream: true as const,
         ...(think ? { think: true } : {}),
-        ...(tools ? { tools: tools as Parameters<typeof ollama.chat>[0]["tools"] } : {}),
-        messages: ollamaMessages as Parameters<typeof ollama.chat>[0]["messages"],
+        ...(tools
+          ? { tools: tools as Parameters<typeof ollama.chat>[0]["tools"] }
+          : {}),
+        messages: ollamaMessages as Parameters<
+          typeof ollama.chat
+        >[0]["messages"],
       });
 
       // Collect tool_calls from the final (done=true) message
       let finalChunk: LLMFinalChunk = {};
       let finalResolve!: (v: LLMFinalChunk) => void;
-      const finalPromise = new Promise<LLMFinalChunk>((res) => { finalResolve = res; });
+      const finalPromise = new Promise<LLMFinalChunk>((res) => {
+        finalResolve = res;
+      });
 
       const abortableStream: LLMAbortableStream = {
         [Symbol.asyncIterator](): AsyncIterator<LLMStreamChunk> {
@@ -59,7 +65,11 @@ export function createOllamaProvider(host: string): LLMProvider {
               if (result.done) {
                 // The done=true chunk carries the final assembled message which is
                 // the primary place Ollama puts tool_calls. Check it before resolving.
-                const finalMsg = (result.value as any)?.message;
+                const finalMsg = (
+                  result.value as unknown as {
+                    message?: { tool_calls?: any[] };
+                  }
+                )?.message;
                 if (finalMsg?.tool_calls && finalMsg.tool_calls.length > 0) {
                   finalChunk = {
                     toolCalls: finalMsg.tool_calls.map((tc: any) => ({
@@ -69,17 +79,26 @@ export function createOllamaProvider(host: string): LLMProvider {
                   };
                 }
                 finalResolve(finalChunk);
-                return { value: undefined as unknown as LLMStreamChunk, done: true };
+                return {
+                  value: undefined as unknown as LLMStreamChunk,
+                  done: true,
+                };
               }
-              const msg = result.value.message;
+              const msg = result.value.message as {
+                content?: string;
+                thinking?: string;
+                tool_calls?: any[];
+              };
 
               // Some Ollama builds emit tool_calls on intermediate streaming chunks
               // before the done=true message. Capture them here as a fallback.
               if (msg.tool_calls && msg.tool_calls.length > 0) {
-                const calls: NativeToolCall[] = msg.tool_calls.map((tc) => ({
-                  name: tc.function.name,
-                  args: tc.function.arguments as Record<string, unknown>,
-                }));
+                const calls: NativeToolCall[] = msg.tool_calls.map(
+                  (tc: any) => ({
+                    name: tc.function.name,
+                    args: tc.function.arguments as Record<string, unknown>,
+                  }),
+                );
                 finalChunk = { toolCalls: calls };
               }
 
@@ -105,10 +124,12 @@ export function createOllamaProvider(host: string): LLMProvider {
 
     async listModels() {
       const result = await ollama.list();
-      return result.models.map((m): LLMModelInfo => ({
-        id: m.model,
-        name: m.name,
-      }));
+      return result.models.map(
+        (m: any): LLMModelInfo => ({
+          id: m.model,
+          name: m.name,
+        }),
+      );
     },
   };
 }

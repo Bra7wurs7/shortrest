@@ -4,28 +4,11 @@ version = "0.3.1"
 edition = "2024"
 
 [dependencies]
-axum = "0.8.4"
-mime_guess = "2.0.5"
+trayserve = { path = "../trayserve" }
 rust-embed = "8.7.2"
-tokio = { version = "1.47.1", features = ["full"] }
-webbrowser = "1.0.5"
-image = { version = "0.25", default-features = false, features = ["png"] }
 
-[features]
-default = []
-desktop = ["dep:webkit6", "dep:adw"]
-
-[target.'cfg(target_os = "linux")'.dependencies]
-ksni = "0.3"
-webkit6 = { version = "0.6", optional = true }
-adw = { package = "libadwaita", version = "0.9", optional = true }
-
-
-[target.'cfg(not(target_os = "linux"))'.dependencies]
-tray-icon = { version = "0.19", default-features = false }
-muda = { version = "0.15", default-features = false }
-tao = "0.30"
-wry = "0.47"
-
-[target.'cfg(target_os = "windows")'.build-dependencies]
-winresource = "0.1"
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"
