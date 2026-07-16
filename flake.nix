@@ -21,6 +21,7 @@
             pkg-config
             cargo
             rustc
+            deno
           ];
 
           buildInputs = with pkgs; [
