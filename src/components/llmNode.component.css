@@ -8,6 +8,50 @@
     color: var(--color_foreground_soft);
 }
 
+.think_effort_row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8em;
+}
+
+.think_effort_label {
+    color: var(--color_foreground_soft);
+    margin-right: 2px;
+}
+
+.think_effort_btn {
+    font-size: 0.95em;
+    border: var(--size_border) var(--style_border) var(--color_border);
+    color: var(--color_foreground_soft);
+    cursor: pointer;
+    transition: var(--transition_border_color);
+    &:hover {
+        border-color: var(--color_border_light);
+        color: var(--color_foreground);
+    }
+    &.active {
+        border-color: var(--aqua-dim);
+    }
+}
+
+.context_size_row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8em;
+}
+
+.context_size_label {
+    color: var(--color_foreground_soft);
+}
+
+.context_size_row input {
+    width: 7em;
+    font-size: 0.95em;
+    padding: 2px 6px;
+}
+
 .node_loop_btn {
     display: flex;
     align-items: center;

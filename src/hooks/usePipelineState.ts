@@ -8,6 +8,7 @@ import {
 import {
   LLMAbortableStream,
   LLMModelInfo,
+  ThinkingEffort,
 } from "../types/llmProvider.interface";
 import {
   MessageNodeConfig,
@@ -71,6 +72,10 @@ interface PipelineData {
   history?: HistoryTurn[];
   /** Persisted model id for this pipeline */
   modelName?: string;
+  /** Persisted thinking-effort level for this pipeline (null = thinking off) */
+  thinkingEffort?: ThinkingEffort | null;
+  /** Persisted context size in tokens (null = server default) */
+  contextSize?: number | null;
   /** Legacy field — migrated to modelName */
   ollamaModelName?: string;
 }
@@ -103,6 +108,12 @@ export interface PipelineInstance {
   /** When true, the pipeline re-runs automatically after each completion. */
   loopEnabled: Accessor<boolean>;
   setLoopEnabled: Setter<boolean>;
+  /** Thinking-effort budget for thinking models (null = thinking off). */
+  thinkingEffort: Accessor<ThinkingEffort | null>;
+  setThinkingEffort: Setter<ThinkingEffort | null>;
+  /** Context window size in tokens (null = server default). */
+  contextSize: Accessor<number | null>;
+  setContextSize: Setter<number | null>;
 }
 
 function createPipelineInstance(data: PipelineData): PipelineInstance {
@@ -123,6 +134,11 @@ function createPipelineInstance(data: PipelineData): PipelineInstance {
   const resolvedModelName = data.modelName ?? data.ollamaModelName ?? null;
   const modelName = () => resolvedModelName;
   const [loopEnabled, setLoopEnabled] = createSignal(false);
+  const [thinkingEffort, setThinkingEffort] =
+    createSignal<ThinkingEffort | null>(data.thinkingEffort ?? "medium");
+  const [contextSize, setContextSize] = createSignal<number | null>(
+    data.contextSize ?? null,
+  );
 
   return {
     id: data.id,
@@ -147,6 +163,10 @@ function createPipelineInstance(data: PipelineData): PipelineInstance {
     modelName,
     loopEnabled,
     setLoopEnabled,
+    thinkingEffort,
+    setThinkingEffort,
+    contextSize,
+    setContextSize,
   };
 }
 
@@ -157,6 +177,8 @@ function serializePipeline(instance: PipelineInstance): PipelineData {
     ollamaNodeCollapsed: instance.ollamaNodeCollapsed(),
     history: instance.history(),
     modelName: instance.model()?.id ?? instance.modelName() ?? undefined,
+    thinkingEffort: instance.thinkingEffort(),
+    contextSize: instance.contextSize(),
   };
 }
 
@@ -266,7 +288,11 @@ export function usePipelineManager(): UsePipelineManagerReturn {
   // Persist pipelines (node configs + collapsed state + selected model)
   createEffect(() => {
     const currentPipelines = pipelines();
-    currentPipelines.forEach((p) => p.model()); // track model signals so changes trigger a save
+    currentPipelines.forEach((p) => {
+      p.model(); // track model signals so changes trigger a save
+      p.thinkingEffort(); // track thinking-effort changes
+      p.contextSize(); // track context-size changes
+    });
     const data = currentPipelines.map(serializePipeline);
     localStorage.setItem(localStoragePipelines, JSON.stringify(data));
   });

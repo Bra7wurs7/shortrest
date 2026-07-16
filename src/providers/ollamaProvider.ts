@@ -25,7 +25,7 @@ export function createOllamaProvider(host: string): LLMProvider {
   const ollama = new Ollama({ host });
 
   return {
-    async chat({ model, messages, think, tools }) {
+    async chat({ model, messages, think, contextSize, tools }) {
       // Pre-process image blobs: Ollama accepts base64 strings in the `images` field
       const ollamaMessages = await Promise.all(
         messages.map(async (m: LLMMessage) => {
@@ -40,7 +40,13 @@ export function createOllamaProvider(host: string): LLMProvider {
       const stream = await ollama.chat({
         model,
         stream: true as const,
-        ...(think ? { think: true } : {}),
+        // Forward think only when explicitly set. `think: false` must be sent
+        // (it disables thinking on thinking models); omitting think uses the
+        // model's default, which keeps thinking ON for thinking models.
+        ...(think !== undefined ? { think } : {}),
+        ...(contextSize
+          ? { options: { num_ctx: contextSize } }
+          : {}),
         ...(tools
           ? { tools: tools as Parameters<typeof ollama.chat>[0]["tools"] }
           : {}),

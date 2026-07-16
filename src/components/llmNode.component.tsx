@@ -1,11 +1,22 @@
 import "./llmNode.component.css";
 import { Accessor, For, JSXElement, Match, Show, Switch } from "solid-js";
-import { LLMModelInfo, LLMProviderType } from "../types/llmProvider.interface";
+import {
+  LLMModelInfo,
+  LLMProviderType,
+  ThinkingEffort,
+} from "../types/llmProvider.interface";
 import { PipelineInstance } from "../hooks/usePipelineState";
 
 const PRESET_URLS = [
   { label: "Local Ollama", url: "127.0.0.1:11434" },
   { label: "Mistral", url: "https://api.mistral.ai" },
+];
+
+const THINK_EFFORTS: { label: string; value: ThinkingEffort | null }[] = [
+  { label: "Off", value: null },
+  { label: "Low", value: "low" },
+  { label: "Med", value: "medium" },
+  { label: "High", value: "high" },
 ];
 
 export interface LlmNodeProps {
@@ -144,6 +155,48 @@ export function LlmNode(props: LlmNodeProps): JSXElement {
                 value={props.llmApiKey()}
                 onchange={(e) => props.setLLMApiKey(e.currentTarget.value)}
                 placeholder="Mistral API key"
+              />
+            </div>
+          </Show>
+          <Show when={props.llmProviderType() === "ollama"}>
+            <div class="settings_row think_effort_row">
+              <span class="think_effort_label">Think</span>
+              <For each={THINK_EFFORTS}>
+                {(opt) => (
+                  <button
+                    class={
+                      "think_effort_btn" +
+                      (p().thinkingEffort() === opt.value ? " active" : "")
+                    }
+                    onClick={() => p().setThinkingEffort(opt.value)}
+                    title={
+                      opt.value
+                        ? `Thinking: ${opt.label} effort`
+                        : "Thinking: off"
+                    }
+                  >
+                    {opt.label}
+                  </button>
+                )}
+              </For>
+            </div>
+            <div class="settings_row context_size_row">
+              <span class="context_size_label">Context</span>
+              <input
+                type="number"
+                min={512}
+                step={512}
+                value={p().contextSize() ?? ""}
+                placeholder="default"
+                onchange={(e) => {
+                  const v = e.currentTarget.value;
+                  if (v === "") {
+                    p().setContextSize(null);
+                  } else {
+                    const n = parseInt(v, 10);
+                    p().setContextSize(Number.isFinite(n) && n > 0 ? n : null);
+                  }
+                }}
               />
             </div>
           </Show>

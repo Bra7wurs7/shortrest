@@ -33,7 +33,7 @@ import {
   ensureEmptyClipboardFile,
 } from "./app-handlers";
 import { useLLMConnection } from "./hooks/useLLMConnection";
-import type { LLMAbortableStream } from "./types/llmProvider.interface";
+import type { LLMAbortableStream, ThinkingEffort } from "./types/llmProvider.interface";
 
 import {
   resolveNodeMessages,
@@ -586,6 +586,8 @@ function App(): JSXElement {
           onToolTurnComplete: (annotated) => {
             p.setModelOutput((prev) => prev + annotated + "\n");
           },
+          thinkEffort: p.thinkingEffort(),
+          contextSize: p.contextSize(),
         });
         flushThoughts.cancel();
         p.setRunningPrompt(null);
@@ -593,11 +595,14 @@ function App(): JSXElement {
         recordHistoryTurn(finalOutput);
       } else {
         // Standard single-shot stream (with think fallback)
-        async function streamStandard(withThink: boolean): Promise<string> {
+        const effort = p.thinkingEffort();
+        const ctxSize = p.contextSize();
+        async function streamStandard(think: ThinkingEffort | false | undefined): Promise<string> {
           const responseStream = await providerNonNull.chat({
             model: modelNonNull.id,
             stream: true as const,
-            ...(withThink ? { think: true } : {}),
+            ...(think !== undefined ? { think } : {}),
+            ...(ctxSize ? { contextSize: ctxSize } : {}),
             messages,
           });
           p.setPromptLoading(false);
@@ -631,14 +636,16 @@ function App(): JSXElement {
 
         let accumulatedOutput: string;
         try {
-          accumulatedOutput = await streamStandard(true);
+          // Off (null) -> explicit think: false so thinking models stop thinking.
+          accumulatedOutput = await streamStandard(effort ?? false);
         } catch (thinkErr: unknown) {
           const isThinkingError =
             thinkErr instanceof Error &&
             thinkErr.message.toLowerCase().includes("think");
           if (!isThinkingError) throw thinkErr;
           p.setModelOutput("");
-          accumulatedOutput = await streamStandard(false);
+          // Model rejects the think param entirely: retry with it omitted.
+          accumulatedOutput = await streamStandard(undefined);
         }
         p.setRunningPrompt(null);
         finalOutput = accumulatedOutput;

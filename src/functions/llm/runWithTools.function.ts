@@ -1,4 +1,4 @@
-import { LLMAbortableStream, LLMMessage, LLMModelInfo, LLMProvider, NativeTool } from "../../types/llmProvider.interface";
+import { LLMAbortableStream, LLMMessage, LLMModelInfo, LLMProvider, NativeTool, ThinkingEffort } from "../../types/llmProvider.interface";
 import { executeTool, ToolbeltContext } from "./toolbeltExecutor.function";
 
 const MAX_TOOL_TURNS = 10;
@@ -25,6 +25,10 @@ export interface RunWithToolsOptions {
    * Called after each tool-call turn with a formatted summary of calls + results.
    */
   onToolTurnComplete: (formattedTurn: string) => void;
+  /** Thinking-effort budget (null = thinking off). */
+  thinkEffort: ThinkingEffort | null;
+  /** Context window size in tokens (null = server default). */
+  contextSize: number | null;
 }
 
 /**
@@ -39,7 +43,7 @@ export interface RunWithToolsOptions {
 export async function runWithTools(
   options: RunWithToolsOptions,
 ): Promise<string> {
-  const { provider, model, tools, toolbeltCtx, resolveMessages, onStream, onChunk, onThinkChunk, onToolTurnComplete } = options;
+  const { provider, model, tools, toolbeltCtx, resolveMessages, onStream, onChunk, onThinkChunk, onToolTurnComplete, thinkEffort, contextSize } = options;
 
   // toolExchange accumulates the assistant+tool-result messages from this agentic session.
   // On each follow-up turn, fresh base messages are resolved and this exchange is appended.
@@ -50,11 +54,12 @@ export async function runWithTools(
   let finalOutput = "";
   let emittedFinal = false;
 
-  async function streamOnce(messages: LLMMessage[], withThink: boolean): Promise<{ content: string; stream: LLMAbortableStream }> {
+  async function streamOnce(messages: LLMMessage[], think: ThinkingEffort | false | undefined): Promise<{ content: string; stream: LLMAbortableStream }> {
     const stream = await provider.chat({
       model: model.id,
       stream: true as const,
-      ...(withThink ? { think: true } : {}),
+      ...(think !== undefined ? { think } : {}),
+      ...(contextSize ? { contextSize } : {}),
       messages,
       tools,
     });
@@ -74,13 +79,15 @@ export async function runWithTools(
 
   async function streamWithFallback(messages: LLMMessage[]): Promise<{ content: string; stream: LLMAbortableStream }> {
     try {
-      return await streamOnce(messages, true);
+      // Off (null) -> explicit think: false so thinking models stop thinking.
+      return await streamOnce(messages, thinkEffort ?? false);
     } catch (err: unknown) {
       const isThinkingError =
         err instanceof Error &&
         err.message.toLowerCase().includes("think");
       if (isThinkingError) {
-        return await streamOnce(messages, false);
+        // Model rejects the think param entirely: retry with it omitted.
+        return await streamOnce(messages, undefined);
       }
       throw err;
     }

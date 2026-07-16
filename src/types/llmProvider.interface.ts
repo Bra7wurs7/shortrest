@@ -3,6 +3,9 @@ export interface LLMModelInfo {
   name: string;
 }
 
+/** Thinking effort budget supported by some Ollama thinking models. */
+export type ThinkingEffort = "high" | "medium" | "low";
+
 /** A single parameter property in a tool's JSON Schema */
 export interface NativeToolProperty {
   type: string;
@@ -66,7 +69,9 @@ export interface LLMProvider {
     model: string;
     messages: LLMMessage[];
     stream: true;
-    think?: boolean;
+    think?: boolean | ThinkingEffort;
+    /** Context window size in tokens (Ollama `num_ctx`). Omit for server default. */
+    contextSize?: number;
     tools?: NativeTool[];
   }): Promise<LLMAbortableStream>;
 

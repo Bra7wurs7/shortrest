@@ -1,4 +1,4 @@
-import { LLMAbortableStream, LLMMessage, LLMModelInfo, LLMProvider } from "../../types/llmProvider.interface";
+import { LLMAbortableStream, LLMMessage, LLMModelInfo, LLMProvider, ThinkingEffort } from "../../types/llmProvider.interface";
 
 export interface RunSubPipelineOptions {
   provider: LLMProvider;
@@ -8,6 +8,10 @@ export interface RunSubPipelineOptions {
   onStream?: (stream: LLMAbortableStream) => void;
   /** Called with each content chunk as it arrives, enabling incremental display. */
   onChunk?: (text: string) => void;
+  /** Thinking-effort budget (null = thinking off). */
+  thinkEffort?: ThinkingEffort | null;
+  /** Context window size in tokens (null = server default). */
+  contextSize?: number | null;
 }
 
 /**
@@ -21,13 +25,14 @@ export interface RunSubPipelineOptions {
 export async function runSubPipeline(
   options: RunSubPipelineOptions,
 ): Promise<string> {
-  const { provider, model, messages, onStream, onChunk } = options;
+  const { provider, model, messages, onStream, onChunk, thinkEffort, contextSize } = options;
 
-  async function attemptRun(withThink: boolean): Promise<string> {
+  async function attemptRun(think: ThinkingEffort | false | undefined): Promise<string> {
     const stream = await provider.chat({
       model: model.id,
       stream: true as const,
-      ...(withThink ? { think: true } : {}),
+      ...(think !== undefined ? { think } : {}),
+      ...(contextSize ? { contextSize } : {}),
       messages,
     });
 
@@ -46,14 +51,16 @@ export async function runSubPipeline(
   }
 
   try {
-    return await attemptRun(true);
+    // Off (null) -> explicit think: false so thinking models stop thinking.
+    return await attemptRun(thinkEffort ?? false);
   } catch (error: unknown) {
     const isThinkingError =
       error instanceof Error &&
       (error.message.includes("400") ||
         error.message.toLowerCase().includes("think"));
     if (isThinkingError) {
-      return await attemptRun(false);
+      // Model rejects the think param entirely: retry with it omitted.
+      return await attemptRun(undefined);
     }
     throw error;
   }

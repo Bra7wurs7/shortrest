@@ -211,6 +211,8 @@ async function _runSubPipeline(
       onChunk: (text) => {
         options.onSubPipelineChunk?.(subPipeline.id, text);
       },
+      thinkEffort: subPipeline.thinkingEffort(),
+      contextSize: subPipeline.contextSize(),
     });
     options.onSubPipelineStateChange?.(subPipeline.id, false, content);
     return content;
