@@ -1,4 +1,4 @@
 export interface BasicFile {
   name: string;
-  content: string;
+  content: string | Blob;
 }

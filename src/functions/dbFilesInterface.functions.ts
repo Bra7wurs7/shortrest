@@ -72,7 +72,7 @@ export async function listFileNamesInDirectory(
 export async function getFileContent(
   dirName: string,
   fileName: string,
-): Promise<string | null> {
+): Promise<string | Blob | null> {
   const db = await dbPromise;
   const file = await db.get("files", [dirName, fileName]);
   return file ? file.content : null;

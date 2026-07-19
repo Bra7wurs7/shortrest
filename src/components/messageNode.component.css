@@ -1,0 +1,92 @@
+.node_controls {
+    gap: 0;
+
+    select {
+        flex: 1;
+        min-width: 0;
+    }
+}
+
+.truncate_length_input {
+    flex: 0 0 52px;
+    min-width: unset;
+    text-align: right;
+}
+
+.file_input {
+    min-height: unset;
+    font-size: small;
+    padding: var(--size_padding);
+}
+
+.file_suggestions {
+    display: flex;
+    flex-direction: column;
+    border: var(--size_border) var(--style_border) var(--color_border);
+    border-top: 0;
+    .suggestion {
+        padding: var(--size_padding);
+        font-size: small;
+        color: var(--color_foreground_soft);
+        cursor: pointer;
+        &:hover {
+            background-color: var(--color_background_soft);
+            color: var(--color_foreground);
+        }
+    }
+}
+
+.sub_pipeline_params {
+    display: flex;
+    flex-direction: column;
+    border-right: var(--size_border) var(--style_border)
+        var(--color_border);
+    border-bottom: var(--size_border) var(--style_border)
+        var(--color_border);
+    border-left: 2px solid var(--blue-dim);
+
+    .params_label {
+        padding: var(--size_padding);
+        font-size: small;
+        color: var(--blue-dim);
+        font-style: italic;
+    }
+
+    .param_row {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        border-top: var(--size_border) var(--style_border)
+            var(--color_border);
+
+        .param_node_label {
+            padding: var(--size_padding);
+            padding-bottom: 0;
+            font-size: small;
+            color: var(--color_foreground_soft);
+        }
+
+        .param_value_input {
+            background-color: var(--color_background_hard);
+            color: var(--color_foreground_hard);
+            border: var(--size_border) var(--style_border)
+                var(--color_border);
+            border-top-color: transparent;
+            border-right-color: transparent;
+            font-family: var(--sans);
+            font-size: small;
+            padding: var(--size_padding);
+            min-height: unset;
+            width: 100%;
+            box-sizing: border-box;
+
+            &:hover {
+                border-color: var(--color_border_light);
+            }
+            &:focus {
+                outline: none;
+                border-color: var(--color_foreground_soft);
+            }
+        }
+    }
+}

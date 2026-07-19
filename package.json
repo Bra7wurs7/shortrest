@@ -1,39 +1,47 @@
 {
   "name": "shortrest",
-  "version": "0.2.1",
+  "version": "0.3.1",
   "description": "",
   "type": "module",
   "scripts": {
     "start": "vite",
     "dev": "vite",
     "build": "vite build",
-    "build-linux": "(vite build --minify) & (cargo build --target x86_64-unknown-linux-gnu --release)",
-    "build-windows": "(vite build --minify) & (cargo build --target x86_64-pc-windows-gnu --release)",
-    "build-apple": "(vite build --minify) & (cargo build --target aarch64-apple-darwin --release)",
-    "clean": "(rm -r ./dist) & (rm -r ./target)",
+    "watch": "vite build --watch",
+    "build-linux": "vite build --minify && cargo build --target x86_64-unknown-linux-gnu --release",
+    "build-windows": "vite build --minify && cargo build --target x86_64-pc-windows-gnu --release",
+    "build-apple": "vite build --minify && cargo build --target aarch64-apple-darwin --release",
+    "clean": "rm -rf ./dist",
     "serve": "vite preview"
   },
   "license": "GNU AGPLv3",
   "devDependencies": {
-    "license-checker": "^25.0.1",
-    "typescript": "^5.9.3",
-    "vite": "^6.3.6",
-    "vite-plugin-solid": "^2.11.9",
-    "vite-plugin-node-polyfills": "^0.24.0"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@codemirror/lang-markdown": "^6.5.1",
+    "@codemirror/lang-xml": "^6.1.0",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/language-data": "^6.5.2",
+    "@codemirror/state": "^6.7.1",
+    "@codemirror/view": "^6.43.6",
+    "@lezer/highlight": "^1.2.3",
+    "@mistralai/mistralai": "^1.15.1",
     "@types/file-saver": "^2.0.7",
     "boxicons": "^2.1.4",
     "buffer": "^6.0.3",
-    "dayjs": "^1.11.18",
+    "codemirror": "^6.0.2",
+    "dayjs": "^1.11.21",
     "file-saver": "^2.0.5",
     "idb": "^8.0.3",
     "jszip": "^3.10.1",
-    "memfs": "^4.48.1",
+    "memfs": "^4.64.0",
     "micromark": "^4.0.2",
     "micromark-extension-gfm": "^3.0.0",
-    "ollama": "^0.6.0",
-    "solid-js": "^1.9.9",
-    "uuid": "^11.1.0"
+    "ollama": "^0.6.3",
+    "solid-js": "^1.9.14",
+    "uuid": "^11.1.1",
+    "vite": "^8.1.5",
+    "vite-plugin-solid": "^2.11.12"
   }
 }

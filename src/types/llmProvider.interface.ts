@@ -1,0 +1,87 @@
+export interface LLMModelInfo {
+  id: string;
+  name: string;
+}
+
+/** Thinking effort budget supported by some Ollama thinking models. */
+export type ThinkingEffort = "high" | "medium" | "low";
+
+/** A single parameter property in a tool's JSON Schema */
+export interface NativeToolProperty {
+  type: string;
+  description?: string;
+  enum?: unknown[];
+  /** For array types: describes the element type */
+  items?: NativeToolProperty;
+  /** For object types: nested property definitions */
+  properties?: Record<string, NativeToolProperty>;
+  /** For object types: required property names */
+  required?: string[];
+}
+
+/** Native tool definition passed to the LLM API */
+export interface NativeTool {
+  type: "function";
+  function: {
+    name: string;
+    description: string;
+    parameters: {
+      type: "object";
+      properties: Record<string, NativeToolProperty>;
+      required?: string[];
+    };
+  };
+}
+
+/** A tool call returned by the model in the final assembled response */
+export interface NativeToolCall {
+  name: string;
+  /** Parsed arguments object */
+  args: Record<string, unknown>;
+}
+
+export interface LLMStreamChunk {
+  content?: string;
+  thinking?: string;
+}
+
+/** Final chunk may carry tool calls assembled from the full response */
+export interface LLMFinalChunk {
+  toolCalls?: NativeToolCall[];
+}
+
+export type LLMAbortableStream = AsyncIterable<LLMStreamChunk> & {
+  abort(): void;
+  /** Resolved after the stream completes — carries any tool calls from the response */
+  final(): Promise<LLMFinalChunk>;
+};
+
+/** A message in the LLM conversation, optionally carrying image blobs for vision models */
+export interface LLMMessage {
+  role: string;
+  content: string;
+  /** Binary image blobs attached to this message (for vision models) */
+  images?: Blob[];
+}
+
+export interface LLMProvider {
+  chat(params: {
+    model: string;
+    messages: LLMMessage[];
+    stream: true;
+    think?: boolean | ThinkingEffort;
+    /** Context window size in tokens (Ollama `num_ctx`). Omit for server default. */
+    contextSize?: number;
+    tools?: NativeTool[];
+  }): Promise<LLMAbortableStream>;
+
+  listModels(): Promise<LLMModelInfo[]>;
+}
+
+export type LLMProviderType = "ollama" | "mistral";
+
+export function detectProvider(url: string): LLMProviderType {
+  const lower = url.toLowerCase();
+  if (lower.includes("mistral")) return "mistral";
+  return "ollama";
+}

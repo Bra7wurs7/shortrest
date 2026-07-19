@@ -1,0 +1,191 @@
+/* ── Type-specific accent propagation ────────────────────────────────────── */
+
+.toolbelt_workspace {
+    --tb-accent: var(--aqua);
+    --tb-accent-dim: var(--aqua-dim);
+}
+
+/* Type icon in header */
+.toolbelt_type_icon {
+    color: var(--tb-accent-dim);
+}
+
+/* ── Body ────────────────────────────────────────────────────────────────── */
+
+.toolbelt_body {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    overflow: hidden;
+}
+
+/* ── Tool cards ──────────────────────────────────────────────────────────── */
+
+.toolbelt_tool_card {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 6px 10px;
+    min-width: 0;
+    overflow: hidden;
+    border-left: 2px solid transparent;
+    transition:
+        border-color var(--transition_duration) ease-in,
+        background-color var(--transition_duration) ease-in;
+
+    &.enabled {
+        border-left-color: var(--tb-accent);
+        background-color: color-mix(
+            in srgb,
+            var(--tb-accent-dim) 10%,
+            transparent
+        );
+    }
+}
+
+.toolbelt_tool_header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--size_margin);
+    min-width: 0;
+}
+
+.toolbelt_enable_label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    cursor: pointer;
+    user-select: none;
+
+    input[type="checkbox"] {
+        cursor: pointer;
+        accent-color: var(--tb-accent);
+        flex-shrink: 0;
+    }
+}
+
+.toolbelt_tool_name {
+    font-family: var(--mono);
+    font-size: 0.82em;
+    color: var(--color_foreground);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.toolbelt_tool_desc {
+    margin: 0;
+    font-size: 0.76em;
+    color: var(--color_foreground_soft);
+    line-height: 1.45;
+    padding-left: 20px;
+    overflow-wrap: break-word;
+}
+
+/* ── Image settings section ──────────────────────────────────────────────── */
+
+.toolbelt_image_settings {
+    display: flex;
+    flex-direction: column;
+    border-top: var(--size_border) var(--style_border) var(--color_border);
+    padding: 6px 10px;
+    gap: 4px;
+
+    /* URL row — flex with growing input */
+    .toolbelt_url_row {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: var(--size_margin);
+
+        input[type="text"] {
+            flex: 1;
+            min-width: 0;
+            background-color: var(--color_background);
+            color: var(--color_foreground);
+            border: var(--size_border) var(--style_border) var(--color_border);
+            padding: var(--size_padding);
+            font-size: 0.82em;
+
+            &:hover {
+                border-color: var(--color_border_light);
+            }
+            &:focus {
+                outline: none;
+                border-color: var(--color_foreground);
+            }
+        }
+    }
+
+    /* Dims row — grid so inputs are always constrained:
+       Row 1: W [input]  H [input]  Lock
+       Row 2: Steps [input spanning mid cols]  Lock */
+    .toolbelt_image_dims {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr) auto;
+        gap: 4px;
+        align-items: center;
+
+        /* Steps input: span cols 2-4 */
+        & > :nth-child(7) {
+            grid-column: 2 / 5;
+        }
+    }
+}
+
+.toolbelt_force_label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.76em;
+    color: var(--color_foreground_soft);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+
+    input[type="checkbox"] {
+        cursor: pointer;
+        accent-color: var(--tb-accent);
+        flex-shrink: 0;
+    }
+}
+
+.toolbelt_dim_label {
+    font-size: 0.78em;
+    color: var(--color_foreground_soft);
+    white-space: nowrap;
+    font-family: var(--mono);
+}
+
+.toolbelt_dim_input {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    background-color: var(--color_background);
+    color: var(--color_foreground);
+    border: var(--size_border) var(--style_border) var(--color_border);
+    font-size: 0.82em;
+    font-family: var(--mono);
+    padding: var(--size_padding);
+    text-align: right;
+
+    /* Hide spinners */
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    &[type="number"] {
+        -moz-appearance: textfield;
+    }
+
+    &:hover {
+        border-color: var(--color_border_light);
+    }
+    &:focus {
+        outline: none;
+        border-color: var(--color_foreground);
+    }
+}

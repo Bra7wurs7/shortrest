@@ -1,82 +1,143 @@
+import "./App.css";
 import {
-  Accessor,
   createEffect,
   createMemo,
   createSignal,
   For,
-  Match,
-  Setter,
-  Show,
-  Signal,
-  Switch,
-  untrack,
   type JSXElement,
 } from "solid-js";
-import { AppMode } from "./types/appMode.enum";
-import { ReactiveFile } from "./types/reactiveFile.interface";
-import { loadOpenFiles } from "./functions/loadOpenFiles.function";
-import { storeOpenFiles } from "./functions/storeOpenFiles.function";
+import { FileViewerMode } from "./types/fileViewerMode.enum";
+import { ClipboardEntry } from "./types/clipboardEntry.interface";
+import { ViewedFile } from "./types/viewedFile.interface";
 import {
-  addDirectory,
-  countFilesInDirectory,
+  loadClipboard,
+  storeClipboard,
+  loadViewedFile,
+  storeViewedFile,
+} from "./functions/storage.functions";
+import {
   getFileContent,
   listAllDirectories,
   listFileNamesInDirectory,
-  removeDirectory,
   removeFileFromDirectory,
-  writeFileToDirectory,
 } from "./functions/dbFilesInterface.functions";
-import { v4 as uuidv4 } from "uuid";
-import { saveAs } from "file-saver";
-import JSZip from "jszip";
 import { ConfirmAction } from "./types/confirmAction.enum";
 import { parseFileName } from "./functions/parseFileName.function";
 import { ParsedFileName } from "./types/parsedFileName.interface";
-import { BasicFile } from "./types/basicFile.interface";
-import { storeActiveFileName } from "./functions/storeActiveFileName.function";
-import { SettingsComponent } from "./components/settings.component";
-import { AiWriter } from "./components/aiWriter.component";
-import { ModelResponse, Ollama } from "ollama";
-import { MdReader } from "./components/mdReader.component";
 
-export const localStorageOpenFilesKey = "openFiles";
-export const localStorageActiveFileNameKey = "activeFile";
-export const localStorageActiveDirectoryName = "activeDirectory";
-export const localStorageAppMode = "appMode";
-export const localStorageOllamaModel = "ollamaModel";
-export const localStorageOllamaUrl = "ollamaUrl";
+import {
+  saveClipboardFile,
+  handleSearchKeyUp,
+  updateDirectories,
+  getOrCreateEditableFile,
+  ensureEmptyClipboardFile,
+} from "./app-handlers";
+import { useLLMConnection } from "./hooks/useLLMConnection";
+import type { LLMAbortableStream, ThinkingEffort } from "./types/llmProvider.interface";
+
+import {
+  resolveNodeMessages,
+  findSubPipelineCycle,
+} from "./functions/llm/resolveNodeMessages.function";
+import { runWithTools } from "./functions/llm/runWithTools.function";
+import {
+  hasEnabledToolbelt,
+  buildNativeToolDefinitions,
+} from "./functions/llm/toolbeltExecutor.function";
+import { NodePipeline } from "./components/nodePipeline.component";
+import { usePipelineManager } from "./hooks/usePipelineState";
+import {
+  localStorageChatUserPrompt,
+  localStorageActiveDirectoryName,
+  localStorageFileViewerMode,
+} from "./constants/storageKeys";
+import { writeFileToDirectory } from "./functions/dbFilesInterface.functions";
+import { extractBracketQuery } from "./functions/extractBracketQuery.function";
+import { longestCommonPrefix } from "./functions/longestCommonPrefix.function";
+import { getModesForExt } from "./constants/appModes";
+
+import { LeftSidebar } from "./components/leftSidebar.component";
+import { LeftToolbar } from "./components/leftToolbar.component";
+import { CenterPanel } from "./components/centerPanel.component";
+
+/**
+ * Returns a flush function that accumulates string chunks and applies them
+ * to a setter at most once per animation frame, preventing per-token re-renders.
+ * Call flush(chunk) to enqueue; the pending buffer is written on the next rAF.
+ * Call flush.cancel() when the stream ends to immediately drain any remainder.
+ */
+function createRafAccumulator(
+  setter: (updater: (prev: string) => string) => void,
+): { (chunk: string): void; cancel: () => void } {
+  let buffer = "";
+  let rafId: number | null = null;
+
+  function drain() {
+    rafId = null;
+    if (!buffer) return;
+    const pending = buffer;
+    buffer = "";
+    setter((prev) => prev + pending);
+  }
+
+  function flush(chunk: string) {
+    buffer += chunk;
+    if (rafId === null) {
+      rafId = requestAnimationFrame(drain);
+    }
+  }
+
+  flush.cancel = () => {
+    if (rafId !== null) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+    drain();
+  };
+
+  return flush;
+}
 
 function App(): JSXElement {
-  const appModes = [
-    { mode: AppMode.AiWriter, icon: "bx-code" },
-    { mode: AppMode.MdReader, icon: "bx-book-reader" },
-    { mode: AppMode.Settings, icon: "bx-cog" },
-  ];
-
-  // Signals
-  const [appMode, setAppMode] = createSignal<AppMode>(
-    localStorage.getItem(localStorageAppMode) as AppMode,
+  // ============================================
+  // App-level signals
+  // ============================================
+  const [fileViewerMode, setFileViewerMode] = createSignal<FileViewerMode>(
+    localStorage.getItem(localStorageFileViewerMode) as FileViewerMode,
   );
+  const [pendingRemovePipelineId, setPendingRemovePipelineId] = createSignal<
+    string | null
+  >(null);
   const [directoryNames, setDirectoryNames] = createSignal<string[]>([]);
   const [activeDirectoryName, setActiveDirectoryName] = createSignal<
     string | null
   >(localStorage.getItem(localStorageActiveDirectoryName));
+
+  // Clipboard: files with unsaved changes
   const [clipboard, setClipboard] =
-    createSignal<ReactiveFile[]>(loadOpenFiles());
-  const [openFiles, setOpenFiles] =
-    createSignal<ReactiveFile[]>(loadOpenFiles());
-  const [activeFileName, setActiveFileName] = createSignal<string | null>(
-    localStorage.getItem(localStorageActiveFileNameKey),
+    createSignal<ClipboardEntry[]>(loadClipboard());
+
+  // Viewed file: what's currently displayed (from IDB or clipboard)
+  const [viewedFile, setViewedFile] = createSignal<ViewedFile | null>(
+    loadViewedFile(),
   );
+
+  // IDB file content: populated when viewing an IDB file
+  const [idbFileContent, setIdbFileContent] = createSignal<string>("");
+  // IDB file blob: set when the viewed IDB file is binary (e.g. generated image)
+  const [idbFileBlob, setIdbFileBlob] = createSignal<Blob | null>(null);
+
   const [inputValue, setInputValue] = createSignal<string>("");
+  const [bracketMode, setBracketMode] = createSignal(false);
   const [confirmAction, setConfirmAction] = createSignal<ConfirmAction | null>(
     null,
   );
-  const [rightClickedOpenFile, setRightClickedOpenFile] = createSignal<
-    string | null
-  >(null);
-  const [rightClickedOpenFileNewName, setRightClickedOpenFileNewName] =
+  const [rightClickedClipboardFile, setRightClickedClipboardFile] =
     createSignal<string | null>(null);
+  const [
+    rightClickedClipboardFileNewName,
+    setRightClickedClipboardFileNewName,
+  ] = createSignal<string | null>(null);
   const [rightClickedSavedFile, setRightClickedSavedFile] = createSignal<
     string | null
   >(null);
@@ -85,24 +146,158 @@ function App(): JSXElement {
   const [rightClickedDirectory, setRightClickedDirectory] = createSignal<
     string | null
   >(null);
+  const [rightClickedDirectoryDelete, setRightClickedDirectoryDelete] =
+    createSignal(false);
   const [hoveredDirectoryName, setHoveredDirectoryName] = createSignal<
     string | null
   >(null);
-  const [ollamaConnection, setOllamaConnection] = createSignal<Ollama | null>(
-    new Ollama(),
-  );
-  const [ollamaUrl, setOllamaUrl] = createSignal<string>(
-    localStorage.getItem(localStorageOllamaUrl) || "127.0.0.1:11434",
-  );
-  const [ollamaModels, setOllamaModels] = createSignal<ModelResponse[] | null>(
-    null,
-  );
-  const [ollamaModel, setOllamaModel] = createSignal<ModelResponse | null>(
-    null,
+  const [clipboardCollapsed, setClipboardCollapsed] = createSignal(false);
+  const [directoryCollapsed, setDirectoryCollapsed] = createSignal(false);
+
+  // ============================================
+  // LLM connection
+  // ============================================
+  const {
+    llmProvider,
+    llmProviderType,
+    llmUrl,
+    setLLMUrl,
+    llmApiKey,
+    setLLMApiKey,
+    llmModels,
+  } = useLLMConnection();
+
+  // ============================================
+  // Prompt / pipeline state
+  // ============================================
+  const [userPrompt, setUserPrompt] = createSignal<string>(
+    localStorage.getItem(localStorageChatUserPrompt) ?? "",
   );
 
+  // Pipeline manager (multiple pipelines)
+  const pipelineMgr = usePipelineManager();
+
+  // Right sidebar mode: "pipeline" or "rpgsim"
+  type RightSidebarMode = "pipeline" | "rpgsim";
+  const [rightSidebarMode, setRightSidebarMode] =
+    createSignal<RightSidebarMode>(
+      (localStorage.getItem("rightSidebarMode") as RightSidebarMode) ||
+        "pipeline",
+    );
+  createEffect(() => {
+    localStorage.setItem("rightSidebarMode", rightSidebarMode());
+  });
+
+  // Resolve each pipeline's model when the model list loads or when pipelines change
+  createEffect(() => {
+    const models = llmModels();
+    pipelineMgr.pipelines(); // track pipeline list so new pipelines get resolved too
+    if (models && models.length > 0) {
+      pipelineMgr.resolveModels(models);
+    }
+  });
+
+  // ============================================
+  // Directory file name signals
+  // ============================================
   const [activeDirectoryParsedFileNames, setActiveDirectoryParsedFileNames] =
     createSignal<ParsedFileName[] | null>(null);
+
+  const [hoveredDirectoryFileNames, setHoveredDirectoryFileNames] =
+    createSignal<ParsedFileName[] | null>(null);
+
+  // ============================================
+  // Memos
+  // ============================================
+  const filteredParsedClipboardFileNames = createMemo<ParsedFileName[]>(() => {
+    return clipboard()
+      .filter((entry) =>
+        entry.name.toLowerCase().includes(inputValue().toLowerCase()),
+      )
+      .map((entry) => parseFileName(entry.name));
+  });
+
+  const filteredParsedDirectoryFileNames = createMemo<ParsedFileName[] | null>(
+    () => {
+      const activeDirFileNames = activeDirectoryParsedFileNames();
+      if (activeDirFileNames) {
+        return activeDirFileNames.filter((name: ParsedFileName) =>
+          name.fullName.toLowerCase().includes(inputValue().toLowerCase()),
+        );
+      }
+      return null;
+    },
+  );
+
+  // The currently displayed file content
+  const displayedFileContent = createMemo<string>(() => {
+    const vf = viewedFile();
+    if (!vf) return "";
+
+    if (vf.source === "clipboard") {
+      const entry = clipboard().find((c) => c.name === vf.fileName);
+      return entry?.content ?? "";
+    }
+
+    // IDB source - return the fetched content
+    return idbFileContent();
+  });
+
+  // Blob content of the currently viewed IDB file (null for text files or clipboard)
+  const displayedFileBlob = createMemo<Blob | null>(() => {
+    const vf = viewedFile();
+    if (vf?.source === "idb") return idbFileBlob();
+    return null;
+  });
+
+  // The currently displayed file name
+  const displayedFileName = createMemo<string | null>(() => {
+    const vf = viewedFile();
+    return vf?.fileName ?? null;
+  });
+
+  // Check if currently viewing a clipboard file
+  const isViewingClipboardFile = createMemo<boolean>(() => {
+    return viewedFile()?.source === "clipboard";
+  });
+
+  // Get the current clipboard entry if viewing one
+  const currentClipboardEntry = createMemo<ClipboardEntry | null>(() => {
+    const vf = viewedFile();
+    if (vf?.source === "clipboard") {
+      return clipboard().find((c) => c.name === vf.fileName) ?? null;
+    }
+    return null;
+  });
+
+  // Viewer modes available for the currently viewed file type
+  const availableModes = createMemo(() => {
+    const vf = viewedFile();
+    const ext = vf ? parseFileName(vf.fileName).ext : null;
+    return getModesForExt(ext);
+  });
+
+  // ============================================
+  // Effects - Persistence
+  // ============================================
+  createEffect(() => {
+    localStorage.setItem(localStorageChatUserPrompt, userPrompt());
+  });
+
+  // Reset fileViewerMode when the current mode is not valid for the new file
+  createEffect(() => {
+    const modes = availableModes();
+    const current = fileViewerMode();
+    if (!modes.some((m) => m.mode === current)) {
+      const next = modes[0].mode;
+      setFileViewerMode(next);
+      localStorage.setItem(localStorageFileViewerMode, next);
+    }
+  });
+
+  // ============================================
+  // Effects - Directory loading
+  // ============================================
   createEffect(() => {
     const activeDirName = activeDirectoryName();
     if (activeDirName) {
@@ -112,8 +307,6 @@ function App(): JSXElement {
     }
   });
 
-  const [hoveredDirectoryFileNames, setHoveredDirectoryFileNames] =
-    createSignal<ParsedFileName[] | null>(null);
   createEffect(() => {
     const hoveredDirName = hoveredDirectoryName();
     if (hoveredDirName) {
@@ -125,1078 +318,712 @@ function App(): JSXElement {
     }
   });
 
-  // Memos
-  const filteredParsedOpenFileNames = createMemo<ParsedFileName[]>(() => {
-    return openFiles()
-      .filter((of) =>
-        of.name().toLowerCase().includes(inputValue().toLowerCase()),
-      )
-      .map((of) => parseFileName(of.name()));
-  });
-  const filteredParsedAllFileNames = createMemo<ParsedFileName[] | null>(() => {
-    const activeDirFileNames = activeDirectoryParsedFileNames();
-    if (activeDirFileNames) {
-      return activeDirFileNames.filter((name: ParsedFileName) =>
-        name.baseName.includes(inputValue().toLowerCase()),
-      );
-    }
-    return null;
-  });
-  const activeFile = createMemo<ReactiveFile | null>(
-    () => openFiles().find((of) => of.name() === activeFileName()) ?? null,
-  );
-
-  // Effects
+  // ============================================
+  // Effects - IDB file content loading
+  // ============================================
   createEffect(() => {
-    setOllamaConnection(new Ollama({ host: ollamaUrl() }));
-  });
-  createEffect(() => {
-    ollamaConnection()
-      ?.list()
-      .then((m) => {
-        setOllamaModels(m.models);
-      })
-      .catch((e) => {
-        setOllamaModels(null);
+    const vf = viewedFile();
+    if (vf?.source === "idb" && vf.directoryName && vf.fileName) {
+      getFileContent(vf.directoryName, vf.fileName).then((content) => {
+        if (content instanceof Blob) {
+          setIdbFileBlob(content);
+          setIdbFileContent("");
+        } else {
+          setIdbFileBlob(null);
+          setIdbFileContent(content ?? "");
+        }
       });
-  });
-  createEffect(() => {
-    const llmModel = ollamaModel();
-    if (llmModel !== null) {
-      localStorage.setItem(localStorageOllamaModel, llmModel.model);
-    }
-  });
-  createEffect(() => {
-    localStorage.setItem(localStorageOllamaUrl, ollamaUrl());
-  });
-  /* Set this.ollamaModel to the model whose name is stored in localstorage  */
-  createEffect(() => {
-    const llmModel = untrack(ollamaModel);
-    const allLlmModels = ollamaModels();
-    if (allLlmModels && allLlmModels.length > 0 && llmModel === null) {
-      const localStorageModelName = localStorage.getItem(
-        localStorageOllamaModel,
-      );
-      const model = allLlmModels.find((m) => m.model === localStorageModelName);
-      if (model !== undefined) {
-        setOllamaModel(model);
-      } else {
-        setOllamaModel(allLlmModels[0] ?? null);
-      }
+    } else if (vf?.source === "clipboard") {
+      // Clear IDB content when viewing clipboard
+      setIdbFileContent("");
+      setIdbFileBlob(null);
     }
   });
 
+  // ============================================
+  // Effects - Ensure clipboard always has an empty file
+  // ============================================
+  createEffect(() => {
+    const current = clipboard();
+    const ensured = ensureEmptyClipboardFile(current, activeDirectoryName());
+    if (ensured !== current) {
+      setClipboard(ensured);
+      storeClipboard(ensured);
+    }
+  });
+
+  // ============================================
   // Initialization
-  listAllDirectories().then((names) => {
-    setDirectoryNames(names);
-    onUpdateDirectory(directoryNames, setDirectoryNames).then(() => {
-      const storedDirName = activeDirectoryName();
-      const currentDirNames = directoryNames();
+  // ============================================
+  listAllDirectories()
+    .then(async (names) => {
+      setDirectoryNames(names);
+      const updatedDirNames = await updateDirectories(
+        names,
+        activeDirectoryName(),
+      );
+      setDirectoryNames(updatedDirNames);
 
-      // If no active directory or it doesn't exist, activate the empty directory
-      if (!storedDirName || !currentDirNames.includes(storedDirName)) {
-        const emptyDirectory = currentDirNames[0]; // Empty directory is always at index 0
+      const storedDirName = activeDirectoryName();
+      if (!storedDirName || !updatedDirNames.includes(storedDirName)) {
+        const emptyDirectory = updatedDirNames[0];
         if (emptyDirectory) {
           setActiveDirectoryName(emptyDirectory);
           localStorage.setItem(localStorageActiveDirectoryName, emptyDirectory);
         }
       }
-    });
-  });
 
+      // Validate viewed file: if it points to a directory that no longer exists, clear it
+      const vf = viewedFile();
+      if (
+        vf?.source === "idb" &&
+        vf.directoryName &&
+        !updatedDirNames.includes(vf.directoryName)
+      ) {
+        setViewedFile(null);
+        storeViewedFile(null);
+      }
+    })
+    .catch((err) => {
+      console.error("Failed to load directories on startup:", err);
+    });
+
+  // ============================================
+  // LLM pipeline handler
+  // ============================================
+  async function handlePipelineSubmit() {
+    const provider = llmProvider();
+
+    // Capture the active pipeline at submit time so it streams to the right instance
+    const p = pipelineMgr.activePipeline();
+
+    const model = p.model();
+
+    if (!provider || !model) {
+      console.warn("Cannot submit pipeline: missing provider or model");
+      return;
+    }
+    // Non-null aliases so TypeScript doesn't lose the narrowing in nested functions
+    const providerNonNull = provider;
+    const modelNonNull = model;
+
+    // Reject cyclic sub-pipeline graphs before making any LLM calls.
+    const cycle = findSubPipelineCycle(p.id, pipelineMgr.pipelines());
+    if (cycle) {
+      p.setModelOutput(
+        `*Error: circular sub-pipeline reference — ${cycle.join(" → ")}*`,
+      );
+      return;
+    }
+
+    // Clear stale output from any sub-pipelines referenced by this pipeline's nodes
+    // so that if a sub-pipeline doesn't run this time, its output area shows nothing.
+    const allPipelines = pipelineMgr.pipelines();
+    for (const node of p.messageNodes()) {
+      if (
+        node.acquisitionMode === "sub-pipeline" &&
+        !node.disabled &&
+        node.sourcePipelineId
+      ) {
+        const subP = allPipelines.find((q) => q.id === node.sourcePipelineId);
+        if (subP) {
+          subP.setModelOutput("");
+          subP.setSubPipelineRunning(false);
+        }
+      }
+    }
+
+    // Extracted so the tool loop can re-resolve on every agent iteration.
+    // A fresh cache is created per call so that within a single resolution pass
+    // multiple nodes referencing the same sub-pipeline share one LLM request,
+    // while separate agentic iterations each start clean.
+    // Per-sub-pipeline RAF accumulators for incremental modelOutput updates.
+    // Created when a sub-pipeline stream opens, drained when it finishes.
+    const subPipelineAccumulators = new Map<
+      string,
+      ReturnType<typeof createRafAccumulator>
+    >();
+
+    const resolveCurrentMessages = () => {
+      const subPipelineCache = new Map<string, Promise<string>>();
+      return resolveNodeMessages({
+        nodes: p.messageNodes(),
+        directInputValue: userPrompt(),
+        clipboard: clipboard(),
+        activeDirectoryName: activeDirectoryName(),
+        displayedFileContent: displayedFileContent(),
+        displayedFileBlob: displayedFileBlob(),
+        pipelines: pipelineMgr.pipelines(),
+        ownHistory: p.history(),
+        provider,
+        model,
+        ownPipelineId: p.id,
+        _subPipelineCache: subPipelineCache,
+        onSubPipelineLoading: (pipelineId) => {
+          const target = pipelineMgr
+            .pipelines()
+            .find((p) => p.id === pipelineId);
+          if (!target) return;
+          target.setPromptLoading(true);
+          target.setRunningPrompt(null);
+        },
+        onSubPipelineStateChange: (pipelineId, running, streamOrOutput) => {
+          const target = pipelineMgr
+            .pipelines()
+            .find((p) => p.id === pipelineId);
+          if (!target) return;
+          target.setSubPipelineRunning(running);
+          if (running) {
+            // Stream has opened: transition from loading → running
+            target.setPromptLoading(false);
+            target.setRunningPrompt(streamOrOutput as LLMAbortableStream);
+            // Create a RAF accumulator for incremental modelOutput updates
+            subPipelineAccumulators.set(
+              pipelineId,
+              createRafAccumulator(target.setModelOutput),
+            );
+          } else {
+            target.setPromptLoading(false);
+            target.setRunningPrompt(null);
+            // Drain any remaining buffered chunks before setting final output
+            const acc = subPipelineAccumulators.get(pipelineId);
+            if (acc) {
+              acc.cancel();
+              subPipelineAccumulators.delete(pipelineId);
+            }
+            target.setModelOutput(streamOrOutput as string);
+          }
+        },
+        onSubPipelineChunk: (pipelineId, text) => {
+          const acc = subPipelineAccumulators.get(pipelineId);
+          if (acc) acc(text);
+        },
+      });
+    };
+
+    // Clear previous output and show loading before resolving messages,
+    // so sub-pipeline output is visible while it streams.
+    p.setModelOutput("");
+    p.setModelThoughts("");
+    p.setPromptLoading(true);
+
+    const messages = await resolveCurrentMessages();
+
+    if (messages.length === 0) {
+      console.warn("Cannot submit pipeline: no messages resolved");
+      p.setPromptLoading(false);
+      return;
+    }
+
+    // The last user-role message is what we record as the "user" side of the turn
+    const lastUserMessage =
+      [...messages].reverse().find((m) => m.role === "user")?.content ?? "";
+
+    function recordHistoryTurn(output: string) {
+      if (lastUserMessage && output) {
+        p.setHistory((prev) => [
+          ...prev,
+          { user: lastUserMessage, assistant: output },
+        ]);
+      }
+    }
+
+    const useToolLoop = hasEnabledToolbelt(p.messageNodes());
+
+    let finalOutput = "";
+
+    try {
+      if (useToolLoop) {
+        // Agentic tool-use loop
+        const flushThoughts = createRafAccumulator(p.setModelThoughts);
+        const accumulatedOutput = await runWithTools({
+          provider,
+          model,
+          messages,
+          tools: buildNativeToolDefinitions(p.messageNodes()),
+          resolveMessages: resolveCurrentMessages,
+          toolbeltCtx: {
+            nodes: p.messageNodes(),
+            viewedFileName: viewedFile()?.fileName ?? null,
+            viewedFileContent: displayedFileContent(),
+            viewedFileModified:
+              viewedFile() === null
+                ? null
+                : viewedFile()!.source === "clipboard",
+            onAppendWorkspace: (appended) => {
+              const vf = viewedFile();
+              if (!vf || vf.source !== "clipboard") return;
+              setClipboard((prev) =>
+                prev.map((e) =>
+                  e.name === vf.fileName
+                    ? { ...e, content: e.content + appended }
+                    : e,
+                ),
+              );
+              storeClipboard(clipboard());
+            },
+            onOverwriteWorkspace: (content) => {
+              const vf = viewedFile();
+              if (!vf || vf.source !== "clipboard") return;
+              setClipboard((prev) =>
+                prev.map((e) =>
+                  e.name === vf.fileName ? { ...e, content } : e,
+                ),
+              );
+              storeClipboard(clipboard());
+            },
+          },
+          onStream: (stream) => {
+            p.setPromptLoading(false);
+            p.setRunningPrompt(stream);
+          },
+          // Final turn: onChunk is called once with the complete output — no batching needed
+          onChunk: (text) => {
+            p.setModelOutput((prev) => prev + text);
+          },
+          onThinkChunk: flushThoughts,
+          // Tool turns: append annotated output (call + inline result) as a block
+          onToolTurnComplete: (annotated) => {
+            p.setModelOutput((prev) => prev + annotated + "\n");
+          },
+          thinkEffort: p.thinkingEffort(),
+          contextSize: p.contextSize(),
+        });
+        flushThoughts.cancel();
+        p.setRunningPrompt(null);
+        finalOutput = accumulatedOutput;
+        recordHistoryTurn(finalOutput);
+      } else {
+        // Standard single-shot stream (with think fallback)
+        const effort = p.thinkingEffort();
+        const ctxSize = p.contextSize();
+        async function streamStandard(think: ThinkingEffort | false | undefined): Promise<string> {
+          const responseStream = await providerNonNull.chat({
+            model: modelNonNull.id,
+            stream: true as const,
+            ...(think !== undefined ? { think } : {}),
+            ...(ctxSize ? { contextSize: ctxSize } : {}),
+            messages,
+          });
+          p.setPromptLoading(false);
+          p.setRunningPrompt(responseStream);
+
+          const flushOutput = createRafAccumulator(p.setModelOutput);
+          const flushThoughts = createRafAccumulator(p.setModelThoughts);
+
+          let accumulatedOutput = "";
+          let hasReceivedThinking = false;
+          try {
+            for await (const chunk of responseStream) {
+              if (chunk.thinking) {
+                if (!hasReceivedThinking) {
+                  p.setModelThoughts("");
+                  hasReceivedThinking = true;
+                }
+                flushThoughts(chunk.thinking);
+              }
+              if (chunk.content) {
+                accumulatedOutput += chunk.content;
+                flushOutput(chunk.content);
+              }
+            }
+          } finally {
+            flushOutput.cancel();
+            flushThoughts.cancel();
+          }
+          return accumulatedOutput;
+        }
+
+        let accumulatedOutput: string;
+        try {
+          // Off (null) -> explicit think: false so thinking models stop thinking.
+          accumulatedOutput = await streamStandard(effort ?? false);
+        } catch (thinkErr: unknown) {
+          const isThinkingError =
+            thinkErr instanceof Error &&
+            thinkErr.message.toLowerCase().includes("think");
+          if (!isThinkingError) throw thinkErr;
+          p.setModelOutput("");
+          // Model rejects the think param entirely: retry with it omitted.
+          accumulatedOutput = await streamStandard(undefined);
+        }
+        p.setRunningPrompt(null);
+        finalOutput = accumulatedOutput;
+        recordHistoryTurn(finalOutput);
+      }
+    } catch (error: unknown) {
+      p.setPromptLoading(false);
+      p.setRunningPrompt(null);
+      const message = error instanceof Error ? error.message : String(error);
+      console.error("Error processing chat response:", error);
+      p.setModelOutput((prev) => prev + `\n\n*Error: ${message}*`);
+      return;
+    }
+
+    // Auto-rerun if loop mode is enabled
+    if (p.loopEnabled()) {
+      handlePipelineSubmit();
+    }
+  }
+
+  function handleCentralInputKeyDown(
+    e: KeyboardEvent & { currentTarget: HTMLInputElement },
+  ) {
+    if (e.key === "Tab" && bracketMode()) {
+      e.preventDefault();
+
+      const input = e.currentTarget;
+      const value = input.value;
+      const cursorPos = input.selectionStart ?? value.length;
+      const query = extractBracketQuery(value, cursorPos);
+      if (query === null) return;
+
+      const allParsedMatches = [
+        ...filteredParsedClipboardFileNames(),
+        ...(filteredParsedDirectoryFileNames() ?? []),
+      ];
+      if (allParsedMatches.length === 0) return;
+
+      const allFullNames = allParsedMatches.map((f) => f.fullName);
+      const completion = longestCommonPrefix(allFullNames);
+      if (completion.length <= query.length) return;
+
+      const bracketStart = cursorPos - query.length;
+
+      if (allParsedMatches.length === 1) {
+        const match = allParsedMatches[0];
+        const inserted = match.baseName + "](" + match.fullName + ")";
+        const newValue =
+          value.substring(0, bracketStart) +
+          inserted +
+          value.substring(cursorPos);
+        setUserPrompt(newValue);
+        setBracketMode(false);
+        setInputValue("");
+        requestAnimationFrame(() => {
+          const pos = bracketStart + inserted.length;
+          input.setSelectionRange(pos, pos);
+        });
+      } else {
+        const newValue =
+          value.substring(0, bracketStart) +
+          completion +
+          value.substring(cursorPos);
+        setUserPrompt(newValue);
+        setInputValue(completion);
+        requestAnimationFrame(() => {
+          input.setSelectionRange(
+            bracketStart + completion.length,
+            bracketStart + completion.length,
+          );
+        });
+      }
+    }
+  }
+
+  function handleCentralInputKeyUp(
+    e: KeyboardEvent & { currentTarget: HTMLInputElement },
+  ) {
+    if (e.key === "Enter") {
+      handlePipelineSubmit();
+    }
+    if (e.key === "]" && bracketMode()) {
+      setBracketMode(false);
+      setInputValue("");
+    }
+  }
+
+  /**
+   * Handle textarea input - create clipboard entry on first edit if viewing IDB file
+   */
+  function handleTextareaInput(value: string) {
+    const vf = viewedFile();
+
+    if (vf?.source === "clipboard") {
+      // Already viewing clipboard file - update immutably
+      setClipboard((prev) =>
+        prev.map((e) =>
+          e.name === vf.fileName ? { ...e, content: value } : e,
+        ),
+      );
+      storeClipboard(clipboard());
+    } else {
+      // Viewing IDB file or nothing - need to create clipboard entry
+      const result = getOrCreateEditableFile(
+        viewedFile(),
+        clipboard(),
+        idbFileContent(),
+        activeDirectoryName(),
+      );
+      // Apply the entry with the new content
+      const updatedClipboard = result.clipboard.map((e) =>
+        e === result.entry ? { ...e, content: value } : e,
+      );
+      setClipboard(updatedClipboard);
+      setViewedFile(result.viewedFile);
+      storeViewedFile(result.viewedFile);
+      storeClipboard(updatedClipboard);
+    }
+  }
+
+  // ============================================
+  // Render
+  // ============================================
   return (
     <div id="APP_CONTAINER" class="dark_theme">
-      <input
-        id="LEFT_INPUT"
-        value={inputValue()}
-        onkeyup={(e) => {
-          onInputKeyUp(
-            e,
-            activeDirectoryName,
-            setInputValue,
-            openFiles,
-            filteredParsedOpenFileNames,
-            setOpenFiles,
-            filteredParsedAllFileNames,
-            setActiveFileName,
-          );
-        }}
-      ></input>
-      <div id="LEFT_SIDE">
-        <div id="LEFT_TOOLBAR">
-          <div id="LM_S_ACTIONS"></div>
-          <div id="LM_S_BOTTOM">
-            <button
-              class={"button_icon"}
-              onclick={(e) => {
-                e.stopPropagation();
-                onClickUploadDirectory(directoryNames, setDirectoryNames);
-              }}
-            >
-              <i class="bx bx-upload"></i>
-            </button>
-            <div id="LM_S_DIRECTORIES">
-              <For each={directoryNames()}>
-                {(name: string, index: Accessor<number>) => (
-                  <Switch>
-                    <Match when={rightClickedDirectory() !== name}>
-                      <button
-                        class={
-                          "button_icon " +
-                          (name === activeDirectoryName() ? "active" : "")
-                        }
-                        onclick={() => {
-                          setActiveDirectoryName(name);
-                          localStorage.setItem(
-                            localStorageActiveDirectoryName,
-                            name,
-                          );
-                        }}
-                        oncontextmenu={(e: PointerEvent) => {
-                          e.preventDefault();
-                          setRightClickedDirectory(name);
-                        }}
-                        onmouseenter={() => {
-                          setHoveredDirectoryName(name);
-                        }}
-                        onmouseleave={() => {
-                          console.log("AAAH!");
-                          setHoveredDirectoryName(null);
-                        }}
-                      >
-                        <Show
-                          when={name === activeDirectoryName() && index() === 0}
-                        >
-                          <i class="bx bx-folder-open"></i>
-                        </Show>
-                        <Show
-                          when={name === activeDirectoryName() && index() > 0}
-                        >
-                          <i class="bx bxs-folder-open"></i>
-                        </Show>
-                        <Show
-                          when={
-                            !(name === activeDirectoryName()) && index() > 0
-                          }
-                        >
-                          <i class="bx bxs-folder"></i>
-                        </Show>
-                        <Show
-                          when={
-                            !(name === activeDirectoryName()) && index() === 0
-                          }
-                        >
-                          <i class="bx bx-folder-plus"></i>
-                        </Show>
-                      </button>
-                    </Match>
-                    <Match when={rightClickedDirectory() === name}>
-                      <button
-                        class={
-                          "button_icon " +
-                          (name === activeDirectoryName() ? "active" : "")
-                        }
-                        onclick={() => {
-                          onClickDownloadDirectory(name);
-                        }}
-                        onmouseleave={() => {
-                          setRightClickedDirectory("");
-                        }}
-                      >
-                        <i class="bx bxs-download"></i>
-                      </button>
-                    </Match>
-                  </Switch>
-                )}
-              </For>
-            </div>
-          </div>
-        </div>
-        <div
-          id="LEFT_SIDEBAR"
-          class={
-            hoveredDirectoryFileNames() !== null &&
-            hoveredDirectoryName() !== activeDirectoryName()
-              ? "showing_hovered_directory"
-              : ""
-          }
-        >
-          <div id="L_S_TOP">
-            <div id="L_S_OPENFILES">
-              <For each={filteredParsedOpenFileNames()}>
-                {(parsedName: ParsedFileName, index: Accessor<number>) => (
-                  <Switch>
-                    <Match
-                      when={rightClickedOpenFile() !== parsedName.fullName}
-                    >
-                      <button
-                        class={
-                          "button_file " +
-                          (activeFileName() === parsedName.fullName
-                            ? "active "
-                            : "") +
-                          (rightClickedOpenFile() === parsedName.fullName
-                            ? "context_menu"
-                            : "")
-                        }
-                        onclick={() => {
-                          setActiveFileName(parsedName.fullName);
-                          storeActiveFileName(parsedName.fullName);
-                        }}
-                        oncontextmenu={(e: PointerEvent) => {
-                          e.preventDefault();
-                          setRightClickedOpenFile(parsedName.fullName);
-                        }}
-                      >
-                        <div class="filename bg">
-                          <Switch>
-                            <Match when={parsedName.baseName}>
-                              <i class="bx bxs-file"></i>
-                            </Match>
-                            <Match when={parsedName.baseName === ""}>
-                              <i class="bx bxs-tag-alt"></i>
-                            </Match>
-                          </Switch>
-                          {parsedName.baseName}
-                        </div>
-                        <div class="tags">
-                          <For each={parsedName.tags}>
-                            {(tag: string) => <span>&nbsp;{tag}</span>}
-                          </For>
-                        </div>
-                      </button>
-                    </Match>
-                    <Match
-                      when={rightClickedOpenFile() === parsedName.fullName}
-                    >
-                      <div
-                        class="button_file_contextmenu"
-                        onmouseleave={() => {
-                          setRightClickedOpenFile(null);
-                          setRightClickedOpenFileNewName(null);
-                          setConfirmAction(null);
-                        }}
-                        onClick={() => {
-                          setRightClickedOpenFile(null);
-                        }}
-                      >
-                        <div
-                          class="filename text_overflow_fade bg"
-                          contenteditable={true}
-                          onclick={(e) => {
-                            e.stopPropagation();
-                          }}
-                          oninput={(e) => {
-                            onInputExistingFileName(
-                              e,
-                              setRightClickedOpenFileNewName,
-                            );
-                          }}
-                        >
-                          {parsedName.fullName ?? "unnamed file"}
-                        </div>
-                        <div class="actions">
-                          <Switch>
-                            <Match
-                              when={
-                                rightClickedOpenFileNewName() === null ||
-                                rightClickedOpenFile() ===
-                                  rightClickedOpenFileNewName()
-                              }
-                            >
-                              <button
-                                class={"button_icon"}
-                                onclick={(e) => {
-                                  e.stopPropagation();
-                                  onClickDownloadOpenFile(
-                                    openFiles,
-                                    parsedName.fullName,
-                                  );
-                                }}
-                              >
-                                <i class="bx bxs-download"></i>
-                              </button>
-                              <button
-                                class={"button_icon"}
-                                onclick={(e) => {
-                                  e.stopImmediatePropagation();
-                                  onClickSaveOpenFile(
-                                    index(),
-                                    openFiles,
-                                    directoryNames,
-                                    setDirectoryNames,
-                                    activeDirectoryParsedFileNames,
-                                    setActiveDirectoryParsedFileNames,
-                                    activeDirectoryName,
-                                  );
-                                }}
-                              >
-                                <i class="bx bx-save"></i>
-                              </button>
-                              <button
-                                class={
-                                  "button_icon " +
-                                  (confirmAction() ===
-                                  ConfirmAction.DiscardChanges
-                                    ? "orange"
-                                    : "")
-                                }
-                                onclick={(e) => {
-                                  e.stopImmediatePropagation();
-                                  onClickCloseOpenFile(
-                                    index(),
-                                    openFiles,
-                                    activeDirectoryName,
-                                    setOpenFiles,
-                                    confirmAction,
-                                    setConfirmAction,
-                                    setRightClickedOpenFile,
-                                  ).then();
-                                }}
-                              >
-                                <i class="bx bx-x-circle"></i>
-                              </button>
-                            </Match>
-                            <Match
-                              when={
-                                rightClickedOpenFile() !==
-                                rightClickedOpenFileNewName()
-                              }
-                            >
-                              <button
-                                class={"button_icon"}
-                                onclick={(e) => {
-                                  e.stopPropagation();
-                                  onRenameOpenFile(
-                                    rightClickedOpenFile(),
-                                    rightClickedOpenFileNewName(),
-                                    openFiles,
-                                  );
-                                }}
-                              >
-                                <i class="bx bx-check"></i>
-                              </button>
-                            </Match>
-                          </Switch>
-                        </div>
-                      </div>
-                    </Match>
-                  </Switch>
-                )}
-              </For>
-            </div>
-            <Show when={filteredParsedOpenFileNames().length > 0}>
-              <div class="filelist_footer">
-                <i class="bx bx-clipboard"></i>
-                <span>Clipboard</span>
-              </div>
-            </Show>
-          </div>
-          <div id="L_S_BOTTOM">
-            <Show
-              when={
-                hoveredDirectoryFileNames()
-                  ? hoveredDirectoryFileNames()!.length > 0
-                  : filteredParsedAllFileNames() &&
-                    filteredParsedAllFileNames()!.length > 0
+      <div id="LEFT_INPUT_WRAPPER">
+        <i class="bx bx-search"></i>
+        <input
+          id="LEFT_INPUT"
+          value={inputValue()}
+          onkeyup={(e) => {
+            setInputValue(e.currentTarget.value);
+            const result = handleSearchKeyUp(
+              e.key,
+              e.ctrlKey,
+              e.currentTarget.value,
+              activeDirectoryName(),
+              clipboard(),
+              filteredParsedClipboardFileNames(),
+              filteredParsedDirectoryFileNames(),
+            );
+            if (result) {
+              if (result.clipboard !== clipboard()) {
+                setClipboard(result.clipboard);
+                storeClipboard(result.clipboard);
               }
-            >
-              <div class="filelist_header">
-                <i class="bx bx-folder"></i>
-                <span>Directory</span>
-              </div>
-            </Show>
-            <Show
-              when={
-                hoveredDirectoryFileNames() ||
-                filteredParsedAllFileNames() !== null
+              if (result.viewedFile) {
+                setViewedFile(result.viewedFile);
+                storeViewedFile(result.viewedFile);
               }
-            >
-              <div id="L_S_B_ALLFILES">
-                <For
-                  each={
-                    hoveredDirectoryFileNames()
-                      ? hoveredDirectoryFileNames()
-                      : filteredParsedAllFileNames()
-                  }
-                >
-                  {(parsedName: ParsedFileName, index: Accessor<number>) => (
-                    <Switch>
-                      <Match
-                        when={rightClickedSavedFile() !== parsedName.fullName}
-                      >
-                        <button
-                          class={
-                            "button_file " +
-                            (rightClickedSavedFile() === parsedName.fullName
-                              ? "context_menu"
-                              : "")
-                          }
-                          onclick={() => {
-                            onClickSavedFile(
-                              parsedName.fullName,
-                              activeDirectoryName,
-                              openFiles,
-                              setOpenFiles,
-                              setActiveFileName,
-                            );
-                          }}
-                          oncontextmenu={(e: PointerEvent) => {
-                            e.preventDefault();
-                            setRightClickedSavedFile(parsedName.fullName);
-                          }}
-                        >
-                          <div class="filename text_overflow_fade bg">
-                            <Switch>
-                              <Match when={parsedName.baseName}>
-                                <i class="bx bxs-file"></i>
-                              </Match>
-                              <Match when={parsedName.baseName === ""}>
-                                <i class="bx bxs-tag-alt"></i>
-                              </Match>
-                            </Switch>
-                            {parsedName.baseName}
-                          </div>
-                          <div class="tags">
-                            <For each={parsedName.tags}>
-                              {(tag: string) => <span>&nbsp;{tag}</span>}
-                            </For>
-                          </div>
-                        </button>
-                      </Match>
-                      <Match
-                        when={rightClickedSavedFile() === parsedName.fullName}
-                      >
-                        <div
-                          class="button_file_contextmenu"
-                          onmouseleave={() => {
-                            setRightClickedSavedFile(null);
-                            setRightClickedSavedFileNewName(null);
-                            setConfirmAction(null);
-                          }}
-                          onClick={() => {
-                            setRightClickedSavedFile(null);
-                          }}
-                        >
-                          <div
-                            class="filename"
-                            contenteditable={true}
-                            onclick={(e) => {
-                              e.stopPropagation();
-                            }}
-                            oninput={(e) => {
-                              onInputExistingFileName(
-                                e,
-                                setRightClickedSavedFileNewName,
-                              );
-                            }}
-                          >
-                            {parsedName.fullName ?? "unnamed file"}
-                          </div>
-                          <div class="actions">
-                            <Switch>
-                              <Match
-                                when={
-                                  rightClickedSavedFileNewName() === null ||
-                                  rightClickedSavedFileNewName() ===
-                                    rightClickedSavedFile()
-                                }
-                              >
-                                <button
-                                  class={"button_icon"}
-                                  onclick={(e) => {
-                                    onClickDownloadSavedFile(
-                                      activeDirectoryName,
-                                      parsedName.fullName,
-                                    );
-                                    e.stopPropagation();
-                                  }}
-                                >
-                                  <i class="bx bxs-download"></i>
-                                </button>
-                                <button
-                                  class={
-                                    "button_icon " +
-                                    (confirmAction() === ConfirmAction.TrashFile
-                                      ? "red"
-                                      : "")
-                                  }
-                                  onclick={(e) => {
-                                    e.stopPropagation();
-                                    onClickTrashSavedFile(
-                                      parsedName.fullName,
-                                      activeDirectoryName,
-                                      activeDirectoryParsedFileNames,
-                                      setActiveDirectoryParsedFileNames,
-                                      directoryNames,
-                                      setDirectoryNames,
-                                      confirmAction,
-                                      setConfirmAction,
-                                      setRightClickedSavedFile,
-                                    ).then();
-                                  }}
-                                >
-                                  <i class="bx bxs-trash-alt"></i>
-                                </button>
-                              </Match>
-                              <Match
-                                when={
-                                  rightClickedSavedFileNewName() !== null &&
-                                  rightClickedSavedFileNewName() !==
-                                    rightClickedSavedFile()
-                                }
-                              >
-                                <button
-                                  class={"button_icon"}
-                                  onclick={(e) => {
-                                    e.stopPropagation();
-                                    onRenameSavedFile(
-                                      parsedName.fullName,
-                                      rightClickedSavedFileNewName(),
-                                      activeDirectoryParsedFileNames,
-                                      setActiveDirectoryParsedFileNames,
-                                      activeDirectoryName,
-                                      directoryNames,
-                                      setDirectoryNames,
-                                    );
-                                  }}
-                                >
-                                  <i class="bx bx-check"></i>
-                                </button>
-                              </Match>
-                            </Switch>
-                          </div>
-                        </div>
-                      </Match>
-                    </Switch>
-                  )}
-                </For>
-              </div>
-            </Show>
-          </div>
-        </div>
-      </div>
-      <Switch>
-        <Match when={appMode() === AppMode.AiWriter}>
-          <textarea
-            id="BASIC_TEXT_EDITOR"
-            value={activeFile()?.content() ?? ""}
-            onkeyup={(e) => {
-              activeFile()?.setContent(e.currentTarget.value);
-            }}
-            onchange={(e) => {
-              storeOpenFiles(openFiles);
-            }}
-          />
-        </Match>
-        <Match when={appMode() === AppMode.MdReader}>
-          {MdReader(activeFile)}
-        </Match>
-        <Match when={appMode() === AppMode.Settings}>
-          {SettingsComponent(
-            ollamaConnection,
-            setOllamaConnection,
-            ollamaModel,
-            setOllamaModel,
-            ollamaModels,
-            setOllamaModels,
-            ollamaUrl,
-            setOllamaUrl,
-          )}
-        </Match>
-      </Switch>
-      <Switch>
-        <Match
-          when={
-            appMode() === AppMode.AiWriter || appMode() === AppMode.MdReader
-          }
-        >
-          <input id="CENTRAL_PROMPT_INPUT"></input>
-        </Match>
-      </Switch>
-      <div id="RIGHT_SIDE">
-        <Switch>
-          <Match
-            when={
-              appMode() === AppMode.AiWriter || appMode() === AppMode.MdReader
+              setInputValue(result.inputValue);
             }
-          >
-            {AiWriter(
-              ollamaConnection(),
-              activeFile,
-              openFiles,
-              activeDirectoryParsedFileNames,
-              activeDirectoryName,
-              ollamaModel,
-            )}
-          </Match>
-        </Switch>
-        <div id="RIGHT_TOOLBAR">
-          <For each={appModes}>
-            {(am) => {
-              return (
-                <button
-                  onclick={() => {
-                    setAppMode(am.mode);
-                    localStorage.setItem(localStorageAppMode, am.mode);
-                  }}
-                  class={
-                    "button_icon " + (appMode() === am.mode ? "active" : "")
-                  }
-                >
-                  <i class={"bx " + am.icon}></i>
-                </button>
-              );
-            }}
-          </For>
-          <button class="button_icon">
-            <i class="bx bx-network-chart" />
-          </button>
-          ,
-        </div>
+          }}
+        ></input>
       </div>
-      <div id="RIGHT_SIDE_BUTTONS">
-        <button class="user_action">
-          Continue Text
-          <i class="bx bx-play-circle" />
-        </button>
-        <button class="user_action fixed_width_icon">
-          <i class="bx bx-network-chart" />
-        </button>
+      <div id="LEFT_SIDE">
+        <LeftToolbar
+          directoryNames={directoryNames}
+          setDirectoryNames={setDirectoryNames}
+          activeDirectoryName={activeDirectoryName}
+          setActiveDirectoryName={setActiveDirectoryName}
+          rightClickedDirectory={rightClickedDirectory}
+          setRightClickedDirectory={setRightClickedDirectory}
+          rightClickedDirectoryDelete={rightClickedDirectoryDelete}
+          setRightClickedDirectoryDelete={setRightClickedDirectoryDelete}
+          hoveredDirectoryName={hoveredDirectoryName}
+          setHoveredDirectoryName={setHoveredDirectoryName}
+        />
+        <LeftSidebar
+          clipboardCollapsed={clipboardCollapsed}
+          setClipboardCollapsed={setClipboardCollapsed}
+          filteredParsedClipboardFileNames={filteredParsedClipboardFileNames}
+          clipboard={clipboard}
+          setClipboard={setClipboard}
+          viewedFile={viewedFile}
+          setViewedFile={setViewedFile}
+          rightClickedClipboardFile={rightClickedClipboardFile}
+          setRightClickedClipboardFile={setRightClickedClipboardFile}
+          rightClickedClipboardFileNewName={rightClickedClipboardFileNewName}
+          setRightClickedClipboardFileNewName={
+            setRightClickedClipboardFileNewName
+          }
+          confirmAction={confirmAction}
+          setConfirmAction={setConfirmAction}
+          directoryNames={directoryNames}
+          setDirectoryNames={setDirectoryNames}
+          activeDirectoryParsedFileNames={activeDirectoryParsedFileNames}
+          setActiveDirectoryParsedFileNames={setActiveDirectoryParsedFileNames}
+          activeDirectoryName={activeDirectoryName}
+          setIdbFileContent={setIdbFileContent}
+          directoryCollapsed={directoryCollapsed}
+          setDirectoryCollapsed={setDirectoryCollapsed}
+          hoveredDirectoryFileNames={hoveredDirectoryFileNames}
+          hoveredDirectoryName={hoveredDirectoryName}
+          filteredParsedDirectoryFileNames={filteredParsedDirectoryFileNames}
+          rightClickedSavedFile={rightClickedSavedFile}
+          setRightClickedSavedFile={setRightClickedSavedFile}
+          rightClickedSavedFileNewName={rightClickedSavedFileNewName}
+          setRightClickedSavedFileNewName={setRightClickedSavedFileNewName}
+        />
+      </div>
+      <CenterPanel
+        fileViewerMode={fileViewerMode}
+        setFileViewerMode={setFileViewerMode}
+        availableModes={availableModes}
+        viewedFile={viewedFile}
+        displayedFileContent={displayedFileContent}
+        displayedFileBlob={displayedFileBlob}
+        onTextareaInput={handleTextareaInput}
+        onSave={async () => {
+          const entry = currentClipboardEntry();
+          if (entry) {
+            const result = await saveClipboardFile(
+              entry,
+              clipboard(),
+              activeDirectoryName(),
+              activeDirectoryParsedFileNames(),
+              viewedFile(),
+            );
+            setClipboard(result.clipboard);
+            storeClipboard(result.clipboard);
+            if (result.dirFileNames !== activeDirectoryParsedFileNames()) {
+              setActiveDirectoryParsedFileNames(result.dirFileNames);
+            }
+            if (result.viewedFile !== viewedFile()) {
+              setViewedFile(result.viewedFile);
+              storeViewedFile(result.viewedFile);
+            }
+            if (result.idbFileContent !== null) {
+              setIdbFileContent(result.idbFileContent);
+            }
+            setRightClickedClipboardFile(null);
+            const newDirNames = await updateDirectories(
+              directoryNames(),
+              activeDirectoryName(),
+            );
+            setDirectoryNames(newDirNames);
+          }
+        }}
+        inputValue={inputValue}
+        setInputValue={setInputValue}
+        filteredParsedClipboardFileNames={filteredParsedClipboardFileNames}
+        filteredParsedDirectoryFileNames={filteredParsedDirectoryFileNames}
+        userPrompt={userPrompt}
+        setUserPrompt={setUserPrompt}
+        bracketMode={bracketMode}
+        setBracketMode={setBracketMode}
+        onCentralInputKeyDown={handleCentralInputKeyDown}
+        onCentralInputKeyUp={handleCentralInputKeyUp}
+        clipboard={clipboard}
+        activeDirectoryName={activeDirectoryName}
+        setViewedFile={setViewedFile}
+        pipeline={pipelineMgr.activePipeline}
+        pipelines={pipelineMgr.pipelines}
+        onAbortSubPipeline={(pipelineId) => {
+          const target = pipelineMgr
+            .pipelines()
+            .find((p) => p.id === pipelineId);
+          target?.runningPrompt()?.abort();
+        }}
+      />
+      <div id="RIGHT_SIDE">
+        <NodePipeline
+          pipeline={pipelineMgr.activePipeline}
+          onUpdateNode={pipelineMgr.updateNode}
+          onRemoveNode={pipelineMgr.removeNode}
+          onMoveNode={pipelineMgr.moveNode}
+          onAddNode={pipelineMgr.addNode}
+          onAddHistoryNode={pipelineMgr.addHistoryNode}
+          onAddWorkspaceToolbeltNode={pipelineMgr.addWorkspaceToolbeltNode}
+          llmUrl={llmUrl}
+          setLLMUrl={setLLMUrl}
+          llmApiKey={llmApiKey}
+          setLLMApiKey={setLLMApiKey}
+          llmProviderType={llmProviderType}
+          llmModels={llmModels}
+          onSubmit={handlePipelineSubmit}
+          clipboard={clipboard}
+          activeDirectoryParsedFileNames={activeDirectoryParsedFileNames}
+          pipelines={pipelineMgr.pipelines}
+        />
+        <div id="RIGHT_TOOLBAR">
+          {rightSidebarMode() === "pipeline" ? (
+            <>
+              <For each={pipelineMgr.pipelines()}>
+                {(p, index) => (
+                  <button
+                    class={(() => {
+                      const ownLoading =
+                        p.promptLoading() && p.runningPrompt() === null;
+                      const subLoading =
+                        !ownLoading &&
+                        p.messageNodes().some((n) => {
+                          if (
+                            n.acquisitionMode !== "sub-pipeline" ||
+                            n.disabled
+                          )
+                            return false;
+                          const sub = pipelineMgr
+                            .pipelines()
+                            .find((q) => q.id === n.sourcePipelineId);
+                          return sub
+                            ? sub.promptLoading() &&
+                                sub.runningPrompt() === null
+                            : false;
+                        });
+                      return (
+                        "button_icon pipeline_btn" +
+                        (pipelineMgr.activePipelineId() === p.id
+                          ? " active"
+                          : "") +
+                        (ownLoading || subLoading ? " loading" : "") +
+                        (p.runningPrompt() !== null ? " running" : "") +
+                        (p.subPipelineRunning() ? " sub_running" : "") +
+                        (pendingRemovePipelineId() === p.id ? " red" : "")
+                      );
+                    })()}
+                    onclick={() => {
+                      if (pendingRemovePipelineId() === p.id) {
+                        if (pipelineMgr.pipelines().length > 1) {
+                          pipelineMgr.removePipeline(p.id);
+                        }
+                        setPendingRemovePipelineId(null);
+                      } else {
+                        setPendingRemovePipelineId(null);
+                        pipelineMgr.setActivePipelineId(p.id);
+                      }
+                    }}
+                    oncontextmenu={(e) => {
+                      e.preventDefault();
+                      if (pipelineMgr.pipelines().length > 1) {
+                        setPendingRemovePipelineId(p.id);
+                      }
+                    }}
+                    onmouseleave={() => {
+                      if (pendingRemovePipelineId() === p.id) {
+                        setPendingRemovePipelineId(null);
+                      }
+                    }}
+                    title={
+                      pendingRemovePipelineId() === p.id
+                        ? "Click to remove pipeline"
+                        : `Pipeline ${index() + 1}${p.promptLoading() && p.runningPrompt() === null ? " (loading)" : ""}${p.runningPrompt() !== null ? " (running)" : ""}${p.subPipelineRunning() ? " (sub-pipeline running)" : ""} — right-click to remove`
+                    }
+                  >
+                    {pendingRemovePipelineId() === p.id ? (
+                      <i class="bx bx-x" />
+                    ) : (
+                      index() + 1
+                    )}
+                  </button>
+                )}
+              </For>
+              <button
+                class="button_icon"
+                onclick={() => pipelineMgr.addPipeline()}
+                title="Add pipeline"
+              >
+                <i class="bx bx-plus"></i>
+              </button>
+            </>
+          ) : null}
+          {/* ── Mode switch buttons at bottom ── */}
+          <div class="toolbar_spacer" />
+          <button
+            class={
+              "button_icon" +
+              (rightSidebarMode() === "pipeline" ? " active" : "")
+            }
+            onclick={() => setRightSidebarMode("pipeline")}
+            title="Node Pipeline"
+          >
+            <i class="bx bx-git-merge" />
+          </button>
+        </div>
       </div>
     </div>
   );
-}
-
-function onClickSavedFile(
-  fileName: string,
-  activeDirectoryName: Accessor<string | null>,
-  openFiles: Accessor<ReactiveFile[]>,
-  setOpenFiles: Setter<ReactiveFile[]>,
-  setActiveFileName: Setter<string | null>,
-) {
-  const fileIndexInOpenFiles = openFiles().findIndex(
-    (f) => f.name() === fileName,
-  );
-
-  if (fileIndexInOpenFiles === -1) {
-    const [name, setName] = createSignal<string>(fileName);
-    const [content, setContent] = createSignal<string>("");
-    const activeDirName = activeDirectoryName();
-    if (activeDirName !== null) {
-      getFileContent(activeDirName, fileName).then((content) => {
-        if (content !== null) {
-          setContent(content);
-        } else {
-          throw new Error("file not found");
-        }
-        storeOpenFiles(openFiles);
-      });
-      setOpenFiles([
-        ...openFiles(),
-        {
-          name,
-          setName,
-          content,
-          setContent,
-        },
-      ]);
-    }
-  }
-  setActiveFileName(fileName);
-}
-
-async function onClickCloseOpenFile(
-  index: number,
-  openFiles: Accessor<ReactiveFile[]>,
-  activeDirectoryName: Accessor<string | null>,
-  setOpenFiles: Setter<ReactiveFile[]>,
-  confirmAction: Accessor<ConfirmAction | null>,
-  setConfirmAction: Setter<ConfirmAction | null>,
-  setRightClickedOpenFile: Setter<string | null>,
-) {
-  const currentOpenFiles = openFiles();
-  const openFile = currentOpenFiles[index];
-  const activeDirName = activeDirectoryName();
-
-  if (openFile) {
-    const savedFileContent =
-      activeDirName !== null
-        ? await getFileContent(activeDirName, openFile.name())
-        : null;
-
-    const changesExist =
-      savedFileContent !== null && savedFileContent !== openFile.content();
-
-    if (savedFileContent === null || changesExist) {
-      // Require confirmation for unsaved changes or non-existent saved file
-      if (confirmAction() === ConfirmAction.DiscardChanges) {
-        currentOpenFiles.splice(index, 1);
-        setOpenFiles([...currentOpenFiles]);
-        setConfirmAction(null);
-        setRightClickedOpenFile(null);
-      } else {
-        setConfirmAction(ConfirmAction.DiscardChanges);
-      }
-    } else {
-      // No confirmation needed for saved changes
-      currentOpenFiles.splice(index, 1);
-      setOpenFiles([...currentOpenFiles]);
-      setConfirmAction(null);
-      setRightClickedOpenFile(null);
-    }
-
-    storeOpenFiles(openFiles);
-  }
-}
-
-function onClickSaveOpenFile(
-  index: number,
-  openFiles: Accessor<ReactiveFile[]>,
-  directoryNames: Accessor<string[]>,
-  setDirectoryNames: Setter<string[]>,
-  activeDirectoryFileNames: Accessor<ParsedFileName[] | null>,
-  setActiveDirectoryFileNames: Setter<ParsedFileName[] | null>,
-  activeDirectoryName: Accessor<string | null>,
-) {
-  const openFile: ReactiveFile | null = openFiles()[index];
-  const activeDirName: string | null = activeDirectoryName();
-  const activeDirFileNames: ParsedFileName[] | null =
-    activeDirectoryFileNames();
-  const fileAlreadyExists =
-    activeDirFileNames === null
-      ? false
-      : !!activeDirFileNames.find((adfn) => adfn.fullName === openFile.name());
-
-  if (openFile && activeDirName && activeDirFileNames) {
-    writeFileToDirectory(activeDirName, {
-      name: openFile.name(),
-      content: openFile.content(),
-    }).then(() => {
-      if (!fileAlreadyExists)
-        setActiveDirectoryFileNames([
-          ...activeDirFileNames,
-          parseFileName(openFile.name()),
-        ]);
-      onUpdateDirectory(directoryNames, setDirectoryNames).then();
-    });
-  }
-}
-
-/** @TODO Put deleted files into a "trash" directory instead of deleting them outright */
-async function onClickTrashSavedFile(
-  name: string,
-  activeDirectoryName: Accessor<string | null>,
-  activeDirectoryParsedFileNames: Accessor<ParsedFileName[] | null>,
-  setActiveDirectoryParsedFileNames: Setter<ParsedFileName[] | null>,
-  directoryNames: Accessor<string[]>,
-  setDirectoryNames: Setter<string[]>,
-  confirmAction: Accessor<ConfirmAction | null>,
-  setConfirmAction: Setter<ConfirmAction | null>,
-  setRightClickedSavedFile: Setter<string | null>,
-) {
-  const activeDirName = activeDirectoryName();
-  const activeDirFileNames = activeDirectoryParsedFileNames();
-
-  if (
-    confirmAction() === ConfirmAction.TrashFile &&
-    activeDirName !== null &&
-    activeDirFileNames !== null
-  ) {
-    await removeFileFromDirectory(activeDirName, name);
-    setActiveDirectoryParsedFileNames(
-      (await listFileNamesInDirectory(activeDirName)).map((fn) =>
-        parseFileName(fn),
-      ),
-    );
-    await onUpdateDirectory(directoryNames, setDirectoryNames);
-    setConfirmAction(null);
-    setRightClickedSavedFile(null);
-  } else {
-    setConfirmAction(ConfirmAction.TrashFile);
-  }
-}
-
-function onInputKeyUp(
-  e: KeyboardEvent & { currentTarget: HTMLInputElement; target: Element },
-  activeDirectoryName: Accessor<string | null>,
-  setInputValue: Setter<string>,
-  openFiles: Accessor<ReactiveFile[]>,
-  filteredParsedOpenFileNames: Accessor<ParsedFileName[]>,
-  setOpenFiles: Setter<ReactiveFile[]>,
-  filteredParsedAllFileNames: Accessor<ParsedFileName[] | null>,
-  setActiveFile: Setter<string | null>,
-) {
-  const filtrdAllFileNames = filteredParsedAllFileNames();
-  const filtrdOpenFiles = filteredParsedOpenFileNames();
-  const activeDirName = activeDirectoryName();
-
-  setInputValue(e.currentTarget.value);
-  switch (e.key) {
-    case "Enter":
-      if (
-        e.ctrlKey &&
-        !openFiles().some((of) => of.name() === e.currentTarget.value)
-      ) {
-        const [name, setName] = createSignal<string>(e.currentTarget.value);
-        const [content, setContent] = createSignal<string>("");
-        const [contentDifferentFromSaved, setContentDifferentFromSaved] =
-          createSignal(false);
-        setOpenFiles([...openFiles(), { name, setName, content, setContent }]);
-        setActiveFile(name);
-        storeActiveFileName(name());
-        setInputValue("");
-        storeOpenFiles(openFiles);
-      } else {
-        if ((filtrdOpenFiles.length = 1)) {
-          setActiveFile(filtrdOpenFiles[0].fullName);
-          storeActiveFileName(filtrdOpenFiles[0].fullName);
-          setInputValue("");
-        } else if (
-          filtrdAllFileNames !== null &&
-          activeDirName !== null &&
-          (filtrdAllFileNames.length = 1 && (filtrdOpenFiles.length = 0))
-        ) {
-          const [name, setName] = createSignal<string>(
-            filtrdAllFileNames[0].fullName,
-          );
-          const [content, setContent] = createSignal<string>("");
-          getFileContent(activeDirName, filtrdAllFileNames[0].fullName).then(
-            (content) => {
-              if (content !== null) {
-                setContent(content);
-              } else {
-                throw new Error("file not found");
-              }
-            },
-          );
-          setOpenFiles([
-            ...openFiles(),
-            { name, setName, content, setContent },
-          ]);
-        }
-      }
-      break;
-    default:
-      break;
-  }
-}
-
-async function onUpdateDirectory(
-  directoryNames: Accessor<string[]>,
-  setDirectoryNames: Setter<string[]>,
-) {
-  const directoryNamesAndSize: { name: string; count: number }[] =
-    await Promise.all(
-      directoryNames().map(async (name) => {
-        return { name, count: await countFilesInDirectory(name) };
-      }),
-    );
-  let foundEmptyDirectory: string | null = null;
-  for (const dns of directoryNamesAndSize) {
-    if (dns.count === 0) {
-      if (foundEmptyDirectory) {
-        await removeDirectory(dns.name);
-      } else {
-        foundEmptyDirectory = dns.name;
-      }
-    }
-  }
-  if (foundEmptyDirectory === null) {
-    await addDirectory(uuidv4());
-  }
-  setDirectoryNames(await listAllDirectories());
-}
-
-function onClickDownloadSavedFile(
-  activeDirectoryName: Accessor<string | null>,
-  name: string,
-) {
-  const activeDirName = activeDirectoryName();
-
-  if (activeDirName) {
-    getFileContent(activeDirName, name)
-      .then((content) => {
-        if (content !== null) {
-          const blob = new Blob([content], { type: "text/plain" });
-          saveAs(blob, name);
-        } else {
-          console.error(
-            `File ${name} not found in directory ${activeDirectoryName()}`,
-          );
-        }
-      })
-      .catch((error) => {
-        console.error("Error downloading file:", error);
-      });
-  }
-}
-
-function onClickDownloadOpenFile(
-  openFiles: Accessor<ReactiveFile[]>,
-  name: string,
-) {
-  const openFile = openFiles().find((file) => file.name() === name);
-
-  if (openFile) {
-    // Get content from the open file's signal
-    const content = openFile.content();
-
-    if (content !== null && content !== undefined) {
-      const blob = new Blob([content], { type: "text/plain" });
-      saveAs(blob, name);
-    } else {
-      console.error(`Content for file ${name} not found`);
-    }
-  } else {
-    console.error(`Open file ${name} not found`);
-  }
-}
-
-function onClickUploadDirectory(
-  directoryNames: Accessor<string[]>,
-  setDirectoryNames: Setter<string[]>,
-) {
-  const input = document.createElement("input");
-  input.type = "file";
-  input.webkitdirectory = true;
-  input.onchange = async (event) => {
-    const files = (event.target as HTMLInputElement).files;
-
-    if (!files) return;
-
-    // Create a new directory in the IDB
-    const directoryName = uuidv4();
-    await addDirectory(directoryName);
-
-    // Upload each file to the new directory
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      const reader = new FileReader();
-
-      reader.readAsText(file);
-      reader.onload = async () => {
-        const content = reader.result as string;
-        await writeFileToDirectory(directoryName, {
-          name: file.name,
-          content,
-        });
-      };
-    }
-
-    onUpdateDirectory(directoryNames, setDirectoryNames).then();
-  };
-
-  input.click();
-}
-
-function onClickDownloadDirectory(name: string) {
-  // Get all file names in the directory
-  listFileNamesInDirectory(name)
-    .then((fileNames) => {
-      if (fileNames.length === 0) {
-        console.warn(`No files found in directory ${name}`);
-        return;
-      }
-
-      // Create a ZIP archive with all files from the directory
-      const zip = new JSZip();
-      const promises = fileNames.map((fileName) => {
-        return getFileContent(name, fileName)
-          .then((content) => {
-            if (content !== null) {
-              zip.file(fileName, content);
-            } else {
-              console.error(`File ${fileName} not found in directory ${name}`);
-            }
-          })
-          .catch((error) => {
-            console.error(`Error getting file ${fileName}:`, error);
-          });
-      });
-
-      return Promise.all(promises)
-        .then(() => zip.generateAsync({ type: "blob" }))
-        .then((zipBlob) => {
-          saveAs(zipBlob, `${name}.zip`);
-        })
-        .catch((error) => {
-          console.error("Error generating ZIP:", error);
-        });
-    })
-    .catch((error) => {
-      console.error(`Error listing files in directory ${name}:`, error);
-    });
-}
-
-function onInputExistingFileName(
-  newNameEvent: Event & {
-    currentTarget: HTMLDivElement;
-    target: Element;
-  },
-  fileNameChangeSetter: Setter<string | null>,
-) {
-  const newFileName: string | undefined = (
-    newNameEvent.target.firstChild as (ChildNode | null) & { data: string }
-  ).data;
-  if (newFileName !== undefined) {
-    fileNameChangeSetter(newFileName);
-  }
-}
-
-function onRenameOpenFile(
-  oldName: string | null,
-  newName: string | null,
-  openFiles: Accessor<ReactiveFile[]>,
-) {
-  const fileWithSameNameAlreadyExists = openFiles().some(
-    (of) => of.name() === newName,
-  );
-
-  if (fileWithSameNameAlreadyExists) return;
-
-  const fileToRename: ReactiveFile | undefined = openFiles().find(
-    (of) => of.name() === oldName,
-  );
-  if (fileToRename !== undefined && newName !== null) {
-    fileToRename.setName(newName);
-  }
-  storeOpenFiles(openFiles);
-}
-
-async function onRenameSavedFile(
-  oldName: string | null,
-  newName: string | null,
-  activeDirectorParsedFileNames: Accessor<ParsedFileName[] | null>,
-  setActiveDirectorParsedFileNames: Setter<ParsedFileName[] | null>,
-  activeDirectoryName: Accessor<string | null>,
-  directoryNames: Accessor<string[]>,
-  setDirectoryNames: Setter<string[]>,
-) {
-  const activeDirName = activeDirectoryName();
-  const activeDirFileNames = activeDirectorParsedFileNames();
-  const fileWithSameNameAlreadyExists =
-    activeDirFileNames !== null
-      ? activeDirFileNames.some((sf) => sf.baseName === newName)
-      : false;
-
-  if (
-    activeDirName !== null &&
-    oldName !== null &&
-    newName !== null &&
-    !fileWithSameNameAlreadyExists &&
-    activeDirFileNames !== null
-  ) {
-    const fileContent = await getFileContent(activeDirName, oldName);
-    const newFile: BasicFile = { name: newName, content: fileContent ?? "" };
-    await writeFileToDirectory(activeDirName, newFile);
-    await removeFileFromDirectory(activeDirName, oldName);
-    setActiveDirectorParsedFileNames(
-      (await listFileNamesInDirectory(activeDirName)).map((fn) =>
-        parseFileName(fn),
-      ),
-    );
-  }
 }
 
 export default App;

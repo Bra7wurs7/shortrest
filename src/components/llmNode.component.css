@@ -1,0 +1,121 @@
+.ollama_node .prompt_header {
+    background-color: var(--color_background_soft);
+    border-top-left-radius: var(--size_toolbar_half);
+}
+
+.llm_status_text {
+    font-style: italic;
+    color: var(--color_foreground_soft);
+}
+
+.think_effort_row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.8em;
+}
+
+.think_effort_label {
+    color: var(--color_foreground_soft);
+    margin-right: 2px;
+}
+
+.think_effort_btn {
+    font-size: 0.95em;
+    border: var(--size_border) var(--style_border) var(--color_border);
+    color: var(--color_foreground_soft);
+    cursor: pointer;
+    transition: var(--transition_border_color);
+    &:hover {
+        border-color: var(--color_border_light);
+        color: var(--color_foreground);
+    }
+    &.active {
+        border-color: var(--aqua-dim);
+    }
+}
+
+.context_size_row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8em;
+}
+
+.context_size_label {
+    color: var(--color_foreground_soft);
+}
+
+.context_size_row input {
+    width: 7em;
+    font-size: 0.95em;
+    padding: 2px 6px;
+}
+
+.node_loop_btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    border: none;
+    color: var(--color_border_light);
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: small;
+    &:hover {
+        color: var(--color_foreground);
+    }
+    &.active {
+        color: var(--aqua);
+    }
+}
+
+.node_run_btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    border: var(--size_border) var(--style_border) var(--color_border);
+    color: var(--color_foreground);
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: small;
+    &:hover {
+        border-color: var(--color_border_light);
+    }
+    &.abort {
+        border-color: var(--yellow-dim);
+        color: var(--yellow);
+    }
+    &:disabled {
+        cursor: default;
+        color: var(--color_border_light);
+    }
+    &.loading {
+        border-color: var(--aqua-dim);
+        color: var(--aqua);
+    }
+}
+
+.no_models_message {
+    padding: var(--size_padding_large);
+    font-size: small;
+    color: var(--color_foreground_soft);
+    p {
+        margin: 4px 0;
+    }
+    a {
+        color: var(--blue);
+        &:hover {
+            color: var(--aqua);
+        }
+    }
+    code {
+        font-family: var(--mono);
+        background-color: var(--color_background_hard);
+        padding: 1px 4px;
+        border-radius: 3px;
+    }
+}

@@ -1,0 +1,26 @@
+#LEFT_TOOLBAR {
+    background-color: var(--color_background_soft);
+    display: flex;
+    flex-direction: column;
+    justify-content: end;
+    overflow-y: hidden;
+    flex-grow: 1;
+    min-width: var(--size_toolbar_width);
+    border-top-left-radius: var(--size_toolbar_width_half);
+    border-bottom-left-radius: var(--size_toolbar_width_half);
+
+    #LM_S_BOTTOM {
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        width: var(--size_toolbar_width);
+
+        #LM_S_DIRECTORIES {
+            overflow-y: auto;
+
+            .button_icon:last-of-type {
+                border-bottom-left-radius: var(--size_toolbar_width_half);
+            }
+        }
+    }
+}
